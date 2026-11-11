@@ -1,58 +1,55 @@
-/* ===== CALL OF THE CARDS - GAME ENGINE ===== */
+/* ===== CALL OF THE CARDS - GAME ENGINE (v2 alpha) =====
+ *
+ * One fortress, one crown. Both rivals build a party, spend Gold each turn
+ * and try to hold 8 Power to storm the Fortress. Companions add Power,
+ * Tricks disrupt the other side, Artifacts bend the rules.
+ *
+ * The public shape (CallOfCardsGame, CARD_DB, state.p1/p2) is kept stable so
+ * the page's save/story hooks and tests keep working.
+ */
 
 const CARD_DB = {
   companions: [
-    { id:'c1', name:'Wandering Rogue',     emoji:'🗡️', cost:1, power:1, type:'companion', text:'Cheap, scrappy, and always useful early.' },
-    { id:'c2', name:'Captain of the Guard', emoji:'🧙', cost:2, power:3, type:'companion', text:'Loyal to the last and worth every coin.' },
-    { id:'c3', name:'Elf Archer',           emoji:'🏹', cost:3, power:4, type:'companion', text:'Swift, precise, never misses a quest.' },
-    { id:'c4', name:'Dwarven Smith',        emoji:'⚒️', cost:2, power:2, type:'companion', text:'When recruited, draw 1 card.' },
-    { id:'c5', name:'Forest Scout',         emoji:'🌿', cost:2, power:2, type:'companion', text:'Reliable tracker. Solid early power.' },
-    { id:'c6', name:'Siege Engineer',       emoji:'🏗️', cost:3, power:4, type:'companion', text:'Every fortress has a weakness.' },
-    { id:'c7', name:'Healer',               emoji:'💚', cost:2, power:2, type:'companion', text:'All allies gain +1 Power while Healer is in play.' },
-    { id:'c8', name:'Shadow Thief',         emoji:'🦇', cost:1, power:1, type:'companion', text:'When recruited, opponent discards 1 random card.' },
+    { id:'squire',    name:'Squire',           emoji:'🛡️', cost:1, power:1, type:'companion', text:'Cheap and cheerful. Every party needs one.' },
+    { id:'rogue',     name:'Wandering Rogue',  emoji:'🗡️', cost:1, power:2, type:'companion', text:'Quick feet, quicker blade.' },
+    { id:'scout',     name:'Forest Scout',     emoji:'🌿', cost:2, power:2, type:'companion', text:'When recruited, draw 1 card.', effect:'draw1' },
+    { id:'smith',     name:'Dwarven Smith',    emoji:'⚒️', cost:2, power:2, type:'companion', text:'When recruited, draw 1 card.', effect:'draw1' },
+    { id:'archer',    name:'Elf Archer',       emoji:'🏹', cost:2, power:3, type:'companion', text:'Swift, precise, never misses.' },
+    { id:'healer',    name:'Healer',           emoji:'💚', cost:2, power:2, type:'companion', text:'All allies gain +1 Power while the Healer is in play.' },
+    { id:'captain',   name:'Captain of the Guard', emoji:'🧙', cost:3, power:4, type:'companion', text:'Loyal to the last and worth every coin.' },
+    { id:'engineer',  name:'Siege Engineer',   emoji:'🏗️', cost:3, power:4, type:'companion', text:'Every fortress has a weakness.' },
+    { id:'thief',     name:'Shadow Thief',     emoji:'🦇', cost:2, power:2, type:'companion', text:'When recruited, the Rival discards 1 card.', effect:'rival_discard' },
+    { id:'knight',    name:'Dragon Knight',    emoji:'🐲', cost:4, power:5, type:'companion', text:'The biggest hitter in the deck.' }
+  ],
+  tricks: [
+    { id:'ambush',    name:'Ambush',        emoji:'🗡️', cost:1, type:'trick', effect:'damage2',      text:'Deal 2 damage to the Rival\'s strongest companion. If they have none, draw 1 card.' },
+    { id:'rally',     name:'Rally',         emoji:'📯', cost:1, type:'trick', effect:'rally2',       text:'Your party gains +2 Power this turn.' },
+    { id:'reinforce', name:'Reinforce',     emoji:'⚔️', cost:1, type:'trick', effect:'reinforce2',   text:'Give your strongest companion +2 Power for good.' },
+    { id:'scout',     name:'Scout Ahead',   emoji:'🧭', cost:1, type:'trick', effect:'draw2',        text:'Draw 2 cards.' },
+    { id:'fortify',   name:'Fortify',       emoji:'🏰', cost:2, type:'trick', effect:'fortify3',     text:'Your party gains +3 Power this turn.' },
+    { id:'bribe',     name:'Bribe',         emoji:'💰', cost:2, type:'trick', effect:'rival_discard',text:'The Rival discards 1 random card.' },
+    { id:'sweep',     name:'Sneak Attack',  emoji:'🥷', cost:2, type:'trick', effect:'damage_all1',  text:'Deal 1 damage to every Rival companion.' },
+    { id:'fireball',  name:'Fireball',      emoji:'🔥', cost:3, type:'trick', effect:'damage3',      text:'Deal 3 damage to the Rival\'s strongest companion.' }
   ],
   artifacts: [
-    { id:'a1', name:'Ring of Courage',    emoji:'💍', cost:4, type:'artifact', text:'All Companions gain +1 Power.', effect:'allies_plus_1' },
-    { id:'a2', name:'Shield of Ages',     emoji:'🛡️', cost:4, type:'artifact', text:'Ignore 1 Power requirement on quests.', effect:'ignore_1_req' },
-    { id:'a3', name:'Sword of Dawn',      emoji:'⚔️', cost:6, type:'artifact', text:'Gain +1 bonus VP when completing any Quest.', effect:'bonus_vp' },
-    { id:'a4', name:'Amulet of Renewal',  emoji:'🔮', cost:3, type:'artifact', text:'Draw 1 extra card at the start of each turn.', effect:'draw_1' },
-    { id:'a5', name:'Crown of Whispers',  emoji:'👑', cost:4, type:'artifact', text:'Once per turn, peek at the top card of your deck.', effect:'peek' },
-    { id:'a6', name:'Boots of Haste',     emoji:'👢', cost:2, type:'artifact', text:'You may recruit one extra Companion per turn.', effect:'extra_recruit' },
-  ],
-  quests: [
-    { id:'q1',  name:'Patrol the Border',      emoji:'📜', vp:1, req:3,  text:'A routine task but the crown is built one stone at a time.' },
-    { id:'q2',  name:'Scout the Ruins',         emoji:'🏚️', vp:1, req:4,  text:'Ancient secrets lie within, guarded by time.' },
-    { id:'q3',  name:'Defend the Village',      emoji:'🏘️', vp:1, req:3,  text:'The villagers count on your strength.' },
-    { id:'q4',  name:'Storm the Fortress',      emoji:'🏰', vp:2, req:6,  text:'Bravery alone won\'t win this one you\'ll need a full party.' },
-    { id:'q5',  name:'Slay the Dragon',         emoji:'🐉', vp:2, req:7,  text:'Legends are made in moments like these.' },
-    { id:'q6',  name:'Reclaim the Throne',      emoji:'👑', vp:2, req:8,  text:'The crown awaits those bold enough to seize it.' },
-    { id:'q7',  name:'Assassin\'s Bounty',       emoji:'🗡️', vp:2, req:5,  text:'A high-value target moves under cover of night. Now worth 2 VP.' },
-    { id:'q8',  name:'Troll Hunt',              emoji:'👹', vp:1, req:4,  text:'Ugly, smelly, and surprisingly tough.' },
-    { id:'q9',  name:'Enchanted Forest Quest',  emoji:'🌲', vp:2, req:6,  text:'The forest tests all who enter.' },
-    { id:'q10', name:'Final Coronation',        emoji:'🏆', vp:3, req:10, text:'The ultimate test. Claim the throne for good.' },
-    { id:'q11', name:'Bandit Raid',            emoji:'💀', vp:2, req:5,  text:'Bandits threaten the trade road. Stop them for glory.' },
-    { id:'q12', name:'Ancient Library',         emoji:'📚', vp:1, req:4,  text:'Recover lost knowledge for the realm.' },
-    { id:'q13', name:'Goblin Market',           emoji:'🪙', vp:1, req:3,  text:'Trade under pressure. Quick deal, quick VP.' },
-    { id:'q14', name:'Haunted Keep',            emoji:'👻', vp:2, req:6,  text:'Ghosts don’t yield. Bring heavy power.' },
-    { id:'q15', name:'Crown Courier',           emoji:'📯', vp:1, req:5,  text:'Deliver the sealed letter through enemy lines.' },
-    { id:'q16', name:'Starfall Summit',         emoji:'⭐', vp:3, req:9,  text:'The climb is brutal but the view is worth 3 VP.' },
-  ],
-  gold: [
-    { id:'g1', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g2', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g3', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g4', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g5', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g6', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g7', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g8', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g9', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-    { id:'g10',name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
-  ],
+    { id:'ring',   name:'Ring of Courage',   emoji:'💍', cost:3, type:'artifact', effect:'allies_plus_1', text:'All your companions gain +1 Power while this is in play.' },
+    { id:'shield', name:'Shield of Ages',    emoji:'🛡️', cost:3, type:'artifact', effect:'storm_minus_1', text:'The Fortress needs 1 less Power to storm.' },
+    { id:'sword',  name:'Sword of Dawn',     emoji:'⚔️', cost:3, type:'artifact', effect:'storm_plus_2',  text:'Your party gains +2 Power while this is in play.' },
+    { id:'amulet', name:'Amulet of Renewal', emoji:'🔮', cost:2, type:'artifact', effect:'draw_1',        text:'Draw 1 extra card at the start of each turn.' },
+    { id:'boots',  name:'Boots of Haste',    emoji:'👢', cost:2, type:'artifact', effect:'gold_1',        text:'Gain 1 extra Gold at the start of each turn.' },
+    { id:'crown',  name:'Crown of Whispers', emoji:'👑', cost:2, type:'artifact', effect:'draw_on_play_2',text:'When acquired, draw 2 cards.' }
+  ]
 };
 
-function shuffle(arr) {
-  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]; }
+const STORM_POWER = 8;
+const GOLD_PER_TURN = 3;
+const MAX_HAND = 8;
+
+function cocShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
   return arr;
 }
 
@@ -60,439 +57,413 @@ class CallOfCardsGame {
   constructor(mode) {
     this.mode = mode || 'ai'; // 'ai' or 'pvp'
     this.state = null;
-    this.turnPhase = 'draw';
-    this.recruitsThisTurn = 0;
-    this.maxRecruitsPerTurn = 1;
-    this.discardedThisTurn = false;
-    this.peekedThisTurn = false;
+    this.turnPhase = 'main';
     this.turnNumber = 0;
     this.gameOver = false;
     this.onStateChange = null;
     this.onGameEnd = null;
     this.onPassDevice = null;
+    this.cycledThisTurn = false;
+    this._recruitsThisTurn = 0;
+    this._aiActing = false;
   }
 
+  /* ---- setup ---- */
   buildDeck() {
     const deck = [];
-    CARD_DB.companions.forEach(c => { for(let i=0;i<3;i++) deck.push({...c, uid: c.id+'_'+i+'_'+Math.random().toString(36).slice(2,6)}); });
-    CARD_DB.artifacts.forEach(a => { for(let i=0;i<2;i++) deck.push({...a, uid: a.id+'_'+i+'_'+Math.random().toString(36).slice(2,6)}); });
-    CARD_DB.gold.forEach(g => deck.push({...g, uid: g.id+'_'+Math.random().toString(36).slice(2,6)}));
-    return shuffle(deck);
-  }
-
-  buildQuestPool() {
-    return shuffle([...CARD_DB.quests]);
+    CARD_DB.companions.forEach(c => {
+      for (let i = 0; i < 3; i++) deck.push({ ...c, uid: c.id + '_' + i + '_' + Math.random().toString(36).slice(2, 7) });
+    });
+    CARD_DB.tricks.forEach(t => {
+      for (let i = 0; i < 2; i++) deck.push({ ...t, uid: t.id + '_t' + i + '_' + Math.random().toString(36).slice(2, 7) });
+    });
+    CARD_DB.artifacts.forEach(a => {
+      deck.push({ ...a, uid: a.id + '_a_' + Math.random().toString(36).slice(2, 7) });
+    });
+    return cocShuffle(deck);
   }
 
   makePlayer(name) {
     const deck = this.buildDeck();
     return {
       name,
-      hand: deck.splice(0, 5),
+      hand: deck.splice(0, name === 'You' ? 5 : 6),
       field: [],
       artifacts: [],
       discard: [],
       completed: [],
+      gold: 0,
+      tempPower: 0,
       vp: 0,
-      deck,
+      stormed: false,
+      stormReady: false,
+      deck
     };
   }
 
   initGame() {
-    const p1 = this.makePlayer('Player 1');
+    const p1 = this.makePlayer('You');
     const p2 = this.makePlayer(this.mode === 'ai' ? 'Rival' : 'Player 2');
-    const quests = this.buildQuestPool();
 
     this.state = {
       p1,
       p2,
-      quests: quests.splice(0, 3),
-      questPool: quests,
+      quests: [{ id: 'fortress', name: 'Storm the Fortress', emoji: '🏰', req: STORM_POWER, vp: 1 }],
       turn: 1,
       activePlayer: 'p1',
       log: [],
-      winTarget: 5,
+      winTarget: 1,
+      stormPower: STORM_POWER
     };
 
     this.turnNumber = 1;
     this.gameOver = false;
+    this.log('Both rivals take their seats. Hold ' + STORM_POWER + ' Power when your turn begins, then storm the Fortress.');
     this.startTurn();
     this.emit();
   }
 
-  /* ---- Helpers ---- */
+  /* ---- helpers ---- */
   active() { return this.state[this.state.activePlayer]; }
   inactive() { return this.state[this.state.activePlayer === 'p1' ? 'p2' : 'p1']; }
   isAI() { return this.mode === 'ai' && this.state.activePlayer === 'p2'; }
+  getAvailableGold(p) { return p.gold; }
 
-  getAvailableGold(p) {
-    return p.hand.filter(c => c.type === 'gold').length;
+  /* Compatibility shims for the older playtest page. */
+  get recruitsThisTurn() { return this._recruitsThisTurn || 0; }
+  get maxRecruitsPerTurn() { return 2; }
+  get discardedThisTurn() { return this.cycledThisTurn; }
+  recruitCompanion(index) { return this.playCard(index); }
+  purchaseArtifact(index) { return this.playCard(index); }
+  discardCard(index) { return this.cycleCard(index); }
+  canCompleteQuest(p, quest) {
+    return this.getTotalPower(p) >= (quest && quest.req ? quest.req : this.stormReq(p));
+  }
+  completeQuest() {
+    const p = this.active();
+    if (this.getTotalPower(p) >= this.stormReq(p)) p.stormReady = true;
+    return this.storm();
   }
 
-  drawCard(p) {
-    if(!p.deck.length && p.discard && p.discard.length) {
-      p.deck = shuffle(p.discard.splice(0));
-      this.log(p.name + ' shuffles their discard into a new deck');
-    }
-    if(p.deck.length) p.hand.push(p.deck.shift());
-  }
-
-  spendGold(p, amount) {
-    let goldToSpend = amount;
-    for(let i = p.hand.length - 1; i >= 0 && goldToSpend > 0; i--) {
-      if(p.hand[i].type === 'gold') {
-        const spent = p.hand.splice(i, 1)[0];
-        p.discard.push(spent);
-        goldToSpend--;
-      }
-    }
-    return goldToSpend === 0;
+  stormReq(p) {
+    const shield = p && p.artifacts.some(a => a.effect === 'storm_minus_1');
+    return Math.max(4, STORM_POWER - (shield ? 1 : 0));
   }
 
   getTotalPower(p) {
-    let power = 0;
-    const hasRing = p.artifacts.some(a => a.effect === 'allies_plus_1');
-    const healerBonus = p.field.filter(c => c.id === 'c7').length; // each Healer gives +1 to all allies, stacks with Ring
-    const bonus = (hasRing ? 1 : 0) + healerBonus;
-    p.field.forEach(c => { power += c.power + bonus; });
+    if (!p) return 0;
+    const ring = p.artifacts.some(a => a.effect === 'allies_plus_1') ? 1 : 0;
+    const healers = p.field.filter(c => c.id === 'healer').length;
+    const sword = p.artifacts.some(a => a.effect === 'storm_plus_2') ? 2 : 0;
+    let power = sword + (p.tempPower || 0);
+    p.field.forEach(c => { power += Math.max(0, c.power) + ring + healers; });
     return power;
   }
 
-  canCompleteQuest(p, quest) {
-    const hasShield = p.artifacts.some(a => a.effect === 'ignore_1_req');
-    const req = hasShield ? Math.max(0, quest.req - 1) : quest.req;
-    return this.getTotalPower(p) >= req;
+  canStorm(p) {
+    p = p || this.active();
+    return !this.gameOver && !p.stormed && p.stormReady && this.getTotalPower(p) >= this.stormReq(p);
   }
 
-  isUnderdog(p) {
-    if(!this.state) return false;
-    const opp = this.state.p1 === p ? this.state.p2 : this.state.p1;
-    return opp && (opp.vp - p.vp) >= 2;
+  drawCard(p) {
+    if (p.hand.length >= MAX_HAND) return;
+    if (!p.deck.length && p.discard.length) {
+      p.deck = cocShuffle(p.discard.splice(0));
+      this.log(p.name + ' shuffled their discard into a fresh deck.');
+    }
+    if (p.deck.length) p.hand.push(p.deck.shift());
   }
 
-  /* ---- Turn management ---- */
+  discardRandom(p) {
+    if (!p || !p.hand.length) return null;
+    const i = Math.floor(Math.random() * p.hand.length);
+    const card = p.hand.splice(i, 1)[0];
+    p.discard.push(card);
+    return card;
+  }
+
+  /* ---- turn flow ---- */
   startTurn() {
     const p = this.active();
     this.turnPhase = 'main';
-    this.recruitsThisTurn = 0;
-    this.discardedThisTurn = false;
-    this.peekedThisTurn = false;
-    this.maxRecruitsPerTurn = p.artifacts.some(a => a.effect === 'extra_recruit') ? 2 : 1;
+    this.cycledThisTurn = false;
+    this._recruitsThisTurn = 0;
+    p.tempPower = 0;
 
-    // Draw 1 (2 with Amulet of Renewal) + Underdog's Resolve: draw 1 extra if 2+ VP behind (v1.3)
-    let drawCount = p.artifacts.some(a => a.effect === 'draw_1') ? 2 : 1;
-    if(this.isUnderdog(p)) drawCount += 1;
-    for(let i=0; i<drawCount; i++) this.drawCard(p);
-
-    if(this.isUnderdog(p) && drawCount > 1) {
-      this.log(`${p.name} draws extra - Underdog's Resolve!`);
-    } else {
-      this.log(`${p.name}'s turn ${this.turnNumber}`);
+    let gold = GOLD_PER_TURN;
+    if (p.artifacts.some(a => a.effect === 'gold_1')) gold += 1;
+    // The player who moves second gets the first-move bonus (one card and one Gold).
+    if (this.state.turn === 1 && p === this.state.p2) {
+      gold += 1;
+      this.drawCard(p);
+      this.log('The second player takes the first-move bonus: +1 Gold and a card.');
     }
+    p.gold += gold;
+
+    let draws = 1;
+    if (p.artifacts.some(a => a.effect === 'draw_1')) draws += 1;
+    const oppPower = this.getTotalPower(this.inactive());
+    if (oppPower - this.getTotalPower(p) >= 3) {
+      draws += 1;
+      this.log(`${p.name} fell behind, so Underdog's Resolve drew an extra card.`);
+    }
+    for (let i = 0; i < draws; i++) this.drawCard(p);
+
+    p.stormReady = !p.stormed && this.getTotalPower(p) >= this.stormReq(p);
+    if (p.stormReady) this.log(`${p.name} held the Fortress power. Storm it now!`);
+
+    this.log(`Turn ${this.state.turn}: ${p.name} gained ${gold} Gold and drew ${draws} card${draws === 1 ? '' : 's'}.`);
   }
 
   endTurn() {
-    if(this.gameOver) return;
-    if(this.isAI()) return; // player can't end AI turn
+    if (this.gameOver) return;
+    if (this.isAI()) return;
 
-    // In PvP: switch players after pass device
-    if(this.mode === 'pvp') {
+    if (this.mode === 'pvp') {
       this.state.activePlayer = this.state.activePlayer === 'p1' ? 'p2' : 'p1';
-      if(this.state.activePlayer === 'p1') {
+      if (this.state.activePlayer === 'p1') {
         this.turnNumber++;
         this.state.turn = this.turnNumber;
       }
-      if(this.onPassDevice) {
-        this.onPassDevice(this.state.activePlayer, () => {
-          this.startTurn();
-          this.emit();
-        });
+      const next = this.state.activePlayer;
+      if (this.onPassDevice) {
+        this.onPassDevice(next, () => { this.startTurn(); this.emit(); });
         return;
       }
       this.startTurn();
       this.emit();
       return;
     }
-    // AI mode: hand over to the Rival
-    if(this.mode === 'ai') {
-      this.nextAITurn();
-      return;
-    }
-    this.emit();
-  }
 
-  nextAITurn() {
-    if(this.gameOver) return;
     this.state.activePlayer = 'p2';
-    this.startTurn();
-    this.runAITurn();
-  }
-
-  /* ---- Player actions (work for active player) ---- */
-  recruitCompanion(cardIndex) {
-    if(this.turnPhase !== 'main' || this.gameOver) return false;
-    const p = this.active();
-    const card = p.hand[cardIndex];
-    if(!card || card.type !== 'companion') return false;
-    if(this.recruitsThisTurn >= this.maxRecruitsPerTurn) return false;
-
-    const goldAvail = this.getAvailableGold(p);
-    if(goldAvail < card.cost) return false;
-
-    p.hand.splice(cardIndex, 1);
-    p.field.push(card);
-    this.spendGold(p, card.cost);
-    this.recruitsThisTurn++;
-
-    this.log(`${p.name} recruited ${card.name} (${card.power} power)`);
-    // On-recruit abilities for physical v1.2
-    if(card.id === 'c4' && p.deck.length > 0) {
-      const drawn = p.deck.shift();
-      p.hand.push(drawn);
-      this.log(`${p.name}'s Dwarven Smith forges ahead - drew 1 card`);
-    }
-    if(card.id === 'c8') {
-      const opp = this.inactive();
-      if(opp.hand.length > 0) {
-        const ri = Math.floor(Math.random() * opp.hand.length);
-        const stolen = opp.hand.splice(ri, 1)[0];
-        opp.discard.push(stolen);
-        this.log(`${p.name}'s Shadow Thief strikes! ${opp.name} discards ${stolen.name}`);
-      }
-    }
+    this.turnPhase = 'ai';
+    this.log('The Rival studies the board...');
     this.emit();
-    return true;
-  }
-
-  purchaseArtifact(cardIndex) {
-    if(this.turnPhase !== 'main' || this.gameOver) return false;
-    const p = this.active();
-    const card = p.hand[cardIndex];
-    if(!card || card.type !== 'artifact') return false;
-
-    const goldAvail = this.getAvailableGold(p);
-    if(goldAvail < card.cost) return false;
-
-    p.hand.splice(cardIndex, 1);
-    p.artifacts.push(card);
-    this.spendGold(p, card.cost);
-
-    this.log(`${p.name} acquired ${card.name}`);
-    this.emit();
-    return true;
-  }
-
-  completeQuest(questIndex) {
-    if(this.turnPhase !== 'main' || this.gameOver) return false;
-    const p = this.active();
-    const quest = this.state.quests[questIndex];
-    if(!quest) return false;
-    if(!this.canCompleteQuest(p, quest)) return false;
-
-    let vpGain = quest.vp;
-    if(p.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
-    p.vp += vpGain;
-    p.completed.push(quest);
-
-    this.state.quests.splice(questIndex, 1);
-    if(this.state.questPool.length > 0) {
-      this.state.quests.push(this.state.questPool.shift());
-    }
-
-    this.log(`${p.name} completed "${quest.name}" for ${vpGain} VP! (${p.vp}/${this.state.winTarget})`);
-
-    if(p.vp >= this.state.winTarget) {
-      this.gameOver = true;
-      this.log(`🏆 ${p.name} wins!`);
+    setTimeout(() => {
+      if (this.gameOver) return;
+      this.startTurn();
       this.emit();
-      if(this.onGameEnd) this.onGameEnd(p.name);
-      return true;
+      this._aiActing = true;
+      this._aiStep(0);
+    }, 550);
+  }
+
+  /* ---- player actions ---- */
+  playCard(index, fromAI) {
+    if (this.gameOver || this.turnPhase !== 'main') return false;
+    if (!fromAI && this.mode === 'ai' && this.state.activePlayer !== 'p1') return false;
+    const p = this.active();
+    const card = p.hand[index];
+    if (!card) return false;
+    if (card.cost > p.gold) return false;
+
+    p.hand.splice(index, 1);
+    p.gold -= card.cost;
+
+    if (card.type === 'companion') {
+      const played = { ...card, basePower: card.power };
+      p.field.push(played);
+      this._recruitsThisTurn = (this._recruitsThisTurn || 0) + 1;
+      this.log(`${p.name} recruited ${card.name} (${card.power} Power).`);
+      if (card.effect === 'draw1') {
+        this.drawCard(p);
+        this.log(`${card.name} drew 1 card.`);
+      }
+      if (card.effect === 'rival_discard') {
+        const lost = this.discardRandom(this.inactive());
+        if (lost) this.log(`${card.name} struck! ${this.inactive().name} discarded ${lost.name}.`);
+      }
+    } else if (card.type === 'artifact') {
+      p.artifacts.push(card);
+      this.log(`${p.name} claimed ${card.name}.`);
+      if (card.effect === 'draw_on_play_2') {
+        this.drawCard(p); this.drawCard(p);
+        this.log(`${card.name} revealed 2 cards.`);
+      }
+    } else if (card.type === 'trick') {
+      p.discard.push(card);
+      this._applyTrick(card, p, this.inactive());
+    } else {
+      p.discard.push(card);
     }
 
     this.emit();
     return true;
   }
 
-  discardCard(cardIndex) {
-    if(this.turnPhase !== 'main' || this.gameOver || this.discardedThisTurn) return false;
+  _applyTrick(card, caster, target) {
+    const log = (m) => this.log(m);
+    switch (card.effect) {
+      case 'damage2': {
+        const victim = target.field.slice().sort((a, b) => b.power - a.power)[0];
+        if (victim) { this._damage(target, victim, 2); log(`${caster.name} played Ambush for 2 damage on ${victim.name}.`); }
+        else { this.drawCard(caster); log(`${caster.name} played Ambush, but there was no target, so drew 1.`); }
+        break;
+      }
+      case 'damage3': {
+        const victim = target.field.slice().sort((a, b) => b.power - a.power)[0];
+        if (victim) { this._damage(target, victim, 3); log(`${caster.name} hurled a Fireball at ${victim.name} for 3 damage.`); }
+        else { log(`${caster.name} cast Fireball at an empty field.`); }
+        break;
+      }
+      case 'damage_all1': {
+        if (!target.field.length) { log(`${caster.name} found no one to ambush.`); break; }
+        target.field.slice().forEach(c => this._damage(target, c, 1, true));
+        log(`${caster.name} launched a Sneak Attack on the whole Rival party.`);
+        break;
+      }
+      case 'draw2':
+        this.drawCard(caster); this.drawCard(caster);
+        log(`${caster.name} scouted ahead and drew 2 cards.`);
+        break;
+      case 'rival_discard': {
+        const lost = this.discardRandom(target);
+        log(lost ? `${caster.name} bribed a contact: ${target.name} discarded ${lost.name}.` : `${caster.name} found no one to bribe.`);
+        break;
+      }
+      case 'rally2':
+        caster.tempPower += 2;
+        log(`${caster.name} sounded the Rally: +2 Power this turn.`);
+        break;
+      case 'fortify3':
+        caster.tempPower += 3;
+        log(`${caster.name} fortified the camp: +3 Power this turn.`);
+        break;
+      case 'reinforce2': {
+        const ally = caster.field.slice().sort((a, b) => b.power - a.power)[0];
+        if (ally) { ally.power += 2; log(`${caster.name} reinforced ${ally.name} (+2 Power).`); }
+        else log(`${caster.name} had no one to reinforce.`);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  _damage(owner, companion, amount, quiet) {
+    if (!companion) return;
+    companion.power -= amount;
+    if (companion.power <= 0) {
+      const i = owner.field.indexOf(companion);
+      if (i >= 0) owner.field.splice(i, 1);
+      owner.discard.push({ ...companion, power: companion.basePower || companion.power });
+      if (!quiet) this.log(`${companion.name} was defeated and left the field.`);
+      else this.log(`${companion.name} fell in the sneak attack.`);
+    }
+  }
+
+  cycleCard(index) {
+    if (this.gameOver || this.turnPhase !== 'main' || this.cycledThisTurn) return false;
+    if (this.mode === 'ai' && this.state.activePlayer !== 'p1') return false;
     const p = this.active();
-    const card = p.hand.splice(cardIndex, 1)[0];
-    if(!card) return false;
+    const card = p.hand.splice(index, 1)[0];
+    if (!card) return false;
     p.discard.push(card);
-    this.discardedThisTurn = true;
     this.drawCard(p);
-    this.log(`${p.name} cycled ${card.name} and drew a replacement`);
+    this.cycledThisTurn = true;
+    this.log(`${p.name} cycled ${card.name} and drew a replacement.`);
     this.emit();
     return true;
   }
 
-  peekTopCard() {
-    if(this.turnPhase !== 'main' || this.gameOver || this.peekedThisTurn) return null;
+  storm() {
+    if (!this.canStorm()) return false;
     const p = this.active();
-    if(!p.artifacts.some(a => a.effect === 'peek')) return null;
-    this.peekedThisTurn = true;
-    const card = p.deck[0] || null;
-    this.log(card ? `${p.name} used Crown of Whispers to peek at ${card.name}` : `${p.name} used Crown of Whispers, but the deck is empty`);
+    p.vp = this.state.winTarget;
+    p.stormed = true;
+    this.gameOver = true;
+    this.log(`🏆 ${p.name} stormed the Fortress with ${this.getTotalPower(p)} Power and took the crown!`);
     this.emit();
-    return card;
+    if (this.onGameEnd) this.onGameEnd(p.name);
+    return true;
   }
 
-  /* ---- AI - smarter (A118) ---- */
-  runAITurn() {
-    if(this.gameOver) return;
+  peekTopCard() { return null; }
+
+  /* ---- rival AI ---- */
+  _aiStep(depth) {
+    if (this.gameOver) { this._aiActing = false; return; }
+    if (depth > 14) return this._finishAITurn();
     const ai = this.active();
     const opp = this.inactive();
 
-    const tryCompleteQuest = () => {
-      const completable = this.state.quests.map((q,i)=>({...q, idx:i})).filter(q=>this.canCompleteQuest(ai,q));
-      if(!completable.length) return false;
-      // Prioritize quests it can nearly complete + high VP, and react to opponent close to winning
-      const oppClose = opp.vp >= 4;
-      completable.sort((a,b)=>{
-        // if opponent close, prioritize any win, then smallest req
-        if(oppClose) return (b.vp - a.vp) || (a.req - b.req);
-        // otherwise prioritize best VP per req, and quests nearly complete (low deficit already 0)
-        const aVal = a.vp / Math.max(1,a.req);
-        const bVal = b.vp / Math.max(1,b.req);
-        return bVal - aVal;
-      });
-      const quest = completable[0];
-      let vpGain = quest.vp;
-      if(ai.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
-      ai.vp += vpGain;
-      ai.completed.push(quest);
-      this.state.quests.splice(quest.idx, 1);
-      if(this.state.questPool.length > 0) this.state.quests.push(this.state.questPool.shift());
-      this.log(`${ai.name} completed "${quest.name}" for ${vpGain} VP! (${ai.vp}/${this.state.winTarget})`);
-      return true;
-    };
+    if (this.canStorm(ai)) { this.storm(); this._aiActing = false; return; }
 
-    // 1) If can win now, take it before recruiting
-    if(tryCompleteQuest()){
-      if(ai.vp >= this.state.winTarget){ this.gameOver=true; this.log(`💀 ${ai.name} claims the crown!`); this.emit(); if(this.onGameEnd) this.onGameEnd(ai.name); return; }
-    }
+    const choice = this._aiChoose(ai, opp);
+    if (!choice) return this._finishAITurn();
 
-    // 2) Evaluate companions - hold gold for bigger plays
-    const companions = ai.hand.map((c,i) => ({...c, handIdx:i})).filter(c => c.type === 'companion');
-    const artifacts = ai.hand.map((c,i) => ({...c, handIdx:i})).filter(c => c.type === 'artifact');
-    let goldLeft = this.getAvailableGold(ai);
-    const currentPower = this.getTotalPower(ai);
-    // Find quest deficits to prioritize recruiting that closes gap
-    const questDeficits = this.state.quests.map(q=>{
-      const hasShield = ai.artifacts.some(a=>a.effect==='ignore_1_req');
-      const req = hasShield ? Math.max(0,q.req-1) : q.req;
-      return {q, deficit: Math.max(0, req - currentPower)};
-    }).sort((a,b)=>a.deficit - b.deficit);
-    const smallestDeficit = questDeficits[0]?.deficit ?? 99;
+    const card = ai.hand[choice.index];
+    this.playCard(choice.index, true);
+    if (this.gameOver) { this._aiActing = false; return; }
+    this._aiTurnTimer = setTimeout(() => this._aiStep(depth + 1), 380);
+    return;
+  }
+
+  _aiChoose(ai, opp) {
+    let best = null;
     const oppPower = this.getTotalPower(opp);
+    const myPower = this.getTotalPower(ai);
+    const need = this.stormReq(ai);
 
-    // Score companions: power/cost + bonus if it closes deficit, + reactive bonus vs opponent
-    const scoredCompanions = companions.map(c=>{
-      let score = c.power / Math.max(1,c.cost);
-      // prioritize quests it can nearly complete
-      if(c.power >= smallestDeficit && smallestDeficit<=3) score += 1.5;
-      else if(smallestDeficit<=2 && c.power>=2) score += 0.8;
-      // react to opponent: if opponent stronger, prioritize bigger power
-      if(oppPower > currentPower + 1) score += c.power * 0.15;
-      // hold gold: penalize cheap 1-cost 1-power if gold scarce and better cards might come
-      if(goldLeft <=2 && c.cost===1 && c.power===1) score -= 0.6;
-      return {...c, score};
-    }).sort((a,b)=>b.score - a.score);
-
-    // Hold logic: if best score < 1.2 and goldLeft <=2, save gold for bigger play
-    const bestScore = scoredCompanions[0]?.score ?? 0;
-    const shouldHold = goldLeft <=2 && bestScore < 1.2 && smallestDeficit > 2 && opp.vp <4;
-    const toRecruit = [];
-    if(!shouldHold){
-      for(const c of scoredCompanions){
-        if(toRecruit.length >= this.maxRecruitsPerTurn) break;
-        if(c.cost <= goldLeft){
-          // also don't spend last gold if it would block a nearly-complete quest next turn
-          if(goldLeft - c.cost ===0 && smallestDeficit===2 && c.power<2 && opp.vp<4){
-            // save 1 gold
-            continue;
-          }
-          toRecruit.push(c); goldLeft -= c.cost;
+    ai.hand.forEach((card, index) => {
+      if (card.cost > ai.gold) return;
+      let score = 0;
+      if (card.type === 'companion') {
+        score = (card.power || 0) / Math.max(1, card.cost) * 1.4;
+        if (myPower + (card.power || 0) >= need) score += 3;
+        if (card.effect === 'draw1') score += 1.2;
+        if (card.effect === 'rival_discard') score += 1.1;
+      } else if (card.type === 'trick') {
+        if (card.effect === 'rally2' || card.effect === 'fortify3') {
+          const boost = card.effect === 'rally2' ? 2 : 3;
+          score = myPower + boost >= need ? 3.2 : 0.9;
+        } else if (card.effect === 'draw2') {
+          score = ai.hand.length <= 5 ? 2.4 : 1.1;
+        } else if (card.effect === 'reinforce2') {
+          score = ai.field.length ? 2.0 : 0.3;
+        } else if (card.effect === 'damage3' || card.effect === 'damage2' || card.effect === 'damage_all1') {
+          score = opp.field.length ? (oppPower >= 4 ? 2.6 : 1.8) : 0.4;
+        } else if (card.effect === 'rival_discard') {
+          score = opp.hand.length >= 3 ? 1.9 : 0.8;
         }
+      } else if (card.type === 'artifact') {
+        if (card.effect === 'allies_plus_1') score = ai.field.length >= 2 ? 2.8 : 1.4;
+        else if (card.effect === 'storm_plus_2') score = myPower >= 3 ? 2.6 : 1.6;
+        else if (card.effect === 'storm_minus_1') score = myPower >= 4 ? 2.4 : 1.5;
+        else if (card.effect === 'draw_1') score = 2.0;
+        else if (card.effect === 'gold_1') score = 1.7;
+        else if (card.effect === 'draw_on_play_2') score = 1.8;
       }
-    } else {
-      this.log(`${ai.name} holds gold for a bigger play`);
-    }
+      // Keep a little gold for a storm-turn trick if it is close.
+      if (card.cost >= ai.gold && myPower < need && myPower >= need - 2) score -= 0.6;
+      score -= card.cost * 0.15;
+      if (!best || score > best.score) best = { index, score };
+    });
 
-    toRecruit.sort((a,b) => b.handIdx - a.handIdx);
-    for(const c of toRecruit){
-      const idx = ai.hand.findIndex(h => h.uid === c.uid);
-      if(idx >= 0){
-        ai.hand.splice(idx, 1);
-        ai.field.push({ ...c });
-        let goldToSpend = c.cost;
-        for(let i = ai.hand.length - 1; i >= 0 && goldToSpend > 0; i--){
-          if(ai.hand[i].type === 'gold'){ ai.discard.push(ai.hand.splice(i,1)[0]); goldToSpend--; }
-        }
-        this.recruitsThisTurn++;
-        this.log(`${ai.name} recruited ${c.name}`);
-      }
-    }
+    if (best && best.score > 0.8) return best;
+    return null;
+  }
 
-    // 3) Try artifacts - reactive and gold-aware
-    if(goldLeft >0 && artifacts.length){
-      // Score artifacts
-      const scoredArtifacts = artifacts.map(a=>{
-        let score=0;
-        if(a.effect==='allies_plus_1' && ai.field.length>=2) score=3;
-        if(a.effect==='bonus_vp' && ai.vp >=3) score=2.5;
-        if(a.effect==='ignore_1_req' && smallestDeficit===1) score=2.8;
-        if(a.effect==='extra_recruit' && ai.hand.filter(c=>c.type==='companion').length>=2) score=2;
-        if(a.effect==='draw_1') score=1.5;
-        score -= a.cost * 0.3; // cheaper better
-        return {...a, score};
-      }).sort((a,b)=>b.score - a.score);
-      const bestArt = scoredArtifacts[0];
-      // Hold gold if opponent close to winning, don't waste on low-score artifact
-      const oppClose = opp.vp >=4;
-      if(bestArt && bestArt.score>1.0 && bestArt.cost <= goldLeft && !oppClose){
-        const idx = ai.hand.findIndex(h=>h.uid===bestArt.uid);
-        if(idx>=0){
-          ai.hand.splice(idx,1);
-          ai.artifacts.push(bestArt);
-          let goldToSpend = bestArt.cost;
-          for(let i=ai.hand.length-1;i>=0 && goldToSpend>0;i--){ if(ai.hand[i].type==='gold'){ ai.hand.splice(i,1); goldToSpend--; } }
-          this.log(`${ai.name} acquired ${bestArt.name}`);
-          goldLeft -= bestArt.cost;
-        }
-      }
-    }
-
-    // 4) Try to complete a quest after recruiting
-    tryCompleteQuest();
-
-    if(ai.vp >= this.state.winTarget){
-      this.gameOver = true;
-      this.log(`💀 ${ai.name} claims the crown!`);
-      this.emit();
-      if(this.onGameEnd) this.onGameEnd(ai.name);
-      return;
-    }
-
+  _finishAITurn() {
+    if (this.gameOver) return;
+    this.state.activePlayer = 'p1';
+    this.turnNumber++;
+    this.state.turn = this.turnNumber;
+    this.startTurn();
     this.emit();
-    setTimeout(() => {
-      this.state.activePlayer = 'p1';
-      this.turnNumber++;
-      this.state.turn = this.turnNumber;
-      this.startTurn();
-      this.emit();
-    }, 700);
   }
 
   log(msg) {
+    if (!this.state) return;
     this.state.log.unshift(msg);
-    if(this.state.log.length > 50) this.state.log.pop();
+    if (this.state.log.length > 40) this.state.log.pop();
   }
 
   emit() {
-    if(this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) this.onStateChange(this.state);
   }
 }
 
 window.CallOfCardsGame = CallOfCardsGame;
 window.CARD_DB = CARD_DB;
+window.COC_STORM_POWER = STORM_POWER;

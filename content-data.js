@@ -4458,6 +4458,19 @@ window.JVDS_CONTENT = {
       "age": "Ages 6-12",
       "character": "Pip",
       "url": "/games/pips-cozy-cove.html"
+    },
+    {
+      "id": "call-of-cards",
+      "title": "Call of the Cards",
+      "tag": "One fortress · Alpha",
+      "emoji": "🃏",
+      "category": "Card",
+      "bg": "linear-gradient(135deg,#1a1226,#3a2050)",
+      "desc": "A quick card duel: recruit companions, play tricks and reach 6 Power before the Rival, then storm the Fortress. Three to five minutes, one crown.",
+      "kids": true,
+      "age": "Ages 8-14",
+      "character": null,
+      "url": "/games/call_of_the_cards.html"
     }
   ],
   "tools": [
@@ -5602,9 +5615,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-10T20:15:10.000Z",
+    "generated": "2026-11-11T14:13:23.000Z",
     "workshops": 282,
-    "games": 15,
+    "games": 16,
     "tools": 49,
     "books": 5,
     "engines": {

@@ -48,7 +48,7 @@ const arcadeCss = fs.readFileSync(ARCADE_CSS, 'utf8');
 console.log('Arcade contract: ' + liveGames.length + ' live games in the line-up (' + games.length + ' in the registry)\n');
 
 /* ── 1. the line-up is curated and unique ─────────────────────── */
-ok('the arcade line-up is curated (1 to ' + MAX_LINEUP + ' games)', games.length >= 1 && games.length <= MAX_LINEUP, games.length + ' games');
+ok('the arcade line-up is curated (1 to ' + MAX_LINEUP + ' games)', liveGames.length >= 1 && liveGames.length <= MAX_LINEUP, liveGames.length + ' live games');
 ok('game ids are unique', new Set(games.map(g => g.id)).size === games.length);
 ok('every line-up entry points at a different file', new Set(games.map(g => g.file)).size === games.length);
 

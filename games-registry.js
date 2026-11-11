@@ -377,6 +377,30 @@ window.JVDS_GAMES = [
     "learning": "Patience · Timing · Focus",
     "learnHref": "/workshops/scratch-catch-workshop.html",
     "learnLabel": "Build a catch game in Scratch"
+  },
+  {
+    "id": "call-of-cards",
+    "thumb": "assets/game-thumbs/call-of-cards.webp",
+    "cat": "Card",
+    "file": "call_of_the_cards.html",
+    "title": "Call of the Cards",
+    "tag": "One fortress · Alpha",
+    "emoji": "🃏",
+    "bg": "linear-gradient(135deg,#1a1226,#3a2050)",
+    "kids": true,
+    "desc": "A quick card duel: recruit companions, play tricks and hold 8 Power at the start of your turn, then storm the Fortress. Three to five minutes, one crown.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Tap or click a card to play it, then press End Turn",
+    "storyHook": "Lumo needs one fortress stormed and the Rival is already recruiting.",
+    "character": "Lumo",
+    "objective": "Build 8 Power, hold it at the start of a turn, then storm the Fortress.",
+    "finishLine": "The gate falls, Lumo takes the crown and your best duel is saved on this device.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 8-14",
+    "learning": "Planning · Resource choices · Reading a board",
+    "learnHref": "/workshops/my-first-browser-game.html",
+    "learnLabel": "Build a card game in the browser"
   }
 ];
 
@@ -404,7 +428,8 @@ window.JVDS_GAME_QUALITY = {
   "stardust-snake": "READY",
   "lumo-hive": "READY",
   "lumo-firefly": "READY",
-  "pips-cozy-cove": "BETA"
+  "pips-cozy-cove": "BETA",
+  "call-of-cards": "EXPERIMENT"
 };
 /* ── Release test records (A1956) ─────────────────────────────────────────
    Every READY game must have an entry here with a testDate (ISO date) and

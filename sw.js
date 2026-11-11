@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v55 - Call of the Cards v2: a faster card duel,
+// a device-friendly board, and the game is back in the arcade as an experiment.
 // JVDesignStudio Service Worker v54 - A2920: refresh the Lumo games again for
 // the first-run coach, shape cues, run cards, lanterns and new thumbnails.
 // JVDesignStudio Service Worker v53 - A2918: precache Pip's Cozy Cove page,
@@ -42,7 +44,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v54';
+const CACHE='jvds-v55';
 const CORE=[
   '/',
   '/offline.html',

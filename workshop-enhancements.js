@@ -610,7 +610,7 @@
       'What went wrong:\n(describe what happened)\n\n' +
       'What step were you on:\n(e.g. Step 3)\n'
     );
-    var href = 'mailto:joshhyyymakes@gmail.com?subject=' + subject + '&body=' + body;
+    var href = 'mailto:jvdesignstudiomail@gmail.com?subject=' + subject + '&body=' + body;
     var btn = document.createElement('a');
     btn.className = 'report-issue-fab';
     btn.href = href;
