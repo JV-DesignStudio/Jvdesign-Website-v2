@@ -71,8 +71,8 @@ let failures = 0;
     const c = document.createElement('canvas');
     c.width = 64; c.height = 32;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#ff4f8b'; ctx.fillRect(0,0,32,32);
-    ctx.fillStyle = '#22c55e'; ctx.fillRect(32,0,32,32);
+    ctx.fillStyle = '#ff4f8b'; ctx.fillRect(4,4,16,16);
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(36,4,16,16);
     const blob = await new Promise(resolve => c.toBlob(resolve, 'image/png'));
     const file = new File([blob], 'two-frame.png', {type:'image/png'});
     await window.loadSheet({files:[file]});
@@ -92,6 +92,73 @@ let failures = 0;
   const playing = await page.evaluate(()=>document.getElementById('playBtn')?.textContent.trim());
   check('play toggles cleanly', playing === '⏸', playing);
   await page.evaluate(()=>document.getElementById('playBtn')?.click());
+
+  const ui = await page.evaluate(()=>({
+    handoffs:['openInPixelStudio','openInGameMaker','downloadProjectBundle'].every(n=>!!document.querySelector('[data-on="'+n+'"]')),
+    unlabeled:Array.from(document.querySelectorAll('button')).filter(b=>{
+      const text=(b.textContent||'').trim();
+      const label=b.getAttribute('aria-label')||b.getAttribute('title');
+      return !text&&!label;
+    }).length,
+    clipList:!!document.getElementById('clipList'),
+    exportOptions:!!document.getElementById('exportTrim')&&!!document.getElementById('exportPadding')&&!!document.getElementById('exportScale'),
+    scrubber:!!document.getElementById('scrubber')
+  }));
+  check('hand-off actions are visible buttons', ui.handoffs);
+  check('every button has an accessible name', ui.unlabeled===0, String(ui.unlabeled));
+  check('clip, export and timeline controls exist', ui.clipList && ui.exportOptions && ui.scrubber);
+
+  const shareUrl = await page.evaluate(async()=>await window.copySpriteShareLink());
+  check('share link carries the sprite payload', typeof shareUrl==='string' && /#sprite=[gu]\./.test(shareUrl), String(shareUrl).slice(0,70));
+  const warnCancel = await page.$('#jvds-share-warn .jvds-share-warn-cancel');
+  if(warnCancel) await warnCancel.click();
+  await page.goto(shareUrl,{waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction('(typeof activeFrames!=="undefined") && activeFrames.length===2',{timeout:15000});
+  const shared = await page.evaluate(()=>({
+    frames:activeFrames.length,
+    promptHidden:document.getElementById('uploadPrompt').classList.contains('hidden'),
+    hash:location.hash.startsWith('#sprite=')
+  }));
+  check('shared link reopens the animation', shared.frames===2 && shared.promptHidden && shared.hash, JSON.stringify(shared));
+
+  const ops = await page.evaluate(()=>{
+    const before=frames.length;
+    toggleFrame(1);
+    selectedFrames=new Set([0]);
+    deleteSelected();
+    const afterDelete=frames.length;
+    const keptHidden=frames.some(f=>!f.enabled);
+    undo();
+    const afterUndo=frames.length;
+    selectedFrames=new Set([0]);
+    moveFrameRight();
+    const moved=frames[0].x>frames[1].x;
+    undo();
+    selectAll();
+    id('clipName').value='walk';
+    id('clipFrom').value='1';
+    id('clipTo').value='2';
+    addClip();
+    const manifest=manifestJSON(
+      activeFrames.map(fi=>({x:frames[fi].x,y:frames[fi].y})),sheetW,sheetH,
+      {cellW:frameW,cellH:frameH,sourceW:frameW,sourceH:frameH,scale:1,crop:{x:0,y:0,w:frameW,h:frameH,trimmed:false}});
+    id('exportTrim').checked=true;
+    id('exportPadding').value='1';
+    id('exportExtrude').checked=true;
+    const rep=buildRepacked();
+    return {before,afterDelete,keptHidden,afterUndo,moved,clip:manifest.animations[0]&&manifest.animations[0].name,cellW:rep.metrics.cellW,cellH:rep.metrics.cellH,atlasW:rep.canvas.width};
+  });
+  check('per-frame delete leaves hidden frames alone', ops.before===2 && ops.afterDelete===1 && ops.keptHidden, JSON.stringify(ops));
+  check('undo restores a deleted frame', ops.afterUndo===2, JSON.stringify(ops));
+  check('frames can be reordered', ops.moved, JSON.stringify(ops));
+  check('clips export as animation tags', ops.clip==='walk', JSON.stringify(ops));
+  check('trim removes transparent edges and padding adds a border', ops.cellW===16 && ops.cellH===16 && ops.atlasW>32, JSON.stringify(ops));
+
+  await page.setViewport({width:1440,height:900});
+  await page.goto('http://127.0.0.1:' + port + '/tools/sprite-animator.html', {waitUntil:'domcontentloaded', timeout:15000});
+  await page.waitForFunction('typeof loadSheet==="function"', {timeout:15000});
+  const wide = await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth}));
+  check('desktop does not overflow viewport', wide.scrollWidth <= wide.clientWidth + 2, wide.scrollWidth + '/' + wide.clientWidth);
 
   await page.goto('http://127.0.0.1:' + port + '/tools/sprite-sheet-animator.html', {waitUntil:'domcontentloaded', timeout:15000});
   const bridge = await page.evaluate(() => ({
