@@ -359,15 +359,23 @@ function buildRocket() {
   const fs = Math.max(0.3, R.finScale); // fin size multiplier
   finAngles.forEach(function(angle, fi) {
     let finMesh;
+    const rootX = br * 0.96;            // start at the body surface, not the axis
     if (R.finStyle === 'delta') {
       const shape = new THREE.Shape();
-      shape.moveTo(0, 0); shape.lineTo(0, bh * 0.5 * fs); shape.lineTo(br * 2.2 * fs, 0); shape.closePath();
+      shape.moveTo(rootX, 0);
+      shape.lineTo(rootX, bh * 0.5 * fs);
+      shape.lineTo(br * 2.4 * fs, 0);
+      shape.closePath();
       const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
       finMesh = new THREE.Mesh(geo, finMat);
       finMesh.position.y = baseY;
     } else if (R.finStyle === 'swept') {
       const shape = new THREE.Shape();
-      shape.moveTo(0, 0); shape.lineTo(br * 0.8 * fs, bh * 0.42 * fs); shape.lineTo(br * 2.0 * fs, bh * 0.42 * fs); shape.lineTo(br * 2.0 * fs, 0); shape.closePath();
+      shape.moveTo(rootX, 0);
+      shape.lineTo(rootX, bh * 0.5 * fs);
+      shape.lineTo(br * 2.2 * fs, bh * 0.32 * fs);
+      shape.lineTo(br * 2.2 * fs, 0);
+      shape.closePath();
       const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
       finMesh = new THREE.Mesh(geo, finMat);
       finMesh.position.y = baseY;
@@ -402,9 +410,10 @@ function buildRocket() {
   if (R.boosters > 0) {
     const bsr = R.boosterSize * 0.16;
     const bsh = bh * R.boosterSize * 0.72;
-    const bDist = br + bsr * 2.5;
+    const bDist = br + bsr * 2.1;
     const boosterAngles = [];
-    for (let i = 0; i < R.boosters; i++) boosterAngles.push((i / R.boosters) * Math.PI * 2);
+    // Offset from the fins so a booster is never buried inside a fin blade.
+    for (let i = 0; i < R.boosters; i++) boosterAngles.push(((i + 0.5) / R.boosters) * Math.PI * 2);
 
     boosterAngles.forEach(function(a, bi) {
       const bx = Math.cos(a) * bDist, bz = Math.sin(a) * bDist;
@@ -530,6 +539,7 @@ function buildRocket() {
   }
 
   scene.add(rocketGroup);
+  fitView();
   updateSpecCard();
   updateStats();
   syncRightBar();
@@ -540,9 +550,19 @@ function buildRocket() {
 ------------------------------- */
 let orbit = { theta: 0.3, phi: 1.1, radius: 12, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !rocketGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, rocketGroup, { x: 0, y: R.bodyHeight / 2, z: 0 }, 1.16);
+  if (fitR > 0) orbit.radius = Math.max(4, Math.min(200, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(4, Math.min(24, orbit.radius));
+  orbit.radius = Math.max(4, Math.min(200, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + R.bodyHeight / 2 + 1;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);

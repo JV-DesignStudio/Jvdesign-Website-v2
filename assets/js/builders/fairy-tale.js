@@ -582,6 +582,7 @@ cottageGroup.add(part(mhWin, 'mushroom_house_window'));
   }
 
   scene.add(cottageGroup);
+  fitView();
   updateStats();
   syncRightBar();
 }
@@ -591,9 +592,19 @@ cottageGroup.add(part(mhWin, 'mushroom_house_window'));
 ------------------------------- */
 let orbit = { theta: 0.3, phi: 1.1, radius: 10, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !cottageGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, cottageGroup, { x: 0, y: 1.5, z: 0 }, 1.16, ['garden_ground']);
+  if (fitR > 0) orbit.radius = Math.max(3, Math.min(200, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(3, Math.min(20, orbit.radius));
+  orbit.radius = Math.max(3, Math.min(200, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + 2;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);

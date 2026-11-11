@@ -131,14 +131,14 @@ function initThree() {
   });
   window.addEventListener('mouseup', () => isMouseDown = false);
   cvs.addEventListener('wheel', e => {
-    camDist = Math.max(0.8, Math.min(8, camDist + e.deltaY * 0.003));
+    camDist = Math.max(0.8, Math.min(80, camDist + e.deltaY * 0.003));
     e.preventDefault();
   }, { passive: false });
 
   // Touch
   BuilderGestures.attachTapSelect(cvs, camera, function(){ return cannonGroup; }, {
     onOrbit: function(dx,dy){ camTheta-=dx*0.005; camPhi=Math.max(0.1,Math.min(Math.PI-0.1,camPhi-dy*0.005)); },
-    onPinch: function(ratio,dist,prev){ camDist=Math.max(0.8,Math.min(8,camDist-(dist-prev)*0.008)); }
+    onPinch: function(ratio,dist,prev){ camDist=Math.max(0.8,Math.min(80,camDist-(dist-prev)*0.008)); }
   });
 
   window.addEventListener('resize', () => {
@@ -424,6 +424,15 @@ function rebuildCannon() {
   document.getElementById('wsWidth').textContent = p.wsWidth.toFixed(1);
   document.getElementById('wsDepth').textContent = p.wsDepth.toFixed(1);
   document.getElementById('wsHeight').textContent = p.wsHeight.toFixed(1);
+  fitView();
+}
+
+function fitView() {
+  if (typeof BuilderGestures === 'undefined' || !BuilderGestures.fitRadius || !cannonGroup) return;
+  const cv = renderer.domElement;
+  if (cv.clientWidth && cv.clientHeight) { camera.aspect = cv.clientWidth / cv.clientHeight; camera.updateProjectionMatrix(); }
+  const fitR = BuilderGestures.fitRadius(camera, cannonGroup, { x: 0, y: 0.3, z: 0 }, 1.3, ['ground']);
+  if (fitR > 0) camDist = Math.max(0.8, Math.min(80, fitR));
 }
 
 // ============ STEP CONTROLS ============

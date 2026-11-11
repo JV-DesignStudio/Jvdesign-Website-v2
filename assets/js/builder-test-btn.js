@@ -156,7 +156,7 @@
     savePic.type = 'button';
     savePic.className = 'save-pic-btn';
     savePic.style.cssText =
-      'position:absolute;top:8px;right:8px;z-index:50;' +
+      'position:absolute;bottom:10px;right:10px;z-index:50;' +
       'background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:8px;' +
       'padding:6px 10px;font-size:.74rem;font-weight:700;cursor:pointer;' +
       'display:flex;align-items:center;gap:5px;backdrop-filter:blur(4px);' +

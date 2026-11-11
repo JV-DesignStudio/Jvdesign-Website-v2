@@ -102,7 +102,7 @@ const P = {
   cableSlot: true,
   cableSlotWidth: 12,
   gripTexture: 'ridges',
-  color: '#22c55e',
+  color: '#4e7d80',
   roundedCorners: true,
   cornerRadius: 3,
   brandText: '',
@@ -497,6 +497,7 @@ function buildStand() {
   standGroup.add(part(phone, 'phone_ghost_preview'));
 
   scene.add(standGroup);
+  fitView();
   updateSpecCard();
   updateStats();
   syncRightBar();
@@ -507,9 +508,19 @@ function buildStand() {
 ------------------------------- */
 let orbit = { theta: 0.3, phi: 1.1, radius: 210, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !standGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, standGroup, { x: 0, y: 30, z: 0 }, 1.3);
+  if (fitR > 0) orbit.radius = Math.max(80, Math.min(900, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(80, Math.min(500, orbit.radius));
+  orbit.radius = Math.max(80, Math.min(900, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + 20;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
@@ -1213,7 +1224,7 @@ function quickBuild() {
   P.cableSlot = true;
   P.cableSlotWidth = 12;
   P.gripTexture = 'ridges';
-  P.color = '#22c55e';
+  P.color = '#4e7d80';
   P.roundedCorners = true;
   P.cornerRadius = 3;
   P.brandText = 'JVDS';
@@ -1380,7 +1391,7 @@ init();
 ------------------------------- */
 const STAND_TEMPLATES = [
   { id: 'quick', emoji: '📱', name: 'Quick Stand', note: 'Angled, ridged grip and a cable slot  -  the quick-build.',
-    data: { standName: 'QUICK STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#22c55e', brandText: '' } },
+    data: { standName: 'QUICK STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#4e7d80', brandText: '' } },
   { id: 'minimal', emoji: '⬜', name: 'Minimal', note: 'Clean and flat with no slot  -  prints fast.',
     data: { standName: 'Minimal', standStyle: 'flat', angle: 0, standWidth: 90, standDepth: 70, cableSlot: false, gripTexture: 'none', color: '#e5e7eb', roundedCorners: true } },
   { id: 'tall', emoji: '📐', name: 'Tall', note: 'Steeper angle for video calls.',

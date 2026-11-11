@@ -124,6 +124,8 @@
           status.textContent = t.name + ' loaded. Change anything you like.';
         }
         if (cfg.onApply) cfg.onApply(id);
+        // Get out of the way so the learner sees the model they just picked.
+        close();
       } catch (err) {
         status.textContent = 'That template could not load: ' + (err && err.message ? err.message : err);
       }

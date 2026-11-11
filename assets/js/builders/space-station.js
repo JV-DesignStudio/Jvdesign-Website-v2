@@ -448,6 +448,7 @@ function buildStation() {
   }
 
   scene.add(stationGroup);
+  fitView();
   updateSpecCard();
   updateStats();
   syncRightBar();
@@ -458,9 +459,19 @@ function buildStation() {
 ------------------------------- */
 let orbit = { theta: 0.3, phi: 1.1, radius: 16, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !stationGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, stationGroup, { x: 0, y: 0, z: 0 }, 1.16, null, true);
+  if (fitR > 0) orbit.radius = Math.max(5, Math.min(300, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(5, Math.min(35, orbit.radius));
+  orbit.radius = Math.max(5, Math.min(300, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);

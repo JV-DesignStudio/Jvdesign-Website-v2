@@ -330,13 +330,23 @@ function buildCar() {
   }
 
   scene.add(carGroup);
+  fitView();
   updateSpecCard(); updateStats(); syncRightBar();
 }
 
 var orbit = { theta: 0.5, phi: 1.0, radius: 8, dragging: false, lastX: 0, lastY: 0 };
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !carGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  var fitR = BuilderGestures.fitRadius(camera, carGroup, { x: 0, y: 0.5, z: 0 }, 1.16);
+  if (fitR > 0) orbit.radius = Math.max(3, Math.min(200, fitR));
+}
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(3, Math.min(18, orbit.radius));
+  orbit.radius = Math.max(3, Math.min(200, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);

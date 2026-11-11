@@ -646,6 +646,7 @@ function buildCastle() {
   if (torchToggle) torchToggle.checked = P.torchCount > 0;
 
   scene.add(castleGroup);
+  fitView();
   updateStats();
   updateSpecCard();
   syncRightBar();
@@ -656,9 +657,19 @@ function buildCastle() {
 ------------------------------- */
 let orbit = { theta: 0.4, phi: 1.0, radius: 20, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !castleGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, castleGroup, { x: 0, y: 3, z: 0 }, 1.16);
+  if (fitR > 0) orbit.radius = Math.max(6, Math.min(300, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(6, Math.min(40, orbit.radius));
+  orbit.radius = Math.max(6, Math.min(300, orbit.radius));
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + 4;
   camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);

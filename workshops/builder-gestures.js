@@ -154,6 +154,91 @@
     return null;
   }
 
+  /**
+   * Distance a camera needs from `target` so the whole model fits on screen.
+   * Projects the model's bounding-box corners into the camera's current view
+   * direction, so long ships and flat gardens frame tightly instead of being
+   * over-zoomed by a single bounding sphere.
+   * @param {THREE.Camera} camera
+   * @param {THREE.Object3D} group
+   * @param {Object|THREE.Vector3} [target] - the point the camera looks at.
+   * @param {number} [pad] - margin multiplier (1.18 leaves a little air).
+   * @param {Array<string>|Function} [ignore] - part names to leave out of the
+   *        fit (ground discs and workshop floors, usually).
+   * @param {boolean} [spin] - true when the model itself rotates, so use the
+   *        rotation-safe bounding sphere instead of the box corners.
+   * @returns {number} distance, or 0 when the group is empty.
+   */
+  function fitRadius(camera, group, target, pad, ignore, spin) {
+    if (!group || !camera || typeof THREE === 'undefined') return 0;
+    var box = modelBounds(group, ignore);
+    if (box.isEmpty()) return 0;
+    var t = target;
+    if (!t) t = box.getCenter(new THREE.Vector3());
+    else if (!t.isVector3) t = new THREE.Vector3(t.x || 0, t.y || 0, t.z || 0);
+
+    var vFov = (camera.fov || 45) * Math.PI / 180;
+    var aspect = camera.aspect || 1.6;
+    var fill = 1 / (pad || 1.18);
+
+    if (spin) {
+      var sphere = box.getBoundingSphere(new THREE.Sphere());
+      var centreGap = sphere.center.distanceTo(t) + sphere.radius;
+      var vHalf = vFov / 2;
+      var hHalf = Math.atan(Math.tan(vHalf) * aspect);
+      return centreGap / Math.sin(Math.min(vHalf, hHalf)) * fill;
+    }
+
+    var dir = camera.position.clone().sub(t);
+    if (dir.lengthSq() < 1e-8) dir.set(0, 0.5, 1);
+    dir.normalize();
+    var view = dir.clone().negate();
+    var right = new THREE.Vector3().crossVectors(view, new THREE.Vector3(0, 1, 0));
+    if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
+    else right.normalize();
+    var up = new THREE.Vector3().crossVectors(right, view).normalize();
+
+    var tanV = Math.tan(vFov / 2) * fill;
+    var tanH = Math.tan(vFov / 2) * aspect * fill;
+
+    var min = 0;
+    var v = new THREE.Vector3();
+    for (var xi = 0; xi < 2; xi++) {
+      for (var yi = 0; yi < 2; yi++) {
+        for (var zi = 0; zi < 2; zi++) {
+          v.set(
+            xi ? box.max.x : box.min.x,
+            yi ? box.max.y : box.min.y,
+            zi ? box.max.z : box.min.z
+          ).sub(t);
+          var a = v.dot(dir);
+          var d = Math.max(a + Math.abs(v.dot(right)) / tanH, a + Math.abs(v.dot(up)) / tanV);
+          if (d > min) min = d;
+        }
+      }
+    }
+    return min;
+  }
+
+  // Bounding box of every mesh in the group, optionally skipping named parts
+  // or anything the predicate rejects.
+  function modelBounds(group, ignore) {
+    var box = new THREE.Box3();
+    if (!ignore) return box.setFromObject(group);
+    var skip = typeof ignore === 'function'
+      ? ignore
+      : function (o) { return ignore.indexOf(o.name) >= 0; };
+    group.updateWorldMatrix(true, true);
+    group.traverse(function (o) {
+      if (!o.isMesh || !o.geometry) return;
+      if (skip(o)) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      if (!o.geometry.boundingBox) return;
+      box.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));
+    });
+    return box;
+  }
+
   var boxes = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 
   function clearSelection(canvas) {
@@ -201,6 +286,7 @@
     attach: attach,
     attachTapSelect: attachTapSelect,
     pick: pick,
+    fitRadius: fitRadius,
     clearSelection: clearSelection,
     TAP_SLOP: TAP_SLOP,
     _internals: { touchDist: touchDist, ndc: ndc, resolveGroup: resolveGroup }

@@ -510,6 +510,7 @@ function buildRobot() {
   });
 
   scene.add(robotGroup);
+  fitView();
   updateSpecCard();
   syncRightBar();
 }
@@ -519,9 +520,19 @@ function buildRobot() {
 ═══════════════════════════════ */
 let orbit = { theta: 0.4, phi: 1.2, radius: 5.5, dragging: false, lastX: 0, lastY: 0 };
 
+function fitView() {
+  if (!window.BuilderGestures || !BuilderGestures.fitRadius || !robotGroup) return;
+  if (canvas.clientWidth && canvas.clientHeight) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+  const fitR = BuilderGestures.fitRadius(camera, robotGroup, { x: 0, y: R.bodyHeight * 0.5, z: 0 }, 1.16);
+  if (fitR > 0) orbit.radius = Math.max(2.5, Math.min(200, fitR));
+}
+
 function updateCamera() {
   orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
-  orbit.radius = Math.max(2.5, Math.min(14, orbit.radius));
+  orbit.radius = Math.max(2.5, Math.min(200, orbit.radius));
   const lookY = R.bodyHeight * 0.95;
   camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
   camera.position.y = orbit.radius * Math.cos(orbit.phi) + lookY * 0.4;
