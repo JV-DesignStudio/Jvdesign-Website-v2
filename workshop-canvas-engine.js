@@ -560,10 +560,39 @@ function ensurePreviewKeyboardExit() {
 window.addEventListener('message', function (e) {
   if (!e.data) return;
   if (e.data.cwTestResult) { settleStepTest(e.data.cwTestResult); return; }
+  if (e.data.cwCaptureResult) { cwSettleCapture(e.data.cwCaptureResult); return; }
   if (!e.data.cwPreviewEscape) return;
   var btn = document.querySelector('.cw-play-preview');
   if (btn) { try { btn.focus(); } catch (err) {} }
 });
+
+/* A2956: capture the running game for a share card. The preview host owns the
+   sandboxed stage, so ask it for a PNG and settle when the answer comes back. */
+var cwCapturePending = null;
+function cwSettleCapture(result) {
+  if (!cwCapturePending) return;
+  var settle = cwCapturePending;
+  cwCapturePending = null;
+  settle(result || { ok: false, reason: 'empty' });
+}
+function cwCapturePreview(timeoutMs) {
+  return new Promise(function (resolve) {
+    var frame = document.getElementById('gameFrame');
+    if (!frame) { resolve({ ok: false, reason: 'no-frame' }); return; }
+    var done = false;
+    function finish(result) {
+      if (done) return;
+      done = true;
+      cwCapturePending = null;
+      resolve(result || { ok: false, reason: 'empty' });
+    }
+    cwCapturePending = finish;
+    try { frame.contentWindow.postMessage({ cwCapture: true }, '*'); }
+    catch (err) { finish({ ok: false, reason: 'post-failed' }); return; }
+    setTimeout(function () { finish({ ok: false, reason: 'timeout' }); }, timeoutMs || 1500);
+  });
+}
+
 
 /* ── SHARED WORKSHOP ENGINE BRIDGE ──
    When the page loads workshop-engine.js, award the site-wide XP/streak
@@ -1946,6 +1975,8 @@ window.CW = {
   checkFills: checkFills,
   downloadGame: downloadGame,
   gameHtml: gameHtml,
+  capturePreview: cwCapturePreview,
+  shareInfo: function () { return { done: Object.keys(completed).length, total: (STEPS || []).length }; },
   getPassport: buildPassport,
   importPassport: function(p) { try { return bringPassportForward(p); } catch(e) { return 0; } },
   projectCode: function() { try { return encodeProject(buildPassport()); } catch(e) { return ''; } },
@@ -2298,4 +2329,340 @@ maybeShowResume();
     panel.addEventListener('drop',function(e){e.preventDefault();panel.classList.remove('cw-drop');handleFile(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]);});
     window.CW.openProject=handleFile;
   }catch(e){}
+})();
+
+/* A2956: one Share-it sheet for every canvas build-along.
+   The old finish share only sent someone the workshop link. This saves a
+   branded card of the game the learner actually made, plus the game file, the
+   project code and the invite link. Everything runs locally, so it still works
+   on a locked-down school device with no account. */
+(function () {
+  try {
+    if (window.__cwShareReady) return;
+    window.__cwShareReady = true;
+    var panel = document.querySelector('.cw-canvas-panel');
+    if (!panel) return;
+
+    var layer = null, sheet = null, statusEl = null, lastFocus = null;
+
+    function workshopTitle() {
+      var t = (document.title || '').split('|')[0].trim();
+      return t || 'My workshop game';
+    }
+    function workshopSlug() {
+      return (location.pathname.split('/').pop() || 'workshop').replace(/\.html?$/i, '') || 'workshop';
+    }
+    function doneCount() { try { return window.CW.shareInfo().done; } catch (e) { return 0; } }
+    function totalSteps() { try { return window.CW.shareInfo().total; } catch (e) { return 0; } }
+    function setStatus(msg) { if (statusEl) statusEl.textContent = msg || ''; }
+
+    function loadImage(src) {
+      return new Promise(function (resolve) {
+        if (!src) { resolve(null); return; }
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { resolve(null); };
+        img.src = src;
+      });
+    }
+    function imageHasPixels(img) {
+      try {
+        var t = document.createElement('canvas');
+        t.width = 40; t.height = 40;
+        var tx = t.getContext('2d');
+        tx.drawImage(img, 0, 0, 40, 40);
+        var d = tx.getImageData(0, 0, 40, 40).data, n = 0;
+        for (var i = 3; i < d.length; i += 4) { if (d[i] > 8) n++; }
+        return n > 8;
+      } catch (e) { return false; }
+    }
+    function wrapText(ctx, text, maxWidth) {
+      var words = String(text || '').split(/\s+/), lines = [], line = '';
+      for (var i = 0; i < words.length; i++) {
+        var test = line ? line + ' ' + words[i] : words[i];
+        if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = words[i]; }
+        else { line = test; }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function drawCover(ctx, img, x, y, w, h, r) {
+      var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      if (!iw || !ih) return;
+      ctx.save();
+      roundRect(ctx, x, y, w, h, r);
+      ctx.clip();
+      var scale = Math.max(w / iw, h / ih);
+      var sw = w / scale, sh = h / scale;
+      ctx.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
+      ctx.restore();
+    }
+
+    function buildCard(shot, mascot) {
+      var W = 1200, H = 630;
+      var c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var x = c.getContext('2d');
+      var bg = x.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#1e1c18');
+      bg.addColorStop(1, '#312a20');
+      x.fillStyle = bg;
+      x.fillRect(0, 0, W, H);
+      x.globalAlpha = 0.16;
+      x.fillStyle = '#70A3A7';
+      x.beginPath(); x.arc(90, 60, 190, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#c98a2e';
+      x.beginPath(); x.arc(1130, 600, 230, 0, Math.PI * 2); x.fill();
+      x.globalAlpha = 1;
+
+      x.fillStyle = '#9CCFD2';
+      x.font = '800 18px Inter, system-ui, sans-serif';
+      x.fillText('JVDesignStudio', 64, 92);
+
+      var title = workshopTitle();
+      var size = 54;
+      x.font = '700 ' + size + 'px Fredoka, Inter, system-ui, sans-serif';
+      var lines = wrapText(x, title, 548);
+      while (lines.length > 3 && size > 32) {
+        size -= 4;
+        x.font = '700 ' + size + 'px Fredoka, Inter, system-ui, sans-serif';
+        lines = wrapText(x, title, 548);
+      }
+      var y = 154;
+      x.fillStyle = '#f5efe0';
+      lines.forEach(function (line) {
+        x.fillText(line, 64, y);
+        y += Math.round(size * 1.14);
+      });
+      y += 4;
+      x.fillStyle = 'rgba(245,239,224,.82)';
+      x.font = '400 22px Inter, system-ui, sans-serif';
+      x.fillText('I built this in the browser.', 64, y);
+      y += 30;
+
+      var done = doneCount(), total = totalSteps();
+      var pill = total ? ('Step ' + done + ' of ' + total + ' done') : 'Built in the browser';
+      x.font = '700 18px Inter, system-ui, sans-serif';
+      var pillW = x.measureText(pill).width + 36;
+      x.fillStyle = 'rgba(112,163,167,.18)';
+      roundRect(x, 64, y, pillW, 42, 21); x.fill();
+      x.strokeStyle = 'rgba(112,163,167,.6)';
+      x.lineWidth = 2;
+      roundRect(x, 64, y, pillW, 42, 21); x.stroke();
+      x.fillStyle = '#9CCFD2';
+      x.fillText(pill, 82, y + 27);
+
+      var px = 652, py = 96, pw = 484, ph = 438;
+      if (shot) {
+        drawCover(x, shot, px, py, pw, ph, 20);
+      } else {
+        x.save();
+        roundRect(x, px, py, pw, ph, 20); x.clip();
+        var pg = x.createLinearGradient(px, py, px + pw, py + ph);
+        pg.addColorStop(0, '#1b2540');
+        pg.addColorStop(1, '#2a1f3a');
+        x.fillStyle = pg;
+        x.fillRect(px, py, pw, ph);
+        x.strokeStyle = 'rgba(255,255,255,.08)';
+        x.lineWidth = 1;
+        var gx, gy;
+        for (gx = px; gx < px + pw; gx += 32) { x.beginPath(); x.moveTo(gx, py); x.lineTo(gx, py + ph); x.stroke(); }
+        for (gy = py; gy < py + ph; gy += 32) { x.beginPath(); x.moveTo(px, gy); x.lineTo(px + pw, gy); x.stroke(); }
+        x.restore();
+        if (mascot) x.drawImage(mascot, px + pw / 2 - 56, py + ph / 2 - 92, 112, 112);
+        x.fillStyle = '#f5efe0';
+        x.font = '700 20px Inter, system-ui, sans-serif';
+        x.textAlign = 'center';
+        x.fillText('Your game runs here', px + pw / 2, py + ph / 2 + 56);
+        x.textAlign = 'left';
+      }
+      x.strokeStyle = 'rgba(240,234,214,.22)';
+      x.lineWidth = 3;
+      roundRect(x, px, py, pw, ph, 20); x.stroke();
+
+      if (mascot) {
+        x.save();
+        x.beginPath(); x.arc(96, H - 96, 32, 0, Math.PI * 2); x.clip();
+        x.drawImage(mascot, 64, H - 128, 64, 64);
+        x.restore();
+      } else {
+        x.fillStyle = '#70A3A7';
+        x.beginPath(); x.arc(96, H - 96, 32, 0, Math.PI * 2); x.fill();
+      }
+      x.fillStyle = '#f5efe0';
+      x.font = '700 20px Inter, system-ui, sans-serif';
+      x.fillText('Made in the browser with Lumo', 144, H - 104);
+      x.fillStyle = 'rgba(245,239,224,.66)';
+      x.font = '600 18px Inter, system-ui, sans-serif';
+      x.fillText('jvdesignstudio.co.uk', 144, H - 76);
+      return c;
+    }
+
+    function shareCardDataUrl() {
+      return window.CW.capturePreview(1600).then(function (cap) {
+        var src = (cap && cap.ok && cap.data) ? cap.data : null;
+        return loadImage(src).then(function (shot) {
+          if (shot && !imageHasPixels(shot)) shot = null;
+          return loadImage('/assets/mascots/lumo-badge.webp').then(function (mascot) {
+            return buildCard(shot, mascot).toDataURL('image/png');
+          });
+        });
+      });
+    }
+
+    function downloadShareCard() {
+      setStatus('Making your card...');
+      shareCardDataUrl().then(function (url) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'my-' + workshopSlug() + '-card.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setStatus('Card saved. Send it to someone to show what you made.');
+      }).catch(function () {
+        setStatus('Could not make the card. You can still download the game.');
+      });
+    }
+
+    function copyText(text, okMsg, emptyMsg) {
+      if (!text) { setStatus(emptyMsg || 'Nothing to copy yet.'); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { setStatus(okMsg); }, function () { prompt('Copy this:', text); });
+      } else { prompt('Copy this:', text); }
+    }
+    function copyProjectCode() {
+      try {
+        copyText(window.CW.projectCode(), 'Project code copied. Paste it on any build canvas to keep going.', 'Finish a step first, then copy your code.');
+      } catch (e) { setStatus('Could not copy the code. Use Download my game instead.'); }
+    }
+    function shareWorkshopLink() {
+      var url = location.origin + location.pathname;
+      var title = workshopTitle();
+      var text = 'I built ' + title + ' at JVDesignStudio. Try it free: ' + url;
+      try { window.dispatchEvent(new CustomEvent('jvds:shared', { detail: { workshop: workshopSlug() } })); } catch (e) {}
+      if (navigator.share) {
+        try { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; } catch (e) {}
+      }
+      copyText(text, 'Link copied. Send it to someone.', 'Share this link: ' + url);
+    }
+
+    function ensureSheet() {
+      if (layer) return;
+      if (!document.getElementById('cw-share-style')) {
+        var st = document.createElement('style');
+        st.id = 'cw-share-style';
+        st.textContent =
+          '.cw-share-layer{position:fixed;inset:0;z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(8,10,18,.74)}' +
+          '.cw-share-layer[hidden]{display:none}' +
+          '.cw-share-sheet{position:relative;width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;background:#28241e;color:#f5efe0;border:1.5px solid rgba(240,234,214,.18);border-radius:16px;padding:24px 24px 20px;box-shadow:0 24px 70px rgba(0,0,0,.55);font-family:Inter,system-ui,sans-serif}' +
+          '.cw-share-sheet h2{font-family:Fredoka,Inter,sans-serif;font-size:1.5rem;line-height:1.2;margin:0 0 6px;color:#f5efe0}' +
+          '.cw-share-kicker{margin:0 0 4px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9CCFD2}' +
+          '.cw-share-intro{margin:0 0 16px;font-size:.9rem;line-height:1.5;color:rgba(245,239,224,.8)}' +
+          '.cw-share-actions{display:grid;gap:10px}' +
+          '.cw-share-do,.cw-share-studio{display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none;font:700 .92rem Inter,system-ui,sans-serif;padding:12px 16px;border-radius:10px;cursor:pointer}' +
+          '.cw-share-do{border:1.5px solid rgba(240,234,214,.22);background:rgba(255,255,255,.06);color:#f5efe0}' +
+          '.cw-share-do:hover,.cw-share-do:focus-visible{border-color:#70A3A7;outline:none}' +
+          '.cw-share-do--card{background:#4e7d80;border-color:#4e7d80;color:#fff}' +
+          '.cw-share-do--card:hover,.cw-share-do--card:focus-visible{background:#3d6366;border-color:#3d6366}' +
+          '.cw-share-studio{border:1.5px solid rgba(112,163,167,.5);color:#9CCFD2;background:transparent}' +
+          '.cw-share-studio:hover,.cw-share-studio:focus-visible{border-color:#9CCFD2;outline:none}' +
+          '.cw-share-close{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(240,234,214,.2);background:rgba(255,255,255,.06);color:#f5efe0;font-size:1.15rem;line-height:1;cursor:pointer}' +
+          '.cw-share-close:hover,.cw-share-close:focus-visible{border-color:#9CCFD2;outline:none}' +
+          '.cw-share-status{margin:14px 0 0;font-size:.8rem;line-height:1.45;color:#9CCFD2;min-height:1.2em}' +
+          '.cw-share-open{background:#4e7d80!important;border-color:#4e7d80!important;color:#fff!important}' +
+          '@media (max-width:480px){.cw-share-sheet{padding:18px 16px 16px}.cw-share-sheet h2{font-size:1.25rem}.cw-share-do,.cw-share-studio{font-size:.88rem;padding:11px 14px}}';
+        document.head.appendChild(st);
+      }
+      layer = document.createElement('div');
+      layer.className = 'cw-share-layer';
+      layer.hidden = true;
+      layer.innerHTML =
+        '<div class="cw-share-sheet" role="dialog" aria-modal="true" aria-labelledby="cw-share-title">' +
+          '<button type="button" class="cw-share-close" aria-label="Close share options">&times;</button>' +
+          '<p class="cw-share-kicker">Stardust says</p>' +
+          '<h2 id="cw-share-title">Show what you made</h2>' +
+          '<p class="cw-share-intro">Save a card of your game, download it, or send a friend the workshop.</p>' +
+          '<div class="cw-share-actions">' +
+            '<button type="button" class="cw-share-do cw-share-do--card" data-cw-share="card">Save my share card</button>' +
+            '<button type="button" class="cw-share-do" data-cw-share="game">Download my game</button>' +
+            '<button type="button" class="cw-share-do" data-cw-share="code">Copy my project code</button>' +
+            '<button type="button" class="cw-share-do" data-cw-share="link">Share the workshop link</button>' +
+            '<a class="cw-share-studio" href="/me.html">Open My Studio</a>' +
+          '</div>' +
+          '<p class="cw-share-status" role="status" aria-live="polite"></p>' +
+        '</div>';
+      document.body.appendChild(layer);
+      sheet = layer.querySelector('.cw-share-sheet');
+      statusEl = layer.querySelector('.cw-share-status');
+
+      layer.addEventListener('click', function (e) {
+        if (e.target === layer || (e.target.closest && e.target.closest('.cw-share-close'))) { closeSheet(); return; }
+        var btn = e.target.closest ? e.target.closest('[data-cw-share]') : null;
+        if (!btn) return;
+        var action = btn.getAttribute('data-cw-share');
+        if (action === 'card') { downloadShareCard(); }
+        else if (action === 'game') {
+          try { window.CW.downloadGame(); } catch (err) {}
+          setStatus('Game downloaded. Open it in any browser.');
+        }
+        else if (action === 'code') { copyProjectCode(); }
+        else if (action === 'link') { shareWorkshopLink(); }
+      });
+      layer.addEventListener('keydown', trapFocus);
+    }
+
+    function trapFocus(e) {
+      if (e.key !== 'Tab' || !sheet) return;
+      var f = sheet.querySelectorAll('button, a[href]');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeSheet(); } }
+    function openSheet() {
+      ensureSheet();
+      lastFocus = document.activeElement;
+      setStatus('');
+      layer.hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKey);
+      var first = layer.querySelector('.cw-share-do--card') || layer.querySelector('button');
+      if (first) { try { first.focus(); } catch (e) {} }
+    }
+    function closeSheet() {
+      if (!layer) return;
+      layer.hidden = true;
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('keydown', onKey);
+      if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+    }
+
+    var openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'cw-btn-dl cw-share-open';
+    openBtn.textContent = 'Share it';
+    openBtn.addEventListener('click', openSheet);
+    var hint = panel.querySelector('.cw-canvas-hint');
+    if (hint && hint.parentNode === panel) { hint.insertAdjacentElement('afterend', openBtn); }
+    else {
+      var firstDl = panel.querySelector('.cw-btn-dl');
+      if (firstDl) { firstDl.insertAdjacentElement('beforebegin', openBtn); }
+      else { panel.appendChild(openBtn); }
+    }
+
+    window.CW.shareCardDataUrl = shareCardDataUrl;
+    window.CW.openShare = openSheet;
+  } catch (e) {}
 })();

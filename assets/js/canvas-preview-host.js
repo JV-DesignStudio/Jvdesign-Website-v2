@@ -17,6 +17,23 @@
       'setTimeout(function(){_finish(false,"The test timed out.");},' + timeout + ');})();';
   }
 
+  // A2956: a learner can save a share card of the running game. The stage has
+  // an opaque origin, so the workshop page cannot read its canvas. Capture from
+  // inside the stage and hand the PNG back through the host.
+  var CAPTURE = '(function(){' +
+    'function reply(msg){try{parent.postMessage(msg,"*");}catch(e){}}' +
+    'window.addEventListener("message",function(e){' +
+    'if(!e.data||!e.data.cwCapture)return;' +
+    'try{' +
+    'var c=document.querySelector("canvas");' +
+    'if(!c){reply({cwCaptureResult:{ok:false,reason:"no-canvas"}});return;}' +
+    'var d=c.toDataURL("image/png");' +
+    'if(!d||d.length<64){reply({cwCaptureResult:{ok:false,reason:"empty"}});return;}' +
+    'reply({cwCaptureResult:{ok:true,data:d}});' +
+    '}catch(err){reply({cwCaptureResult:{ok:false,reason:String((err&&err.message)||err)}});}' +
+    '});' +
+    '})();';
+
   // The stage is a sandboxed srcdoc frame, so its origin is opaque and the
   // host cannot read stage.contentDocument. Instead the stage gets a small
   // bootstrap that creates and loads the code blobs from inside its own
@@ -48,7 +65,8 @@
       '}' +
       '_run(0);' +
       // A1981: Escape leaves the preview so keyboard users are never trapped.
-      'document.addEventListener("keydown",function(e){if(e.key==="Escape"){parent.postMessage({cwPreviewEscape:true},"*");}});';
+      'document.addEventListener("keydown",function(e){if(e.key==="Escape"){parent.postMessage({cwPreviewEscape:true},"*");}});' +
+      CAPTURE;
     return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + (cfg.css || '') +
       '</head><body>' + (cfg.canvas || '') + (cfg.fxOverlay || '') +
       '<script>' + boot + '</script></body></html>';
@@ -58,6 +76,13 @@
   // the test as its own script so those pages get executable checks too.
   function injectTest(html, test) {
     var src = '<script>' + testSource(test).replace(/<\//g, '<\\/') + '<\/script>';
+    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, src + '</body>') : html + src;
+  }
+
+  // A2956: give the legacy complete-HTML path the same capture listener.
+  function injectCapture(html) {
+    if (html.indexOf('cwCaptureResult') !== -1) return html;
+    var src = '<script>' + CAPTURE + '<\/script>';
     return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, src + '</body>') : html + src;
   }
 
@@ -72,7 +97,13 @@
       if (e.data.cwTest) cfg.cwTest = e.data.cwTest;
       stage.srcdoc = buildStage(cfg);
     } else if (typeof e.data.cwPreview === 'string') {
-      stage.srcdoc = e.data.cwTest ? injectTest(e.data.cwPreview, e.data.cwTest) : e.data.cwPreview;
+      var html = e.data.cwTest ? injectTest(e.data.cwPreview, e.data.cwTest) : e.data.cwPreview;
+      stage.srcdoc = injectCapture(html);
+    } else if (e.data.cwCapture) {
+      try { stage.contentWindow.postMessage({ cwCapture: true }, '*'); } catch (err) {}
+    } else if (e.data.cwCaptureResult) {
+      // Forward the captured PNG to the workshop page.
+      parent.postMessage(e.data, '*');
     } else if (e.data.cwTestResult) {
       // A test ran inside the sandboxed stage. Forward its verdict to the
       // workshop page, which is this host's parent.
