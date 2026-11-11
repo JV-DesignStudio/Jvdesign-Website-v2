@@ -124,11 +124,36 @@
     canvas.addEventListener('touchend', onEnd, { passive: false });
     canvas.addEventListener('touchcancel', onCancel, { passive: false });
 
+    // Keyboard access: the canvas is focusable, arrows orbit and +/- zoom.
+    if (canvas.tabIndex < 0) canvas.tabIndex = 0;
+    if (canvas.setAttribute) {
+      canvas.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown + -');
+    }
+    function zoomBy(dir) {
+      try {
+        canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: dir * 120, bubbles: true, cancelable: true }));
+      } catch (e) { /* no WheelEvent: skip */ }
+    }
+    function onKey(e) {
+      if (!opts.onOrbit && !opts.onPinch) return;
+      var k = e.key, used = true;
+      if (k === 'ArrowLeft') opts.onOrbit && opts.onOrbit(-24, 0);
+      else if (k === 'ArrowRight') opts.onOrbit && opts.onOrbit(24, 0);
+      else if (k === 'ArrowUp') opts.onOrbit && opts.onOrbit(0, -24);
+      else if (k === 'ArrowDown') opts.onOrbit && opts.onOrbit(0, 24);
+      else if (k === '+' || k === '=') zoomBy(-1);
+      else if (k === '-' || k === '_') zoomBy(1);
+      else used = false;
+      if (used) e.preventDefault();
+    }
+    canvas.addEventListener('keydown', onKey);
+
     return function detach() {
       canvas.removeEventListener('touchstart', onStart);
       canvas.removeEventListener('touchmove', onMove);
       canvas.removeEventListener('touchend', onEnd);
       canvas.removeEventListener('touchcancel', onCancel);
+      canvas.removeEventListener('keydown', onKey);
     };
   }
 
@@ -180,6 +205,9 @@
     var vFov = (camera.fov || 45) * Math.PI / 180;
     var aspect = camera.aspect || 1.6;
     var fill = 1 / (pad || 1.18);
+    // Portrait previews are tall and narrow: use a little more of the frame so
+    // the model does not sit in a puddle of empty space on a phone.
+    if (aspect < 1) fill = Math.min(0.95, fill * 1.08);
 
     if (spin) {
       var sphere = box.getBoundingSphere(new THREE.Sphere());
@@ -239,6 +267,29 @@
     return box;
   }
 
+  /**
+   * Small shared lighting/renderer lift for the builder scenes. Adds a soft
+   * sky/ground fill so unlit sides do not read as black, and uses filmic tone
+   * mapping so bright paint and metal keep their shape. Safe to call twice.
+   */
+  function polishScene(scene, renderer, opts) {
+    if (typeof THREE === 'undefined' || !scene || !renderer) return;
+    opts = opts || {};
+    try {
+      if (THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = opts.exposure || 1.05;
+      if (THREE.SRGBColorSpace && renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      if (THREE.PCFSoftShadowMap) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    } catch (e) { /* older three builds: keep defaults */ }
+    if (opts.hemi === 0 || scene.getObjectByName('jvds-fill')) return;
+    var hemi = new THREE.HemisphereLight(opts.sky || 0xcbd8ff, opts.ground || 0x3a2e22, opts.hemi == null ? 0.42 : opts.hemi);
+    hemi.name = 'jvds-fill';
+    scene.add(hemi);
+  }
+
+  /** Small selection box used by tap-to-select. */
+
   var boxes = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 
   function clearSelection(canvas) {
@@ -282,11 +333,36 @@
     return attach(canvas, merged);
   }
 
+  // A short pulse round the preview when a step is applied, so progress is
+  // visible even when the step only changes a name or a small detail.
+  function installStepPulse() {
+    if (typeof document === 'undefined' || document.getElementById('jvds-step-pulse-style')) return;
+    var style = document.createElement('style');
+    style.id = 'jvds-step-pulse-style';
+    style.textContent =
+      '@keyframes jvds-step-pulse{0%{box-shadow:inset 0 0 0 0 rgba(112,163,167,0)}35%{box-shadow:inset 0 0 0 3px rgba(112,163,167,.55)}100%{box-shadow:inset 0 0 0 0 rgba(112,163,167,0)}}' +
+      '.jvds-step-pulse{animation:jvds-step-pulse .52s ease-out}';
+    (document.head || document.documentElement).appendChild(style);
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      var el = t && t.closest && t.closest('[data-action="applyStep"],[data-on="applyStep"]');
+      if (!el) return;
+      var vp = document.getElementById('viewport');
+      if (!vp) return;
+      vp.classList.remove('jvds-step-pulse');
+      void vp.offsetWidth;
+      vp.classList.add('jvds-step-pulse');
+      setTimeout(function () { vp.classList.remove('jvds-step-pulse'); }, 560);
+    }, true);
+  }
+  if (typeof document !== 'undefined') installStepPulse();
+
   var api = {
     attach: attach,
     attachTapSelect: attachTapSelect,
     pick: pick,
     fitRadius: fitRadius,
+    polishScene: polishScene,
     clearSelection: clearSelection,
     TAP_SLOP: TAP_SLOP,
     _internals: { touchDist: touchDist, ndc: ndc, resolveGroup: resolveGroup }

@@ -164,6 +164,7 @@ function initThree(){
   c.addEventListener('mousemove',e=>{if(!isDrag)return;cTheta-=(e.clientX-mX)*0.004;cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-(e.clientY-mY)*0.004));mX=e.clientX;mY=e.clientY;});
   window.addEventListener('mouseup',()=>isDrag=false);
   c.addEventListener('wheel',e=>{cDist=Math.max(4,Math.min(300,cDist+e.deltaY*0.012));e.preventDefault();},{passive:false});
+  BuilderGestures.polishScene(scene, renderer);
   BuilderGestures.attachTapSelect(c, camera, function(){ return shipGroup; }, {
     onOrbit: function(dx,dy){ cTheta-=dx*0.004; cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-dy*0.004)); },
     onPinch: function(ratio,dist,prev){ cDist=Math.max(4,Math.min(300,cDist-(dist-prev)*0.025)); }
@@ -972,19 +973,20 @@ const AIRSHIP_TEMPLATES = [
   { id: 'ironclad', emoji: '🎈', name: 'HMS Ironclad', note: 'Balloon on top, twin engines  -  the classic.',
     data: { airshipName: 'HMS Ironclad', hullLen: 10, hullW: 2.5, engineCount: 2, balloonW: 3.5, stackCount: 2 } },
   { id: 'aurora', emoji: '🌌', name: 'Aurora', note: 'Slim hull and sky-blue balloon.',
-    data: { airshipName: 'Aurora', hullLen: 11, hullW: 2.2, balloonW: 3.2, balloonH: 2.8, engineCount: 2, stackCount: 1 } },
+    data: { airshipName: 'Aurora', hullLen: 11, hullW: 2.2, balloonW: 3.2, balloonH: 2.8, engineCount: 2, stackCount: 1, balloonColor: '#7fb3d5', hullColor: '#34495e', fabricColor: '#a9cce3', brassColor: '#d7c27a', flagColor: '#38bdf8' } },
   { id: 'ember', emoji: '🔥', name: 'Ember', note: 'Red trim, big props and a short hull.',
-    data: { airshipName: 'Ember', hullLen: 9, hullW: 2.8, engineCount: 2, stackCount: 2, showRearProp: true } },
+    data: { airshipName: 'Ember', hullLen: 9, hullW: 2.8, engineCount: 2, stackCount: 2, showRearProp: true, balloonColor: '#a8321e', hullColor: '#5a2418', fabricColor: '#8b2a1a', brassColor: '#e0a63a', flagColor: '#f5c842' } },
   { id: 'leviathan', emoji: '🐋', name: 'Leviathan', note: 'Long and heavy with four engines.',
-    data: { airshipName: 'Leviathan', hullLen: 12, hullW: 3.0, engineCount: 4, balloonLen: 10, wingSpan: 3.0 } },
+    data: { airshipName: 'Leviathan', hullLen: 12, hullW: 3.0, engineCount: 4, balloonLen: 10, wingSpan: 3.0, balloonColor: '#6b7280', hullColor: '#3f3f46', fabricColor: '#9ca3af', brassColor: '#b08d3f', flagColor: '#a78bfa' } },
   { id: 'nimbus', emoji: '☁️', name: 'Nimbus', note: 'Small gondola, big balloon  -  built for lift.',
-    data: { airshipName: 'Nimbus', hullLen: 8, hullW: 2.0, balloonW: 4.0, balloonH: 3.5, engineCount: 2, stackCount: 1 } },
+    data: { airshipName: 'Nimbus', hullLen: 8, hullW: 2.0, balloonW: 4.0, balloonH: 3.5, engineCount: 2, stackCount: 1, balloonColor: '#e8dcc8', hullColor: '#6b6b5a', fabricColor: '#d8cfb8', brassColor: '#c8a84e', flagColor: '#f5c842' } },
   { id: 'vanguard', emoji: '⚙️', name: 'Vanguard', note: 'Wings, rudder and rigging  -  ready for adventure.',
-    data: { airshipName: 'Vanguard', hullLen: 10, hullW: 2.6, engineCount: 2, wingSpan: 3.0, rudderH: 1.8, showRigging: true } }
+    data: { airshipName: 'Vanguard', hullLen: 10, hullW: 2.6, engineCount: 2, wingSpan: 3.0, rudderH: 1.8, showRigging: true, balloonColor: '#4f7a6a', hullColor: '#2f4a3a', fabricColor: '#8fbfa8', brassColor: '#c8a84e', flagColor: '#4ade80' } }
 ];
 function loadAirshipTemplate(t) {
   Object.assign(P, t.data);
-  if (typeof rebuildShip === 'function') rebuildShip(); else if (typeof buildSandbox === 'function') buildSandbox();
+  if (typeof rebuild === 'function') rebuild();
+  else if (typeof rebuildShip === 'function') rebuildShip();
   if (typeof updateStats === 'function') updateStats();
   if (typeof toast === 'function') toast('Template: ' + t.data.airshipName);
   if (window.builderTrack) builderTrack('quick_build');

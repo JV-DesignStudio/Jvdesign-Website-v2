@@ -361,6 +361,7 @@ window.addEventListener('mousemove', function(e) {
   orbit.lastX = e.clientX; orbit.lastY = e.clientY;
 });
 canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+BuilderGestures.polishScene(scene, renderer);
 BuilderGestures.attachTapSelect(canvas, camera, function () { return carGroup; }, {
   onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
   onPinch: function (ratio) { orbit.radius *= ratio; },

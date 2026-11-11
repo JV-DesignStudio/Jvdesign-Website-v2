@@ -170,6 +170,7 @@ function initThree(){
   c.addEventListener('mousemove',e=>{if(!isDrag)return;cTheta-=(e.clientX-mX)*0.004;cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-(e.clientY-mY)*0.004));mX=e.clientX;mY=e.clientY;});
   window.addEventListener('mouseup',()=>isDrag=false);
   c.addEventListener('wheel',e=>{cDist=Math.max(3,Math.min(300,cDist+e.deltaY*0.015));e.preventDefault();},{passive:false});
+  BuilderGestures.polishScene(scene, renderer);
   BuilderGestures.attachTapSelect(c, camera, function(){ return shipGroup; }, {
     onOrbit: function(dx,dy){ cTheta-=dx*0.004; cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-dy*0.004)); },
     onPinch: function(ratio,dist,prev){ cDist=Math.max(3,Math.min(300,cDist-(dist-prev)*0.03)); }

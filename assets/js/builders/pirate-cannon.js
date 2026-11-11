@@ -136,6 +136,7 @@ function initThree() {
   }, { passive: false });
 
   // Touch
+  BuilderGestures.polishScene(scene, renderer);
   BuilderGestures.attachTapSelect(cvs, camera, function(){ return cannonGroup; }, {
     onOrbit: function(dx,dy){ camTheta-=dx*0.005; camPhi=Math.max(0.1,Math.min(Math.PI-0.1,camPhi-dy*0.005)); },
     onPinch: function(ratio,dist,prev){ camDist=Math.max(0.8,Math.min(80,camDist-(dist-prev)*0.008)); }

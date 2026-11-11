@@ -488,6 +488,8 @@ window.addEventListener('mousemove', function(e) {
 });
 canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
 
+BuilderGestures.polishScene(scene, renderer);
+
 BuilderGestures.attachTapSelect(canvas, camera, function () { return stationGroup; }, {
   onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
   onPinch: function (ratio) { orbit.radius *= ratio; },
@@ -513,9 +515,9 @@ function animate() {
   if (!orbit.dragging) orbit.theta += 0.002;
   updateCamera();
 
-  // Station rotation when launched
+  // Station rotation when launched (gentle yaw so the long truss stays readable)
   if (stationRotating && stationGroup) {
-    stationGroup.rotation.y += 0.003;
+    stationGroup.rotation.y = Math.sin(frame * 0.01) * 0.6;
   }
 
   // Ring rotation
