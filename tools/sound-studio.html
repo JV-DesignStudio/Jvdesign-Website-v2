@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-5RsrQg0oNqPyR3knA7ox3XpIqBCWrmuPh0J72yHXP1Y=' 'sha256-xkERrDvxHSYjOLG6nWUbXbPf2PhyMdhBhWJ8DiHhvK4=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-5RsrQg0oNqPyR3knA7ox3XpIqBCWrmuPh0J72yHXP1Y=' 'sha256-mLxS7Veizg4jV5Iyw89Y/b8RFsNxYjYVvaFI+53M8c0=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -5464,12 +5464,27 @@ function _bufToRecord(buf,name,id){
   }
   return {id:id||_uid(), name:name, sampleRate:buf.sampleRate, length:buf.length, numberOfChannels:buf.numberOfChannels, channels:channels, bytes:bytes, savedAt:Date.now()};
 }
+function _resampleBuffer(buf,targetRate){
+  if(!buf||!targetRate||!isFinite(targetRate)||buf.sampleRate===targetRate) return buf;
+  const ratio=buf.sampleRate/targetRate;
+  const len=Math.max(1,Math.round(buf.length/ratio));
+  const ac=getCtx();
+  const out=ac.createBuffer(buf.numberOfChannels,len,targetRate);
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const src=buf.getChannelData(c), dst=out.getChannelData(c);
+    for(let i=0;i<len;i++){
+      const pos=i*ratio, i0=Math.floor(pos), i1=Math.min(src.length-1,i0+1), frac=pos-i0;
+      dst[i]=src[i0]*(1-frac)+src[i1]*frac;
+    }
+  }
+  return out;
+}
 function _recordToBuf(rec){
   const ac=getCtx();
   const chans=Array.isArray(rec.channels)?rec.channels:[];
   const buf=ac.createBuffer(rec.numberOfChannels||chans.length||1, rec.length||0, rec.sampleRate||ac.sampleRate);
   chans.forEach((data,c)=>{ if(c<buf.numberOfChannels){ try{ buf.copyToChannel(new Float32Array(data),c); }catch(e){} } });
-  return buf;
+  return _resampleBuffer(buf,ac.sampleRate);
 }
 function _sampleTotal(){ return mySamples.reduce((n,s)=>n+(s.bytes||0),0); }
 function saveMySample(rec){
@@ -5578,7 +5593,7 @@ async function loadSfxFile(file){
     const data=await file.arrayBuffer();
     const buf=await getCtx().decodeAudioData(data);
     if(buf.duration>60){ mySfxStatus('That clip is over a minute. Try a shorter sound.',true); return; }
-    addMySample(buf,(file.name||'My sound').replace(/\.[^.]+$/,''));
+    addMySample(_resampleBuffer(buf,getCtx().sampleRate),(file.name||'My sound').replace(/\.[^.]+$/,''));
   }catch(e){
     mySfxStatus('Could not read that audio file. Try a WAV or MP3.',true);
   }
@@ -5636,7 +5651,7 @@ async function toggleRecord(){
     cleanupRecording();
     try{
       const buf=await getCtx().decodeAudioData(await blob.arrayBuffer());
-      addMySample(buf,_recBase);
+      addMySample(_resampleBuffer(buf,getCtx().sampleRate),_recBase);
     }catch(e){
       mySfxStatus('Recorded, but this browser could not open the take. Load a WAV file instead.',true);
     }
