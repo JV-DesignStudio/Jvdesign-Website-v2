@@ -4466,7 +4466,7 @@ window.JVDS_CONTENT = {
       "emoji": "🃏",
       "category": "Card",
       "bg": "linear-gradient(135deg,#1a1226,#3a2050)",
-      "desc": "A quick card duel: recruit companions, play tricks and reach 6 Power before the Rival, then storm the Fortress. Three to five minutes, one crown.",
+      "desc": "A quick card duel: recruit companions, play tricks and hold 8 Power at the start of your turn, then storm the Fortress. Three to five minutes, one crown.",
       "kids": true,
       "age": "Ages 8-14",
       "character": null,
@@ -5615,7 +5615,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-11T14:13:23.000Z",
+    "generated": "2026-11-11T18:09:59.000Z",
     "workshops": 282,
     "games": 16,
     "tools": 49,
