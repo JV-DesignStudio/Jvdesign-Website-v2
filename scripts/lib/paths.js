@@ -46,10 +46,10 @@ const EXCLUDE_FILES = new Set([
 // games-registry.js; curated filesystem count = raw - GAME_ORPHANS.
 const GAME_ORPHANS = [
   'games/cozy-cafe-match-game.html','games/cozy-biscuit-clicker.html',
-  'games/arcane_citadel.html','games/backpack-quest.html','games/beat-builder-battle.html',
+  'games/arcane_citadel_page.html','games/backpack-quest.html','games/beat-builder-battle.html',
   'games/bread-blocks.html','games/bubble-pop-galaxy.html','games/call-of-the-cards-playtest.html',
-  'games/call_of_the_cards.html','games/candy_kingdom.html','games/cozy_creatures.html',
-  'games/creature-rescue-clinic.html','games/critter-whack.html',
+  'games/candy_kingdom.html','games/cozy_creatures.html',
+  'games/creature-rescue-clinic.html','games/critter-whack-page.html',
   'games/crypt-crawlers.html','games/dough-dash.html',
   'games/dungeon-delve.html','games/echo-casebook.html','games/echo_fruit_catch.html',
   'games/garden-defense.html','games/little_steps.html','games/lumo-dash-page.html',
