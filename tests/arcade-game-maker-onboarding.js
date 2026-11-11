@@ -67,6 +67,78 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('tour does NOT auto-start behind the welcome', first.tour === false && first.tourShowClass === false);
   check('exactly one onboarding modal is visible', (first.welcome ? 1 : 0) + (first.tour ? 1 : 0) === 1);
 
+  // A2949: the first run is a two-step guided flow, not a wall of genres.
+  const wizard = await page.evaluate(() => {
+    const shown = (el) => !!el && !el.hidden && getComputedStyle(el).display !== 'none';
+    const on = document.querySelector('#fgStep2 .fg-level.fg-on');
+    return {
+      step1: shown(document.getElementById('fgStep1')),
+      step2: shown(document.getElementById('fgStep2')),
+      ideas: document.querySelectorAll('#fgStep1 .fg-choice').length,
+      levels: document.querySelectorAll('#fgStep2 .fg-level').length,
+      buildBtn: !!document.querySelector('#fgStep2 .fg-build'),
+      defaultLevel: on ? on.getAttribute('data-on-arg') : ''
+    };
+  });
+  check('first step shows three plain ideas', wizard.step1 === true && wizard.ideas === 3, wizard.ideas + ' ideas');
+  check('difficulty step is hidden until an idea is picked', wizard.step2 === false);
+  check('difficulty offers three levels and defaults to normal',
+    wizard.levels === 3 && wizard.defaultLevel === 'normal' && wizard.buildBtn === true,
+    wizard.levels + ' levels, default ' + wizard.defaultLevel);
+
+  const overlayFit = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+    boxWidth: document.getElementById('welcome-box').getBoundingClientRect().width
+  }));
+  check('first-run flow fits a 390px screen without sideways scroll',
+    overlayFit.scrollWidth <= overlayFit.innerWidth && overlayFit.boxWidth <= overlayFit.innerWidth,
+    JSON.stringify(overlayFit));
+
+
+  const flow = await page.evaluate(async () => {
+    document.querySelector('#fgStep1 .fg-choice[data-fg-genre="PLATFORMER"]').click();
+    await new Promise(r => setTimeout(r, 80));
+    const afterIdea = {
+      step1: !document.getElementById('fgStep1').hidden,
+      step2: !document.getElementById('fgStep2').hidden,
+      summary: (document.getElementById('fgSummary') || {}).textContent || ''
+    };
+    document.querySelector('#fgStep2 .fg-level[data-on-arg="hard"]').click();
+    const hardPressed = document.querySelector('#fgStep2 .fg-level[data-on-arg="hard"]').getAttribute('aria-pressed');
+    document.querySelector('#fgStep2 .fg-back').click();
+    const backToStep1 = !document.getElementById('fgStep1').hidden && document.getElementById('fgStep2').hidden;
+    return { afterIdea, hardPressed, backToStep1 };
+  });
+  check('picking an idea opens the difficulty step', flow.afterIdea.step2 === true && flow.afterIdea.step1 === false);
+  check('picking an idea names the game being built', flow.afterIdea.summary.includes('Forest Jump'), flow.afterIdea.summary);
+  check('difficulty choice is announced', flow.hardPressed === 'true');
+  check('Back returns to the idea step', flow.backToStep1 === true);
+
+  const built = await page.evaluate(async () => {
+    window.__fgLoaded = null;
+    const orig = window._loadTemplate;
+    window._loadTemplate = function (k) { window.__fgLoaded = k; };
+    document.querySelector('#fgStep1 .fg-choice[data-fg-genre="PLATFORMER"]').click();
+    await new Promise(r => setTimeout(r, 50));
+    document.querySelector('#fgStep2 .fg-level[data-on-arg="hard"]').click();
+    document.querySelector('#fgStep2 .fg-build').click();
+    await new Promise(r => setTimeout(r, 120));
+    const res = {
+      loaded: window.__fgLoaded,
+      overlayOpen: document.getElementById('welcome-overlay').classList.contains('show'),
+      visited: localStorage.getItem('jv_arcade_visited'),
+      speed: (document.getElementById('playerSpeed') || {}).value
+    };
+    window._loadTemplate = orig;
+    return res;
+  });
+  check('Build loads the chosen game', built.loaded === 'forest_platform', String(built.loaded));
+  check('Build closes the first-run overlay and remembers the visit',
+    built.overlayOpen === false && built.visited === '1');
+  check('Build applies the chosen difficulty', String(built.speed) === '280', 'player speed ' + built.speed);
+
+
   // Second visit: no modal at all.
   await page.evaluate(() => { localStorage.setItem('jv_arcade_visited', '1'); });
   await page.reload({waitUntil:'domcontentloaded'});
