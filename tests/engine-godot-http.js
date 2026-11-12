@@ -36,13 +36,15 @@ const server = http.createServer((req, res) => {
         heading: (document.getElementById('godot-lab-title') || {}).textContent || '',
         steps: document.querySelectorAll('.godot-lab-step').length,
         editor: !!document.querySelector('a[href="https://editor.godotengine.org/latest/"]'),
+        lab: !!document.querySelector('a[href="/workshops/godot-lab/index.html"]'),
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       }));
       check('status 200 @' + width, !!resp && resp.status() === 200, String(resp && resp.status()));
       check('page title @' + width, /Godot/i.test(info.title), info.title);
       check('lab heading @' + width, /Godot Lab/i.test(info.heading), info.heading);
       check('three lab steps @' + width, info.steps === 3, 'steps ' + info.steps);
-      check('real editor link @' + width, info.editor);
+      check('Godot Lab link @' + width, info.lab);
+      check('official editor fallback @' + width, info.editor);
       check('no horizontal overflow @' + width, info.overflow <= 2, info.overflow + 'px');
       check('no page errors @' + width, errors.length === 0, errors.slice(0, 2).join(' | '));
       await page.close();
