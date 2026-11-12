@@ -413,6 +413,17 @@ var LIVE_CSS = '<style id="cw-live-style">' +
   '.cw-sol-notes-head{font-family:Fredoka,cursive;font-size:.9rem;color:#4ade80;margin-bottom:6px}' +
   '.cw-sol-notes ul{margin:0;padding-left:18px;font-size:.82rem;line-height:1.5;color:#e8eaf2}' +
   '.cw-sol-notes li{margin:3px 0}' +
+  '.cw-node-tree-wrap{margin:14px 0 10px;padding:12px 14px;border-radius:11px;background:rgba(99,179,237,.06);border:1px solid rgba(99,179,237,.22)}' +
+  '.cw-node-tree-label{font-family:Fredoka,cursive;font-size:.85rem;font-weight:700;color:#90cdf4;margin-bottom:8px;letter-spacing:.03em}' +
+  '.cw-node-tree{font-family:monospace;font-size:.82rem;line-height:1.75}' +
+  '.cw-nt-row{display:flex;align-items:baseline;gap:4px;white-space:pre}' +
+  '.cw-nt-connector{color:rgba(144,205,244,.4);flex-shrink:0}' +
+  '.cw-nt-icon{flex-shrink:0}' +
+  '.cw-nt-type{color:#90cdf4;font-weight:700}' +
+  '.cw-nt-name{color:rgba(240,234,214,.55);font-weight:400}' +
+  '.cw-nt-name::before{content:" ("}' +
+  '.cw-nt-name::after{content:")"}' +
+  '.cw-nt-note{font-size:.75rem;color:rgba(240,234,214,.4);margin-left:6px;font-style:italic;white-space:normal}' +
   '.cw-report{margin-top:12px;font-size:.8rem}' +
   '.cw-report summary{cursor:pointer;color:rgba(232,234,242,.5);font-weight:600}' +
   '.cw-report summary:hover{color:#9ccfd2}' +
@@ -957,6 +968,49 @@ function lastCompletedNum() {
   return nums.length ? Math.max.apply(null, nums) : 0;
 }
 
+/* Render a Godot-style scene-tree diagram from a nodeTree config object.
+   nodeTree = { icon?, type, name, children?: [...same] }
+   Returns an HTML string. */
+function renderNodeTree(node, depth, isLast, prefix) {
+  if (depth === undefined) {
+    return '<div class="cw-node-tree" aria-label="Scene tree diagram">' +
+      renderNodeTree(node, 0, true, '') +
+    '</div>';
+  }
+  var ICONS = {
+    'Node': '⬡', 'Node2D': '⬡', 'Node3D': '⬡',
+    'CharacterBody2D': '🔵', 'CharacterBody3D': '🔵',
+    'RigidBody2D': '🔵', 'StaticBody2D': '⬛',
+    'Area2D': '🟡', 'Area3D': '🟡',
+    'Sprite2D': '🖼', 'Sprite3D': '🖼', 'AnimatedSprite2D': '🎞',
+    'CollisionShape2D': '⬡', 'CollisionShape3D': '⬡',
+    'Camera2D': '📷', 'Camera3D': '📷',
+    'AudioStreamPlayer': '🔊', 'AudioStreamPlayer2D': '🔊',
+    'Label': '🏷', 'RichTextLabel': '🏷',
+    'Timer': '⏱', 'AnimationPlayer': '▶',
+    'TileMap': '🗺', 'TileMapLayer': '🗺',
+    'GPUParticles2D': '✨', 'CPUParticles2D': '✨',
+    'PointLight2D': '💡', 'DirectionalLight3D': '💡',
+    'MeshInstance3D': '🧊', 'CSGBox3D': '🧊'
+  };
+  var icon = node.icon || ICONS[node.type] || '⬡';
+  var connector = depth === 0 ? '' : (prefix + (isLast ? '└─ ' : '├─ '));
+  var childPrefix = depth === 0 ? '' : (prefix + (isLast ? '   ' : '│  '));
+  var html = '<div class="cw-nt-row" style="padding-left:' + (depth * 0) + 'px">' +
+    '<span class="cw-nt-connector" aria-hidden="true">' + connector + '</span>' +
+    '<span class="cw-nt-icon" aria-hidden="true">' + icon + '</span>' +
+    '<span class="cw-nt-type">' + node.type + '</span>' +
+    (node.name ? '<span class="cw-nt-name">' + node.name + '</span>' : '') +
+    (node.note ? '<span class="cw-nt-note">' + node.note + '</span>' : '') +
+  '</div>';
+  if (node.children && node.children.length) {
+    for (var ci = 0; ci < node.children.length; ci++) {
+      html += renderNodeTree(node.children[ci], depth + 1, ci === node.children.length - 1, childPrefix);
+    }
+  }
+  return html;
+}
+
 function renderSteps() {
   var panel = document.getElementById('stepsPanel');
   panel.innerHTML = '';
@@ -986,6 +1040,7 @@ function renderSteps() {
       ((isActive || isDone) ? '<p class="cw-expect"><strong>What you should see:</strong> ' + (step.expect || step.goal) + '</p>' : '') +
       predictHtml +
       '<ul class="cw-explain">' + step.points.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
+      (step.nodeTree ? '<div class="cw-node-tree-wrap"><div class="cw-node-tree-label">📄 Godot Scene Tree</div>' + renderNodeTree(step.nodeTree) + '</div>' : '') +
       '<div class="cw-challenge">' + step.challenge + '</div>' +
       '<textarea class="cw-editor" id="editor-' + step.num + '"' +
         ' aria-label="Code editor for step ' + step.num + '"' +

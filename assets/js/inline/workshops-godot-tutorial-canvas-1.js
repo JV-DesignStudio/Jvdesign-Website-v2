@@ -208,6 +208,21 @@ window.CW_CONFIG = {
       solution: '# Sprite starts in the center\nvar start_x = 200\nvar start_y = 200\n\n# Number of coins to collect\nvar coin_count = 8',
       checks: ['200', '8'],
       height: 110,
+      nodeTree: {
+        type: 'Node2D', name: 'Main',
+        children: [
+          {
+            type: 'CharacterBody2D', name: 'Player', note: 'your sprite',
+            children: [
+              { type: 'Sprite2D', name: 'Arrow' },
+              { type: 'CollisionShape2D' }
+            ]
+          },
+          { type: 'Node2D', name: 'Coins', note: '8 children', children: [
+            { type: 'Area2D', name: 'Coin', icon: '🟡' }
+          ]}
+        ]
+      },
       fills: {
         text: 'The sprite starts at the ___ of the canvas. Collecting all ___ coins triggers the win condition.',
         answers: ['center', '8']
@@ -239,6 +254,14 @@ window.CW_CONFIG = {
       solution: '# Build velocity from input\nvar vx = 0\nvar vy = 0\nif Input.is_action_pressed("ui_left"): vx = -speed\nif Input.is_action_pressed("ui_right"): vx = speed\nif Input.is_action_pressed("ui_up"): vy = -speed\nif Input.is_action_pressed("ui_down"): vy = speed\nposition.x += vx\nposition.y += vy',
       checks: ['speed', 'vx', 'vy'],
       height: 200,
+      nodeTree: {
+        type: 'CharacterBody2D', name: 'Player',
+        children: [
+          { type: 'GDScript', name: 'Player.gd', icon: '📜', note: '_process() runs every frame' },
+          { type: 'Sprite2D', name: 'Arrow' },
+          { type: 'CollisionShape2D' }
+        ]
+      },
       fills: {
         text: 'Velocity is ___ each frame to position. A velocity approach makes it easy to add ___ or deceleration later.',
         answers: ['added', 'acceleration']
@@ -332,6 +355,13 @@ window.CW_CONFIG = {
       solution: '# Check each coin\nfor coin in coins:\n    if coin.active:\n        var dist = abs(player_x - coin.x) + abs(player_y - coin.y)\n        if dist < 18:\n            coin.active = false\n            score += 1',
       checks: ['18', 'false', 'score'],
       height: 160,
+      nodeTree: {
+        type: 'Area2D', name: 'Coin',
+        children: [
+          { type: 'CollisionShape2D', note: 'detects overlap' },
+          { type: 'GDScript', name: 'Coin.gd', icon: '📜', note: 'body_entered signal → collect()' }
+        ]
+      },
       fills: {
         text: 'Coins are collected within ___ pixels. Setting active to ___ prevents collecting the same coin twice.',
         answers: ['18', 'false']
