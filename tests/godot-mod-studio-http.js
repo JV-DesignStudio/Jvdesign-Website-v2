@@ -27,46 +27,34 @@ const server=http.createServer((req,res)=>{
 
     const st=await page.evaluate(()=>({
       tabs:document.querySelectorAll('.ms-tab').length,
-      cells:document.querySelectorAll('#gmBoard .ms-cell').length,
-      swatches:document.querySelectorAll('#gmPalette .ms-swatch').length,
-      scripts:document.querySelectorAll('#gmScriptList input[type=checkbox]').length,
-      log:!!document.getElementById('gmLog'),
-      exportBtn:!!document.getElementById('gmDownload'),
+      grid:!!document.getElementById('gmBoard'),
+      palette:!!document.getElementById('gmPalette'),
+      liveedit:!!document.getElementById('gmScriptPreview'),
+      editorLink:!!document.querySelector('a[href="godot-lab/index.html"]'),
+      starter:!!document.querySelector('a[href="godot-lab/starter.zip"]'),
+      offline:!!document.querySelector('a[href="engine-godot.html"]'),
+      steps:document.querySelectorAll('.ms-card ol.ms-checklist li').length,
+      got:document.querySelectorAll('.ms-card ul.ms-checklist li').length,
+      output:!!document.getElementById('studio')&&/Read the Output panel/.test(document.body.innerText),
       cheat:!!document.querySelector('a[href*="godot-cheatsheet.html"]'),
       hub:!!document.querySelector('a[href*="godot-world-workshop.html"]'),
       dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
       sw:document.documentElement.scrollWidth
     }));
-    check('studio has 5 tabs',st.tabs===5,'tabs '+st.tabs);
-    check('studio grid has 24 cells',st.cells===24,'cells '+st.cells);
-    check('palette has 6 objects',st.swatches===6,'swatches '+st.swatches);
-    check('script list has 5 scripts',st.scripts===5,'scripts '+st.scripts);
-    check('studio has the Output console',st.log);
-    check('studio has the download button',st.exportBtn);
-    check('studio links the cheat sheet',st.cheat);
-    check('studio links back to the series hub',st.hub);
+    check('fake studio tabs are gone',st.tabs===0,'tabs '+st.tabs);
+    check('fake scene grid is gone',!st.grid);
+    check('fake palette is gone',!st.palette);
+    check('fake script preview is gone',!st.liveedit);
+    check('links the real Godot editor',st.editorLink);
+    check('offers the starter project download',st.starter);
+    check('offers the offline Godot hub',st.offline);
+    check('has a 4 step first session',st.steps===4,'steps '+st.steps);
+    check('lists the starter contents',st.got===4,'items '+st.got);
+    check('teaches the real Output panel',st.output);
+    check('links the cheat sheet',st.cheat);
+    check('links back to the series hub',st.hub);
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
-
-    await page.click('.ms-tab[data-tab="scripts"]');
-    const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
-    check('tabs switch panels',onScripts);
-
-    await page.click('.ms-tab[data-tab="scene"]');
-    await page.click('#gmExample');
-    const scene=await page.evaluate(()=>window.GMS_buildScene&&window.GMS_buildScene());
-    check('builds a real Godot scene',/^\[gd_scene/.test(scene)&&/CharacterBody2D/.test(scene)&&/Area2D/.test(scene),'len '+(scene||'').length);
-    const proj=await page.evaluate(()=>window.GMS_buildProject&&window.GMS_buildProject());
-    check('builds a project.godot',/run\/main_scene="res:\/\/Main\.tscn"/.test(proj));
-    const scripts=await page.evaluate(()=>window.GMS_scriptNames&&window.GMS_scriptNames());
-    check('writes GDScript files',Array.isArray(scripts)&&scripts.includes('player.gd')&&scripts.includes('coin.gd'),JSON.stringify(scripts));
-
-    await page.click('.ms-tab[data-tab="debug"]');
-    await page.click('#gmLog .err');
-    await page.click('#gmOptions .ms-dbg-opt');
-    const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#gmOptions .is-correct'),next:document.getElementById('gmNext').style.display}));
-    check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
-
     check('studio no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
 
     await page.setViewport({width:390,height:844,isMobile:true});
@@ -78,11 +66,11 @@ const server=http.createServer((req,res)=>{
     await page.setViewport({width:1440,height:900});
     await page.goto(base+'/workshops/godot-world-workshop.html',{waitUntil:'load'});
     const hub=await page.evaluate(()=>({studioLink:!!document.querySelector('a[href="godot-mod-studio.html"]'),sw:document.documentElement.scrollWidth}));
-    check('hub links the Godot Mod Studio',hub.studioLink);
+    check('hub links the Godot Studio',hub.studioLink);
     check('hub desktop no overflow',hub.sw<=1442,hub.sw+'');
     await page.goto(base+'/workshops/godot_tutorial.html',{waitUntil:'load'});
     const ep=await page.evaluate(()=>({handoff:/Build it in our Godot Studio too/.test(document.body.innerHTML),dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length}));
-    check('episode links the Godot Mod Studio',ep.handoff);
+    check('episode links the Godot Studio',ep.handoff);
     check('episode has no dashes',ep.dashes===0,'dashes '+ep.dashes);
   } finally { await browser.close(); await new Promise(r=>server.close(r)); }
   console.log(failures?('\n'+failures+' FAILED'):'\nALL PASS');

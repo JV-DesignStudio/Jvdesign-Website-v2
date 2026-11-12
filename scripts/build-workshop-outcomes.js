@@ -73,6 +73,11 @@ const OVERRIDES = {
     finish: 'a working set of GDScript scripts you understand',
     extend: 'writing one small script without copying the example'
   },
+  'godot-mod-studio': {
+    project: 'Godot Studio',
+    finish: 'a real project file you can open in Godot',
+    extend: 'adding one feature of your own before you download'
+  },
   'build-a-game-15-min': {
     finish: 'a playable Dot Smash game you can show someone',
     extend: 'changing the speed, target or score rule'
@@ -225,7 +230,7 @@ function build() {
       id,
       url: entry.url,
       kind,
-      project: title,
+      project: (OVERRIDES[id] && OVERRIDES[id].project) || title,
       learn,
       finish: finishFor(entry, kind),
       extend: extendFor(id, kind, entry)
