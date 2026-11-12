@@ -120,7 +120,8 @@ const pages = walk(ROOT, []).filter((p) => !p.includes(path.sep + 'partials' + p
 // assets/canvas-preview.html is the canvas preview host (A1717). It must stay
 // free of any CSP so its sandboxed stage can run learner code inline; it is not
 // a content page. See scripts/canvas-preview.html + tests/canvas-preview-runtime.js.
-const contentPages = pages.filter((p) => path.relative(ROOT, p).replace(/\\/g, '/') !== 'assets/canvas-preview.html');
+const SANDBOX_HOSTS = new Set(['assets/canvas-preview.html', 'assets/preview-host.html']);
+const contentPages = pages.filter((p) => !SANDBOX_HOSTS.has(path.relative(ROOT, p).replace(/\\/g, '/')));
 let withCsp = 0;
 const missing = [];
 const dupes = [];
