@@ -7,8 +7,34 @@
     {key:'jvds_sound_auto', tool:'Sound Studio', icon:'🎵', href:'../tools/sound-studio.html', type:'sound',
      label:function(d){return (d.bpm||120)+' BPM, '+(d.tracks?d.tracks.length:0)+' track'+(d.tracks&&d.tracks.length!==1?'s':'');}},
     {key:'jv_arcade_autosave', tool:'Arcade Game Maker', icon:'🕹️', href:'../tools/arcade-game-maker.html', type:'game',
-     label:function(d){return '“'+(d.title||'Untitled')+'” - '+(d.genre||'custom');}}
+     label:function(d){return '“'+(d.title||'Untitled')+'” - '+(d.genre||'custom');}},
+    {key:'jvds-tabletop-v1', tool:'Tabletop Studio', icon:'🎲', href:'../tools/tabletop-studio.html', type:'board',
+     label:function(d){return (d.name?String(d.name)+', ':'')+(d.cols||'?')+'×'+(d.rows||'?')+' board, '+(d.tokens?d.tokens.length:0)+' piece'+(d.tokens&&d.tokens.length!==1?'s':'');}}
   ];
+
+  var BOARD_COLORS = {
+    grass:'#8FBF6A', water:'#6FA9C9', sand:'#E3CD8F', forest:'#5E8C5A',
+    stone:'#B9B4A8', path:'#C9A97D', lava:'#D46A4A', snow:'#EDF2F4', wall:'#6B6257'
+  };
+
+  function boardThumb(d){
+    try{
+      var cols=Math.max(1,Number(d.cols)||12), rows=Math.max(1,Number(d.rows)||9);
+      var c=document.createElement('canvas'); c.width=96; c.height=72;
+      var x=c.getContext('2d'); if(!x) return '';
+      x.fillStyle='#F0EAD6'; x.fillRect(0,0,96,72);
+      var cw=96/cols, ch=72/rows;
+      for(var r=0;r<rows;r++){
+        for(var col=0;col<cols;col++){
+          var t=Array.isArray(d.tiles)?d.tiles[r*cols+col]:null;
+          if(!t||!BOARD_COLORS[t]) continue;
+          x.fillStyle=BOARD_COLORS[t];
+          x.fillRect(Math.floor(col*cw), Math.floor(r*ch), Math.ceil(cw)+1, Math.ceil(ch)+1);
+        }
+      }
+      return c.toDataURL();
+    }catch(e){ return ''; }
+  }
 
   function readItem(t){
     try{var raw=localStorage.getItem(t.key); if(!raw) return null; return JSON.parse(raw);}catch(e){return null;}
@@ -34,6 +60,10 @@
     }
     if(t.type==='game' && d && d.sprite){
       thumbHtml='<img class="my-stuff-card-thumb" src="'+esc(d.sprite)+'" alt="Game sprite" width="48" height="48">';
+    }
+    if(t.type==='board' && d && Array.isArray(d.tiles)){
+      var boardImg=boardThumb(d);
+      if(boardImg) thumbHtml='<img class="my-stuff-card-thumb" src="'+boardImg+'" alt="Board preview" width="48" height="48">';
     }
     li.innerHTML=thumbHtml+
       '<div class="my-stuff-card-body">'+

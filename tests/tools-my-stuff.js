@@ -73,12 +73,20 @@ const ARCADE_DATA = JSON.stringify({
   bossPhases:[], savedAt:'4 Nov, 14:00', userCode:''
 });
 
+const TABLE_DATA = JSON.stringify({
+  v:1, cols:4, rows:3, shape:'square', name:'Test board',
+  tiles:['grass','water','sand','forest','stone','path','lava','snow','wall','grass','water','sand'],
+  tokens:[{id:1,type:'piece',kind:'meeple',x:80,y:60,rot:0,scale:1}],
+  deck:[], nextId:2, savedAt:'4 Nov, 15:00'
+});
+
 async function seedStorage(page) {
-  await page.evaluate((px, snd, arc) => {
+  await page.evaluate((px, snd, arc, tbl) => {
     localStorage.setItem('jvds_pixel', px);
     localStorage.setItem('jvds_sound_auto', snd);
     localStorage.setItem('jv_arcade_autosave', arc);
-  }, PIXEL_DATA, SOUND_DATA, ARCADE_DATA);
+    localStorage.setItem('jvds-tabletop-v1', tbl);
+  }, PIXEL_DATA, SOUND_DATA, ARCADE_DATA, TABLE_DATA);
 }
 
 (async () => {
@@ -105,6 +113,7 @@ async function seedStorage(page) {
         pixelCard: !!s.querySelector('[data-type="sprite"]'),
         soundCard: !!s.querySelector('[data-type="sound"]'),
         gameCard: !!s.querySelector('[data-type="game"]'),
+        boardCard: !!s.querySelector('[data-type="board"]'),
         exportAllBtn: !!s.querySelector('#myStuffExportAll'),
         importInput: !!s.querySelector('#myStuffImportFile'),
         scrollWidth: document.documentElement.scrollWidth,
@@ -113,12 +122,13 @@ async function seedStorage(page) {
 
     check('desktop: my-stuff section present', shelf !== null);
     check('desktop: shelf visible with data', shelf && shelf.visible);
-    check('desktop: shows 3 cards', shelf && shelf.cards === 3, 'found ' + (shelf && shelf.cards));
+    check('desktop: shows 4 cards', shelf && shelf.cards === 4, 'found ' + (shelf && shelf.cards));
     check('desktop: Pixel Studio card', shelf && shelf.pixelCard);
     check('desktop: Sound Studio card', shelf && shelf.soundCard);
     check('desktop: Arcade Game Maker card', shelf && shelf.gameCard);
-    check('desktop: Open buttons on all cards', shelf && shelf.openBtns === 3, 'found ' + (shelf && shelf.openBtns));
-    check('desktop: Export buttons on all cards', shelf && shelf.exportBtns === 3, 'found ' + (shelf && shelf.exportBtns));
+    check('desktop: Tabletop Studio card', shelf && shelf.boardCard);
+    check('desktop: Open buttons on all cards', shelf && shelf.openBtns === 4, 'found ' + (shelf && shelf.openBtns));
+    check('desktop: Export buttons on all cards', shelf && shelf.exportBtns === 4, 'found ' + (shelf && shelf.exportBtns));
     check('desktop: Export All button', shelf && shelf.exportAllBtn);
     check('desktop: Import input', shelf && shelf.importInput);
     check('desktop: no overflow at 1440', shelf && shelf.scrollWidth <= 1440, shelf && shelf.scrollWidth);
@@ -146,7 +156,7 @@ async function seedStorage(page) {
     });
 
     check('mobile: shelf visible', shelf && shelf.visible);
-    check('mobile: shows 3 cards', shelf && shelf.cards === 3, 'found ' + (shelf && shelf.cards));
+    check('mobile: shows 4 cards', shelf && shelf.cards === 4, 'found ' + (shelf && shelf.cards));
     check('mobile: no overflow at 390', shelf && shelf.scrollWidth <= 390, shelf && shelf.scrollWidth);
     check('mobile: no browser errors', errors.length === 0, errors.join('; '));
     await page.close();
@@ -162,6 +172,7 @@ async function seedStorage(page) {
       localStorage.removeItem('jvds_pixel');
       localStorage.removeItem('jvds_sound_auto');
       localStorage.removeItem('jv_arcade_autosave');
+      localStorage.removeItem('jvds-tabletop-v1');
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
 
@@ -188,6 +199,7 @@ async function seedStorage(page) {
     check('links: Pixel Studio link', hrefs.some(h => h && h.includes('pixel-studio')));
     check('links: Sound Studio link', hrefs.some(h => h && h.includes('sound-studio')));
     check('links: Arcade Game Maker link', hrefs.some(h => h && h.includes('arcade-game-maker')));
+    check('links: Tabletop Studio link', hrefs.some(h => h && h.includes('tabletop-studio')));
     await page.close();
   }
 

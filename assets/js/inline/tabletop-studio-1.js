@@ -12,7 +12,10 @@
   var MAX_DICE = 6;
 
   var PIECE_DEFS = [
-    { id: 'meeple',   label: 'Player',     glyph: '🧍', color: '#BC4749' },
+    { id: 'meeple',   label: 'Player 1',   glyph: '🧍', color: '#BC4749' },
+    { id: 'meeple-2', label: 'Player 2',   glyph: '🧍', color: '#3f6e71' },
+    { id: 'meeple-3', label: 'Player 3',   glyph: '🧍', color: '#c98a2e' },
+    { id: 'meeple-4', label: 'Player 4',   glyph: '🧍', color: '#7a5aa8' },
     { id: 'hero',     label: 'Fox hero',   glyph: '🦊', color: '#3f6e71' },
     { id: 'tiger',    label: 'Tiger hero', glyph: '🐯', color: '#c98a2e' },
     { id: 'monster',  label: 'Monster',    glyph: '👾', color: '#7a5aa8' },
@@ -98,6 +101,9 @@
   var clearArmed = false;
   var clearTimer = null;
   var toastTimer = null;
+  var autosaveTimer = null;
+  var dirty = false;
+  var lastDrawReshuffled = false;
   var drawQueued = false;
 
   var dieSides = 6;
@@ -140,6 +146,7 @@
       cols: 12,
       rows: 9,
       shape: 'square',
+      name: '',
       tiles: tiles,
       bg: null,
       tokens: [],
@@ -148,6 +155,7 @@
       mode: 'build',
       terrain: 'grass',
       brush: 1,
+      tool: 'brush',
       snap: true,
       selectedId: 0
     };
@@ -182,6 +190,14 @@
     window.setTimeout(function () {
       URL.revokeObjectURL(url);
     }, 1500);
+  }
+
+  function safeName() {
+    var raw = String(S.name || 'tabletop-board')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return raw.slice(0, 40) || 'tabletop-board';
   }
 
   /* ------------------------------------------------------------------ */
@@ -573,8 +589,9 @@
     updateDeckLabel();
     selectToken(t.id);
     markStep('piece');
-    toast('You drew the ' + cardLabel(t) + '.');
-    announce('Drew the ' + cardLabel(t) + '.');
+    var prefix = lastDrawReshuffled ? 'Deck reshuffled. ' : '';
+    toast(prefix + 'You drew the ' + cardLabel(t) + '.');
+    announce(prefix + 'Drew the ' + cardLabel(t) + '.');
   }
 
   function selectToken(id) {
@@ -595,11 +612,12 @@
 
   function updatePieceBar() {
     var t = tokenById(S.selectedId);
-    pieceBar.hidden = !t || S.mode === 'play';
+    pieceBar.hidden = !t;
     if (t) flipBtn.hidden = t.type !== 'card';
   }
 
   function flipToken(t) {
+    pushUndo();
     t.faceDown = !t.faceDown;
     updateTokenElement(t);
     markDirty();
@@ -607,6 +625,7 @@
   }
 
   function nudgeToken(t, dx, dy) {
+    pushUndo();
     var cell = cellAt(t.x, t.y);
     var col = clamp(cell.col + dx, 0, S.cols - 1);
     var row = clamp(cell.row + dy, 0, S.rows - 1);
@@ -621,11 +640,16 @@
   function removeToken(t) {
     pushUndo();
     S.tokens = S.tokens.filter(function (x) { return x.id !== t.id; });
+    if (t.type === 'card') {
+      if (!Array.isArray(S.deck)) S.deck = [];
+      S.deck.push({ r: t.r, s: t.s });
+    }
     if (S.selectedId === t.id) S.selectedId = 0;
     renderTokens();
     markDirty();
+    updateDeckLabel();
     updatePieceBar();
-    announce('Piece removed.');
+    announce(t.type === 'card' ? 'Card returned to the deck.' : 'Piece removed.');
   }
 
   /* ------------------------------------------------------------------ */
@@ -647,27 +671,78 @@
   }
 
   function drawFromDeck() {
-    if (!Array.isArray(S.deck) || S.deck.length === 0) S.deck = makeDeck();
+    lastDrawReshuffled = false;
+    if (!Array.isArray(S.deck) || S.deck.length === 0) {
+      S.deck = makeDeck();
+      lastDrawReshuffled = true;
+    }
     return S.deck.pop();
   }
 
   function updateDeckLabel() {
     var n = Array.isArray(S.deck) ? S.deck.length : 52;
-    deckLeftEl.textContent = n + ' cards left. Tap a card on the board to flip it.';
+    deckLeftEl.textContent = n === 0
+      ? 'Deck empty. Draw a card to reshuffle.'
+      : n + ' cards left. Tap a card on the board to flip it.';
   }
 
   /* ------------------------------------------------------------------ */
   /* Painting                                                            */
   /* ------------------------------------------------------------------ */
 
+  function hexNeighbours(col, row) {
+    var offsets = (row % 2)
+      ? [[1, 0], [-1, 0], [1, -1], [0, -1], [1, 1], [0, 1]]
+      : [[1, 0], [-1, 0], [0, -1], [-1, -1], [0, 1], [-1, 1]];
+    return offsets.map(function (o) {
+      return { col: col + o[0], row: row + o[1] };
+    });
+  }
+
   function paintCell(col, row, terrain) {
+    var value = (terrain === 'erase') ? null : terrain;
+    if (S.shape === 'hex' && S.brush === 3) {
+      setTileAt(col, row, value);
+      hexNeighbours(col, row).forEach(function (n) {
+        setTileAt(n.col, n.row, value);
+      });
+      return;
+    }
     var spread = (S.shape === 'square' && S.brush === 3) ? 1 : 0;
     for (var dr = -spread; dr <= spread; dr++) {
       for (var dc = -spread; dc <= spread; dc++) {
         var c = col + dc;
         var r = row + dr;
         if (c < 0 || r < 0 || c >= S.cols || r >= S.rows) continue;
-        S.tiles[r * S.cols + c] = (terrain === 'erase') ? null : terrain;
+        S.tiles[r * S.cols + c] = value;
+      }
+    }
+  }
+
+  function floodFill(startCol, startRow, terrain) {
+    if (startCol < 0 || startRow < 0 || startCol >= S.cols || startRow >= S.rows) return;
+    var value = (terrain === 'erase') ? null : terrain;
+    var start = S.tiles[startRow * S.cols + startCol];
+    if (start === value) return;
+    var stack = [{ col: startCol, row: startRow }];
+    var seen = {};
+    while (stack.length) {
+      var cell = stack.pop();
+      if (cell.col < 0 || cell.row < 0 || cell.col >= S.cols || cell.row >= S.rows) continue;
+      var index = cell.row * S.cols + cell.col;
+      if (seen[index]) continue;
+      seen[index] = true;
+      if (S.tiles[index] !== start) continue;
+      S.tiles[index] = value;
+      if (S.shape === 'hex') {
+        hexNeighbours(cell.col, cell.row).forEach(function (n) { stack.push(n); });
+      } else {
+        stack.push(
+          { col: cell.col + 1, row: cell.row },
+          { col: cell.col - 1, row: cell.row },
+          { col: cell.col, row: cell.row + 1 },
+          { col: cell.col, row: cell.row - 1 }
+        );
       }
     }
   }
@@ -709,9 +784,16 @@
 
   function applyPaint(cell, erase) {
     var terrain = erase ? 'erase' : S.terrain;
-    if (lastPaintCell) paintLine(lastPaintCell, cell, terrain);
-    else paintCell(cell.col, cell.row, terrain);
-    lastPaintCell = cell;
+    if (S.tool === 'fill') {
+      floodFill(cell.col, cell.row, terrain);
+      lastPaintCell = null;
+    } else if (lastPaintCell) {
+      paintLine(lastPaintCell, cell, terrain);
+      lastPaintCell = cell;
+    } else {
+      paintCell(cell.col, cell.row, terrain);
+      lastPaintCell = cell;
+    }
     hideEmpty();
     markStep('paint');
     scheduleDraw();
@@ -726,6 +808,7 @@
       cols: S.cols,
       rows: S.rows,
       shape: S.shape,
+      name: S.name,
       tiles: S.tiles.slice(),
       bg: S.bg,
       tokens: S.tokens.map(function (t) {
@@ -743,7 +826,11 @@
   }
 
   function pushUndo() {
-    undos.push(snapshot());
+    pushUndoSnapshot(snapshot());
+  }
+
+  function pushUndoSnapshot(snap) {
+    undos.push(snap);
     if (undos.length > 30) undos.shift();
     updateUndoButton();
   }
@@ -752,6 +839,7 @@
     S.cols = snap.cols;
     S.rows = snap.rows;
     S.shape = snap.shape;
+    S.name = typeof snap.name === 'string' ? snap.name : '';
     S.tiles = snap.tiles.slice();
     S.bg = snap.bg;
     S.tokens = snap.tokens.map(function (t) {
@@ -788,13 +876,23 @@
   }
 
   function markDirty() {
+    dirty = true;
     updateSaveState('Tap Save', true);
+    scheduleAutosave();
   }
 
-  function updateSaveState(text, dirty) {
+  function scheduleAutosave() {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(function () {
+      if (!dirty) return;
+      saveBoard(true);
+    }, 1500);
+  }
+
+  function updateSaveState(text, isDirty) {
     if (!savedEl) return;
     savedEl.textContent = text;
-    savedEl.classList.toggle('is-dirty', !!dirty);
+    savedEl.classList.toggle('is-dirty', !!isDirty);
   }
 
   function saveBoard(quiet) {
@@ -802,16 +900,23 @@
       var payload = snapshot();
       payload.v = 1;
       payload.savedAt = Date.now();
+      payload.name = S.name;
       payload.mode = S.mode;
       payload.terrain = S.terrain;
       payload.brush = S.brush;
+      payload.tool = S.tool;
       payload.snap = S.snap;
       payload.selectedId = 0;
       localStorage.setItem(STORE_KEY, JSON.stringify(payload));
-      updateSaveState('Saved just now', false);
+      dirty = false;
+      window.clearTimeout(autosaveTimer);
+      updateSaveState(quiet ? 'Autosaved' : 'Saved just now', false);
       if (!quiet) {
         toast('Saved to this browser.');
         announce('Board saved to this browser.');
+        if (window.ToolAnalytics) {
+          try { ToolAnalytics.event('board_saved', 'manual'); } catch (err) { /* analytics is optional */ }
+        }
       }
       return true;
     } catch (err) {
@@ -837,6 +942,12 @@
     }
     if (!data || !Array.isArray(data.tiles)) return false;
 
+    return applyBoardData(data);
+  }
+
+  function applyBoardData(data) {
+    if (!data || !Array.isArray(data.tiles)) return false;
+
     var cols = clamp(Number(data.cols) || 12, 2, 40);
     var rows = clamp(Number(data.rows) || 9, 2, 30);
     var shape = data.shape === 'hex' ? 'hex' : 'square';
@@ -844,6 +955,7 @@
     S.cols = cols;
     S.rows = rows;
     S.shape = shape;
+    S.name = typeof data.name === 'string' ? data.name.slice(0, 40) : '';
 
     if (data.tiles.length === cols * rows) {
       S.tiles = data.tiles.map(function (t) {
@@ -902,6 +1014,7 @@
     S.mode = data.mode === 'play' ? 'play' : 'build';
     S.terrain = TERRAIN[data.terrain] ? data.terrain : 'grass';
     S.brush = Number(data.brush) === 3 ? 3 : 1;
+    S.tool = data.tool === 'fill' ? 'fill' : 'brush';
     S.snap = true;
     S.selectedId = 0;
 
@@ -1241,7 +1354,9 @@
     } else {
       statusEl.textContent = 'Paint a tile, then add a piece.';
       barHint.textContent = 'Drag a piece onto the board.';
-      byId('ttTerrainHelp').textContent = 'Pick a colour, then paint the board.';
+      byId('ttTerrainHelp').textContent = S.tool === 'fill'
+        ? 'Fill is on. Tap a tile to flood it.'
+        : 'Pick a colour, then paint the board.';
     }
   }
 
@@ -1413,6 +1528,9 @@
       blank: 'Blank board'
     };
     var hadContent = !!(S.bg || S.tokens.length || S.tiles.some(function (t) { return !!t; }));
+    if (window.ToolAnalytics) {
+      try { ToolAnalytics.event('template_used', id); } catch (err) { /* analytics is optional */ }
+    }
     pushUndo();
     resetBoardDoc();
     if (id === 'meadow') buildMeadowTemplate();
@@ -1447,7 +1565,7 @@
     S.tokens = [];
     S.bg = null;
     bgImg = null;
-    S.deck = [];
+    S.deck = makeDeck();
     S.selectedId = 0;
     emptyDismissed = false;
     firstSteps = { paint: false, piece: false, roll: false, dismissed: firstSteps.dismissed, celebrated: false };
@@ -1539,14 +1657,14 @@
           toast('Could not export the board image.');
           return;
         }
-        downloadBlob(blob, 'tabletop-board.png');
+        downloadBlob(blob, safeName() + '.png');
         toast('Board image exported.');
         announce('Board image exported as a PNG.');
       }, 'image/png');
     } else {
       var link = document.createElement('a');
       link.href = out.toDataURL('image/png');
-      link.download = 'tabletop-board.png';
+      link.download = safeName() + '.png';
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1563,9 +1681,52 @@
     data.brush = S.brush;
     data.snap = S.snap;
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, 'tabletop-board.json');
+    downloadBlob(blob, safeName() + '.json');
     toast('Board file saved.');
     announce('Board file saved as JSON.');
+  }
+
+  function onLoadFile(event) {
+    var file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast('That board file is too big.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try {
+        data = JSON.parse(String(reader.result));
+      } catch (err) {
+        toast('That file is not a board file.');
+        return;
+      }
+      var snap = snapshot();
+      if (!applyBoardData(data)) {
+        toast('That file is not a board file.');
+        return;
+      }
+      pushUndoSnapshot(snap);
+      emptyDismissed = true;
+      firstSteps.dismissed = true;
+      setBgImage(S.bg);
+      syncControls();
+      renderAll();
+      markDirty();
+      toast('Board loaded.');
+      announce('Board loaded from file.');
+    };
+    reader.onerror = function () {
+      toast('That file could not be read.');
+    };
+    reader.readAsText(file);
+  }
+
+  function onBoardNameInput(event) {
+    S.name = String(event.target.value || '').slice(0, 40);
+    markDirty();
   }
 
   /* ------------------------------------------------------------------ */
@@ -1618,6 +1779,8 @@
   function syncControls() {
     byId('ttShape').value = S.shape;
     byId('ttSize').value = S.cols + 'x' + S.rows;
+    var nameInput = byId('ttBoardName');
+    if (nameInput) nameInput.value = S.name || '';
 
     var modeButtons = document.querySelectorAll('.tt-mode-btn');
     for (var i = 0; i < modeButtons.length; i++) {
@@ -1632,6 +1795,11 @@
     var brushes = document.querySelectorAll('[data-brush]');
     for (var k = 0; k < brushes.length; k++) {
       brushes[k].setAttribute('aria-pressed', Number(brushes[k].dataset.brush) === S.brush ? 'true' : 'false');
+    }
+
+    var tools = document.querySelectorAll('[data-tool]');
+    for (var t = 0; t < tools.length; t++) {
+      tools[t].setAttribute('aria-pressed', tools[t].dataset.tool === S.tool ? 'true' : 'false');
     }
 
     dieCountOut.textContent = String(dieCount);
@@ -1655,12 +1823,31 @@
       all[i].setAttribute('aria-pressed', all[i] === btn ? 'true' : 'false');
     }
     if (btn.dataset.terrain === 'erase') {
-      byId('ttTerrainHelp').textContent = 'Erase is on. Drag across tiles to rub them out.';
+      byId('ttTerrainHelp').textContent = S.tool === 'fill'
+        ? 'Fill is on. Tap a tile to clear its area.'
+        : 'Erase is on. Drag across tiles to rub them out.';
       announce('Eraser selected.');
     } else {
-      byId('ttTerrainHelp').textContent = 'Painting with ' + TERRAIN[btn.dataset.terrain].name + '.';
+      byId('ttTerrainHelp').textContent = S.tool === 'fill'
+        ? 'Fill is on. Tap a tile to flood it with ' + TERRAIN[btn.dataset.terrain].name + '.'
+        : 'Painting with ' + TERRAIN[btn.dataset.terrain].name + '.';
       announce(TERRAIN[btn.dataset.terrain].name + ' selected.');
     }
+  }
+
+  function onToolClick(event) {
+    var btn = event.target.closest('[data-tool]');
+    if (!btn) return;
+    S.tool = btn.dataset.tool === 'fill' ? 'fill' : 'brush';
+    var all = document.querySelectorAll('[data-tool]');
+    for (var i = 0; i < all.length; i++) {
+      all[i].setAttribute('aria-pressed', all[i] === btn ? 'true' : 'false');
+    }
+    var name = S.terrain === 'erase' ? 'erase' : (TERRAIN[S.terrain] ? TERRAIN[S.terrain].name : 'paint');
+    byId('ttTerrainHelp').textContent = S.tool === 'fill'
+      ? 'Fill is on. Tap a tile to flood it with ' + name + '.'
+      : 'Painting with ' + name + '. Drag to paint.';
+    announce(S.tool === 'fill' ? 'Fill tool selected.' : 'Brush tool selected.');
   }
 
   function onBrushClick(event) {
@@ -1806,10 +1993,15 @@
     event.preventDefault();
     try { cv.setPointerCapture(event.pointerId); } catch (err) { /* capture is optional */ }
     pushUndo();
-    painting = true;
     eraseStroke = event.button === 2 || S.terrain === 'erase';
     lastPaintCell = null;
     kbActive = false;
+    if (S.tool === 'fill') {
+      applyPaint(pointerCell(event), eraseStroke);
+      markDirty();
+      return;
+    }
+    painting = true;
     applyPaint(pointerCell(event), eraseStroke);
     markDirty();
   }
@@ -1856,7 +2048,8 @@
       event.preventDefault();
       kbActive = true;
       pushUndo();
-      paintCell(kbCursor.col, kbCursor.row, S.terrain);
+      if (S.tool === 'fill') floodFill(kbCursor.col, kbCursor.row, S.terrain);
+      else paintCell(kbCursor.col, kbCursor.row, S.terrain);
       hideEmpty();
       markDirty();
       scheduleDraw();
@@ -1898,13 +2091,46 @@
     }
   }
 
+  function focusables(root) {
+    if (!root) return [];
+    return Array.prototype.slice.call(root.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) {
+      return !el.disabled && el.offsetParent !== null;
+    });
+  }
+
+  function trapFocus(root, event) {
+    if (event.key !== 'Tab') return false;
+    var list = focusables(root);
+    if (!list.length) return false;
+    var first = list[0];
+    var last = list[list.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return true;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+      return true;
+    }
+    return false;
+  }
+
   function onGlobalKeyDown(event) {
     if (!helpEl.hidden) {
       if (event.key === 'Escape') {
         event.preventDefault();
         closeHelp();
+      } else if (event.key === 'Tab') {
+        trapFocus(helpEl.querySelector('.tt-modal-card'), event);
       }
       return;
+    }
+    if (sidebar.classList.contains('open') && event.key === 'Tab') {
+      if (trapFocus(sidebar, event)) return;
     }
     var tag = (event.target.tagName || '').toLowerCase();
     var typing = tag === 'input' || tag === 'textarea' || tag === 'select';
@@ -1925,14 +2151,17 @@
     if (!t) return;
     var action = btn.dataset.pieceAct;
     if (action === 'rotate') {
+      pushUndo();
       t.rot = ((t.rot || 0) + 45) % 360;
       updateTokenElement(t);
       markDirty();
     } else if (action === 'smaller') {
+      pushUndo();
       t.scale = clamp((t.scale || 1) - 0.15, 0.55, 1.9);
       updateTokenElement(t);
       markDirty();
     } else if (action === 'bigger') {
+      pushUndo();
       t.scale = clamp((t.scale || 1) + 0.15, 0.55, 1.9);
       updateTokenElement(t);
       markDirty();
@@ -1954,6 +2183,9 @@
     document.querySelectorAll('[data-brush]').forEach(function (btn) {
       btn.addEventListener('click', onBrushClick);
     });
+    document.querySelectorAll('[data-tool]').forEach(function (btn) {
+      btn.addEventListener('click', onToolClick);
+    });
 
     byId('ttPieces').addEventListener('click', onPieceClick);
     byId('ttPieces').addEventListener('pointerdown', onPiecePointerDown);
@@ -1973,6 +2205,15 @@
     byId('ttSave').addEventListener('click', function () { saveBoard(false); });
     byId('ttExport').addEventListener('click', exportPNG);
     byId('ttExportJson').addEventListener('click', exportJSON);
+    byId('ttLoadJson').addEventListener('click', function () { byId('ttLoadFile').click(); });
+    byId('ttLoadFile').addEventListener('change', onLoadFile);
+    var nameInput = byId('ttBoardName');
+    if (nameInput) nameInput.addEventListener('input', onBoardNameInput);
+    var printBtn = byId('ttPrint');
+    if (printBtn) printBtn.addEventListener('click', function () {
+      saveBoard(true);
+      window.print();
+    });
     undoBtn.addEventListener('click', undo);
     clearBtn.addEventListener('click', onClearClick);
     byId('ttClearTiles').addEventListener('click', clearTiles);
@@ -2069,6 +2310,11 @@
     window.addEventListener('resize', layoutTokens);
     window.addEventListener('orientationchange', function () {
       window.setTimeout(layoutTokens, 200);
+    });
+    window.addEventListener('beforeunload', function (event) {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = '';
     });
   }
 
@@ -2172,6 +2418,7 @@
       offY: t.y - (event.clientY - rect.top) * sy,
       sx: sx,
       sy: sy,
+      snap: snapshot(),
       moved: false
     };
 
@@ -2212,6 +2459,7 @@
     drag.el.classList.remove('is-dragging');
 
     if (drag.moved) {
+      pushUndoSnapshot(drag.snap);
       if (S.mode === 'build' && S.snap) {
         var cell = cellAt(drag.t.x, drag.t.y);
         var c = centerOf(cell.col, cell.row);

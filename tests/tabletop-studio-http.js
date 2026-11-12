@@ -58,6 +58,7 @@ function wait(ms) {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
+  page.on('dialog', dialog => { dialog.accept().catch(() => {}); });
   page.on('console', m => {
     if (m.type() !== 'error') return;
     const text = m.text();
@@ -85,9 +86,12 @@ function wait(ms) {
     tokensLayer: !!document.getElementById('ttTokens'),
     swatches: document.querySelectorAll('#ttTerrain .tt-swatch').length,
     pieces: document.querySelectorAll('#ttPieces [data-piece]').length,
+    tools: document.querySelectorAll('[data-tool]').length,
     dice: document.querySelectorAll('#ttDiceTypes .tt-die-chip').length,
     modes: document.querySelectorAll('.tt-mode-btn').length,
     templates: document.querySelectorAll('#ttEmpty [data-template]').length,
+    print: !!document.getElementById('ttPrint'),
+    loadFile: !!document.getElementById('ttLoadFile'),
     emptyVisible: !document.getElementById('ttEmpty').hidden,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
@@ -100,10 +104,13 @@ function wait(ms) {
   check('board canvas exists', initial.canvas);
   check('token layer exists', initial.tokensLayer);
   check('terrain swatches present (9 + erase)', initial.swatches === 10, String(initial.swatches));
-  check('pieces present', initial.pieces === 10, String(initial.pieces));
+  check('player and prop pieces present', initial.pieces === 13, String(initial.pieces));
+  check('paint and fill tools present', initial.tools === 2, String(initial.tools));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
   check('four starter boards offered', initial.templates === 4, String(initial.templates));
+  check('print action present', initial.print);
+  check('board file import present', initial.loadFile);
   check('empty state shows on a new board', initial.emptyVisible);
   check('no visible mojibake', initial.cleanText);
   check('no horizontal overflow at 1280px', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
@@ -122,6 +129,8 @@ function wait(ms) {
   await wait(300);
   const clearedStarter = await page.evaluate(() => !document.getElementById('ttEmpty').hidden);
   check('clearing a starter brings the choices back', clearedStarter);
+  const deckAfterClear = await page.evaluate(() => document.getElementById('ttDeckLeft').textContent);
+  check('clearing resets the deck label', /^52 cards left/.test(deckAfterClear), deckAfterClear);
 
   await page.click('#ttStartBlank');
   await wait(200);
@@ -131,6 +140,46 @@ function wait(ms) {
   }));
   check('start blank hides the empty state', blank.emptyHidden);
   check('first steps appear after starting', blank.stepsVisible);
+
+  await page.click('[data-tool="fill"]');
+  await page.click('[data-terrain="sand"]');
+  const fillBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(fillBox.x + fillBox.w * 0.5, fillBox.y + fillBox.h * 0.5);
+  await wait(1900);
+  const filled = await page.evaluate(() => {
+    const raw = localStorage.getItem('jvds-tabletop-v1');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return { painted: data.tiles.filter(Boolean).length, total: data.tiles.length };
+  });
+  check('fill floods the blank board and autosaves', filled && filled.painted === filled.total, filled ? JSON.stringify(filled) : 'no autosave');
+
+  await page.evaluate(() => { document.querySelector('#ttShape').closest('details').open = true; });
+  await page.select('#ttShape', 'hex');
+  await page.click('[data-tool="brush"]');
+  await page.click('[data-brush="3"]');
+  await page.click('[data-terrain="water"]');
+  const hexBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(hexBox.x + hexBox.w * 0.5, hexBox.y + hexBox.h * 0.5);
+  await wait(1900);
+  const hexFilled = await page.evaluate(() => {
+    const raw = localStorage.getItem('jvds-tabletop-v1');
+    if (!raw) return 0;
+    return JSON.parse(raw).tiles.filter(t => t === 'water').length;
+  });
+  check('hex big brush paints the neighbours', hexFilled === 7, String(hexFilled));
+
+  await page.select('#ttShape', 'square');
+  await page.click('[data-brush="1"]');
+  await page.click('[data-terrain="water"]');
+  await page.click('#ttClearTiles');
+  await wait(200);
 
   await page.click('#ttHelpBtn');
   await wait(200);
@@ -179,6 +228,14 @@ function wait(ms) {
   });
   check('dragging a token moves it', moved.left !== tokenBox.left, tokenBox.left + ' -> ' + moved.left);
 
+  await page.click('#ttUndo');
+  await wait(200);
+  const afterUndo = await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token');
+    return el ? el.style.left : null;
+  });
+  check('undo restores a moved piece instead of deleting it', afterUndo === tokenBox.left, afterUndo + ' vs ' + tokenBox.left);
+
   await page.click('.tt-mode-btn[data-mode="play"]');
   await wait(150);
   const playPressed = await page.evaluate(() => document.querySelector('.tt-mode-btn[data-mode="play"]').getAttribute('aria-pressed'));
@@ -210,15 +267,21 @@ function wait(ms) {
   const stepsDone = await page.evaluate(() => document.getElementById('ttSteps').hidden);
   check('rolling finishes and hides the first steps', stepsDone);
 
+  await page.evaluate(() => {
+    const el = document.getElementById('ttBoardName');
+    el.value = 'Test board';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await page.click('#ttSave');
   await wait(200);
   const saved = await page.evaluate(() => {
     const raw = localStorage.getItem('jvds-tabletop-v1');
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return { tokens: data.tokens.length, tiles: data.tiles.filter(Boolean).length };
+    return { tokens: data.tokens.length, tiles: data.tiles.filter(Boolean).length, name: data.name };
   });
   check('save writes the board to localStorage', !!saved && saved.tokens === 2, saved ? JSON.stringify(saved) : 'no save');
+  check('save stores the board name', !!saved && saved.name === 'Test board', saved && saved.name);
 
   await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForSelector('#ttTerrain .tt-swatch', { timeout: 10000 });
@@ -230,6 +293,31 @@ function wait(ms) {
   }));
   check('saved board reloads', restored.tokens === 2, JSON.stringify(restored));
   check('reload hides the empty state', restored.emptyHidden);
+  const restoredName = await page.evaluate(() => document.getElementById('ttBoardName').value);
+  check('board name reloads', restoredName === 'Test board', restoredName);
+
+  const importPath = path.join(require('os').tmpdir(), 'jvds-tabletop-import.json');
+  fs.writeFileSync(importPath, JSON.stringify({
+    v: 1,
+    name: 'Imported test',
+    cols: 4,
+    rows: 3,
+    shape: 'square',
+    tiles: ['grass', 'water', null, 'sand', 'path', null, null, 'stone', 'lava', 'snow', 'wall', 'forest'],
+    tokens: [{ id: 1, type: 'piece', kind: 'meeple-2', x: 80, y: 60, rot: 0, scale: 1 }],
+    deck: [],
+    nextId: 2
+  }));
+  await (await page.$('#ttLoadFile')).uploadFile(importPath);
+  await wait(500);
+  const imported = await page.evaluate(() => ({
+    name: document.getElementById('ttBoardName').value,
+    tokens: document.querySelectorAll('#ttTokens .tt-token').length,
+    width: document.getElementById('ttBoard').width
+  }));
+  check('importing a board file loads its board', imported.tokens === 1 && imported.width === 320, JSON.stringify(imported));
+  check('importing a board file loads its name', imported.name === 'Imported test', imported.name);
+  fs.unlinkSync(importPath);
 
   await page.click('#ttClear');
   await page.click('#ttClear');

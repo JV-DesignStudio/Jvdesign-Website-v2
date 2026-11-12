@@ -11,7 +11,7 @@ function getGuide(){ try{ return localStorage.getItem('jvds_guide'); }catch(e){ 
 function setGuide(id){
   try{
     localStorage.setItem('jvds_guide', id);
-    // GA4 , guide affinity (quick-win analytics)
+    // GA4, guide affinity (quick-win analytics)
     try{ if(window.gtag) gtag('event','guide_choose', {guide:id}); }catch(e){}
     try{ if(window.ga4Analytics && ga4Analytics.track) ga4Analytics.track('guide_choose', {guide:id}); }catch(e){}
     try{ if(window.JVDSAnalytics) JVDSAnalytics.guide = id; }catch(e){}
@@ -136,10 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const img = mascot==='ember' ? '/assets/mascots/ember-hero.webp' : (mascot==='pip' ? '/assets/mascots/pip-hero.webp' : '/assets/mascots/lumo-hero.webp');
       const name = mascot==='ember' ? 'Ember' : (mascot==='pip' ? 'Pip' : 'Lumo');
       const line = mascot==='ember'
-        ? "Need a hand? Try me , I love happy accidents. Hit the tool, tweak a knob, and see what happens."
+        ? "Need a hand? Try me. I love happy accidents. Hit the tool, tweak a knob, and see what happens."
         : (mascot==='pip'
           ? "Go on, have a play. Break it, beat your best, then have one more go."
-          : "Psst , follow me step by step. Tap the blocks, try it your way, no wrong answers.");
+          : "Psst: follow me step by step. Tap the blocks, try it your way, no wrong answers.");
       const coach = document.createElement('div');
       coach.className = 'mascot-coach' + (isTool ? ' mascot-coach--tool' : '');
       coach.style.setProperty('--mascot-accent', mascot==='ember' ? 'var(--mascot-ember)' : (mascot==='pip' ? 'var(--mascot-pip)' : 'var(--mascot-lumo)'));
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Empty / filtered states , mascot helpers (already baked into HTML; observer is fallback) ──
+  // ── Empty / filtered states, mascot helpers (already baked into HTML; observer is fallback) ──
   const searchEmpty = document.getElementById('emptyState') || document.getElementById('searchEmpty') || document.querySelector('[data-search-empty]');
   if (searchEmpty && !searchEmpty.querySelector('.mascot-empty')){
     // already patched in HTML, but ensure observer keeps it if dynamically shown
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastXP=parseInt(localStorage.getItem('jvds_xp')||'0',10);
     setInterval(()=>{
       const cur=parseInt(localStorage.getItem('jvds_xp')||'0',10);
-      if(cur> lastXP){ showCelebration({mascot: getGuide()||'stardust', title:'Level up!', text:`${cur-lastXP} XP , keep going!`}); }
+      if(cur> lastXP){ showCelebration({mascot: getGuide()||'stardust', title:'Level up!', text:`${cur-lastXP} XP, keep going!`}); }
       lastXP=cur;
     }, 3000);
   }catch(e){}
@@ -215,19 +215,19 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', e=>{
     eggBuf=(eggBuf+e.key.toLowerCase()).slice(-8);
     if(eggBuf.endsWith('lumo')){
-      showCelebration({mascot:'play', title:'Crew Assemble! ✨', text:'Lumo · Ember · Echo · Pip · Stardust , together!'});
+      showCelebration({mascot:'play', title:'Crew Assemble! ✨', text:'Lumo · Ember · Echo · Pip · Stardust, together!'});
       eggBuf='';
     }
   });
 
-  // ── Ask Lumo / Ember , search persona ──
+  // ── Ask Lumo / Ember, search persona ──
   const searchInput=document.getElementById('searchInput');
   if(searchInput){
     const g=getGuide();
-    const persona = g==='ember' ? {name:'Ember', ph:'Ask Ember , try “pixel art” or “make a beat”…'} :
-                    g==='play' ? {name:'Echo & Pip', ph:'Ask Echo & Pip , try “cozy game” or “arcade”…'} :
-                    g==='stardust' ? {name:'Stardust', ph:'Ask Stardust , try “Lumo” or “belonging”…'} :
-                    {name:'Lumo', ph:'Ask Lumo , try “fox” or “resilience”…'};
+    const persona = g==='ember' ? {name:'Ember', ph:'Ask Ember, try “pixel art” or “make a beat”…'} :
+                    g==='play' ? {name:'Echo & Pip', ph:'Ask Echo & Pip, try “cozy game” or “arcade”…'} :
+                    g==='stardust' ? {name:'Stardust', ph:'Ask Stardust, try “Lumo” or “belonging”…'} :
+                    {name:'Lumo', ph:'Ask Lumo, try “fox” or “resilience”…'};
     // Only override if still default placeholder
     if(searchInput.placeholder.includes('fox') || searchInput.placeholder.includes('Try:')){
       searchInput.placeholder = persona.ph;
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Certificate signing , tools/certificate.html gets mascot signature ──
+  // ── Certificate signing, tools/certificate.html gets mascot signature ──
   if (location.pathname.includes('certificate')){
     const certHost=document.querySelector('.cert-preview, .certificate, main');
     if(certHost){
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sig=document.createElement('div');
         sig.className='mascot-cert-sign';
         sig.style.cssText='display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0 0;font-size:.82rem;color:var(--charcoal-lt)';
-        sig.innerHTML=`<img src="${cfg.img}" alt="" style="width:28px;height:28px;border-radius:50%;border:1px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);object-fit:cover;background:#fff"> Signed with ✨ by ${cfg.name} , ${cfg.pillar}`;
+        sig.innerHTML=`<img src="${cfg.img}" alt="" style="width:28px;height:28px;border-radius:50%;border:1px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.1);object-fit:cover;background:#fff"> Signed with ✨ by ${cfg.name}, ${cfg.pillar}`;
         certHost.appendChild(sig);
       }
     }
@@ -299,7 +299,7 @@ function showGuideQuiz(){
       <div class="mascot-quiz-progress" aria-live="polite">Question <span id="quizStep">1</span> of 3</div>
       <div class="mascot-quiz-q" id="quizQ" role="heading" aria-level="3"></div>
       <div class="mascot-quiz-opts" id="quizOpts"></div>
-      <button class="mascot-quiz-skip" id="quizSkip">Skip , let me explore</button>
+      <button class="mascot-quiz-skip" id="quizSkip">Skip, let me explore</button>
     </div>`;
   document.body.appendChild(bd);
   function focusables(){
@@ -334,10 +334,10 @@ function showGuideQuiz(){
       {t:"Feel it in a story", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
     {q:"Pick a superpower!", opts:[
-      {t:"Curiosity , always asking why", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
-      {t:"Creation , turning ideas real", m:'ember', img:'/assets/mascots/ember-hero.webp'},
-      {t:"Playfulness , joy is power", m:'play', img:'/assets/mascots/echo-hero.webp'},
-      {t:"Wonder , tiny stars, big dreams", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
+      {t:"Curiosity, always asking why", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
+      {t:"Creation, turning ideas real", m:'ember', img:'/assets/mascots/ember-hero.webp'},
+      {t:"Playfulness, joy is power", m:'play', img:'/assets/mascots/echo-hero.webp'},
+      {t:"Wonder, tiny stars, big dreams", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
   ];
   let idx=0, votes={lumo:0,ember:0,play:0,stardust:0};
@@ -389,7 +389,7 @@ function personalizeHome(){
 function addCompanion(cfg){
   const img=document.createElement('img');
   img.className='mascot-companion';
-  img.src=cfg.img; img.alt=cfg.name; img.title=cfg.name+' , click for a tip';
+  img.src=cfg.img; img.alt=cfg.name; img.title=cfg.name+', click for a tip';
   /* A2376: sit inside the shared action dock when one is present, so the
      character does not float separately over the bottom of the page. */
   const dock=document.getElementById('jvds-action-dock');
@@ -411,7 +411,7 @@ function addCompanion(cfg){
     const sleepy=Math.random()<.5;
     img.style.filter = sleepy ? 'saturate(.85) brightness(.98)' : 'none';
     if(document.visibilityState==='visible' && !document.querySelector('.mascot-quiz-backdrop')){
-      if(sleepy) showTip('Pssst , still there? Tap me if you need a nudge ✨', 3200);
+      if(sleepy) showTip('Pssst, still there? Tap me if you need a nudge ✨', 3200);
     }
     scheduleIdle();
   }
