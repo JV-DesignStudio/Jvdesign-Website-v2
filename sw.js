@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v57 - A2960: refresh Tabletop Studio with
+// starter boards, first steps, a visible dice result and a quick help card.
 // JVDesignStudio Service Worker v56 - A2960: precache Tabletop Studio so the
 // board maker opens and plays with the network down after one online visit.
 // JVDesignStudio Service Worker v55 - Call of the Cards v2: a faster card duel,
@@ -46,7 +48,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v56';
+const CACHE='jvds-v57';
 const CORE=[
   '/',
   '/offline.html',
