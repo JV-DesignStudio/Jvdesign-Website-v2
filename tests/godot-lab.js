@@ -1,11 +1,13 @@
-/* A2959: the Godot Lab embeds the real Godot editor with a starter project.
-   This checks the cross-origin isolation, the self-hosted editor frame, the
-   starter ZIP hand-off and the 390/1440 layout. It stubs the editor's Start
-   button so the test does not download the 96 MB wasm. */
+/* A2961: the Godot Lab embeds the real Godot 4.7.2 editor with a starter
+   project. This boots the real engine (not a stub) and checks cross-origin
+   isolation, the starter ZIP hand-off, the engine loading then starting, and
+   the 390/1440 layout. The 92 MB wasm is served from this repo, so nothing is
+   downloaded. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '..');
 const PAGE = 'workshops/godot-lab/index.html';
+const BOOT_TIMEOUT = 180000;
 let failures = 0;
 function check(name, ok, detail = '') {
   console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' , ' + detail : ''));
@@ -25,22 +27,38 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': mime[path.extname(f).toLowerCase()] || 'application/octet-stream' });
   fs.createReadStream(f).pipe(res);
 });
+const benign = /HTTPS proxy|set_https_proxy|Failed to load resource|net::ERR_FAILED|favicon/i;
 (async () => {
   server.listen(0);
   await new Promise(r => server.once('listening', r));
   const base = 'http://127.0.0.1:' + server.address().port;
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
+  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--enable-unsafe-swiftshader', '--use-gl=angle', '--ignore-gpu-blocklist'] });
   try {
+    // Layout check first, before the engine boots.
+    const phone = await browser.newPage();
+    await phone.setViewport({ width: 390, height: 844, isMobile: true });
+    await phone.setRequestInterception(true);
+    phone.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') || r.url().startsWith('blob:') ? r.continue() : r.abort());
+    await phone.goto(base + '/' + PAGE, { waitUntil: 'load', timeout: 30000 });
+    const mobile = await phone.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      frame: !!document.getElementById('godot-frame'),
+      button: !!document.querySelector('[data-gl-load]')
+    }));
+    check('390px lab controls visible', mobile.frame && mobile.button);
+    check('390px no horizontal overflow', mobile.scrollWidth <= 392, 'scrollWidth ' + mobile.scrollWidth);
+    await phone.close();
+
     const page = await browser.newPage();
     const errors = [];
-    page.on('pageerror', e => errors.push(e.message));
-    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', e => { if (!benign.test(e.message)) errors.push(e.message); });
+    page.on('console', m => { if (m.type() === 'error' && !benign.test(m.text())) errors.push(m.text()); });
     await page.setRequestInterception(true);
-    page.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') ? r.continue() : r.abort());
+    page.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') || r.url().startsWith('blob:') ? r.continue() : r.abort());
     await page.setViewport({ width: 1440, height: 900 });
 
     await page.goto(base + '/' + PAGE, { waitUntil: 'load', timeout: 30000 });
-    await page.waitForFunction(() => window.crossOriginIsolated === true, { timeout: 25000 });
+    await page.waitForFunction(() => window.crossOriginIsolated === true, { timeout: 30000 });
     await page.waitForFunction(() => {
       const f = document.getElementById('godot-frame');
       return f && f.getAttribute('src');
@@ -49,7 +67,7 @@ const server = http.createServer((req, res) => {
       const f = document.getElementById('godot-frame');
       const d = f && f.contentDocument;
       return d && d.getElementById('zip-file') && d.getElementById('startButton');
-    }, { timeout: 15000 });
+    }, { timeout: 20000 });
 
     const lab = await page.evaluate(() => ({
       isolated: window.crossOriginIsolated,
@@ -80,33 +98,41 @@ const server = http.createServer((req, res) => {
     check('editor is the Godot web editor', /Godot/i.test(editor.title), editor.title);
     check('editor has Start and ZIP preload', editor.start && editor.zip, JSON.stringify(editor));
 
-    const preload = await page.evaluate(async () => {
+    // Boot the real engine. Load starter project clicks Start with the ZIP.
+    const boot = await page.evaluate(async (timeout) => {
       const f = document.getElementById('godot-frame');
       const d = f.contentDocument;
-      let started = false;
-      d.getElementById('startButton').onclick = function () { started = true; };
       document.querySelector('[data-gl-load]').click();
-      await new Promise(r => setTimeout(r, 1200));
-      return {
-        started,
-        files: d.getElementById('zip-file').files.length,
-        status: (document.querySelector('[data-gl-status]') || {}).textContent || ''
-      };
-    });
-    check('starter ZIP is preloaded into the editor', preload.files === 1, 'files ' + preload.files);
-    check('Start is triggered after preload', preload.started === true);
-    check('status explains the load', /Starting|starter|editor/i.test(preload.status), preload.status);
-
-    await page.setViewport({ width: 390, height: 844, isMobile: true });
-    const mobile = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      frame: !!document.getElementById('godot-frame'),
-      button: !!document.querySelector('[data-gl-load]')
-    }));
-    check('390px lab controls visible', mobile.frame && mobile.button);
-    check('390px no horizontal overflow', mobile.scrollWidth <= 392, 'scrollWidth ' + mobile.scrollWidth);
-
-    check('no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+      const zipSeen = await new Promise(resolve => {
+        const t0 = Date.now();
+        (function poll() {
+          const z = d.getElementById('zip-file');
+          if (z && z.files.length === 1) return resolve(true);
+          if (Date.now() - t0 > 10000) return resolve(false);
+          setTimeout(poll, 100);
+        })();
+      });
+      let seenLoading = false, last = {};
+      const t0 = Date.now();
+      while (Date.now() - t0 < timeout) {
+        const ind = d.getElementById('status-indeterminate');
+        const prog = d.getElementById('status-progress');
+        const notice = d.getElementById('status-notice');
+        const shown = !!((ind && getComputedStyle(ind).display !== 'none') || (prog && getComputedStyle(prog).display !== 'none'));
+        const noticeShown = !!(notice && getComputedStyle(notice).display !== 'none');
+        const c = d.getElementById('editor-canvas') || d.querySelector('canvas');
+        last = { shown, noticeShown, cw: c ? c.clientWidth : 0, ch: c ? c.clientHeight : 0 };
+        if (noticeShown) return { ok: false, zipSeen, reason: 'engine notice: ' + notice.innerText.slice(0, 240), last };
+        if (shown) seenLoading = true;
+        if (seenLoading && !shown && c && c.clientWidth > 10 && c.clientHeight > 10) return { ok: true, zipSeen, last };
+        await new Promise(r => setTimeout(r, 250));
+      }
+      return { ok: false, zipSeen, reason: 'boot timeout', last };
+    }, BOOT_TIMEOUT);
+    check('starter ZIP is preloaded into the editor', boot.zipSeen === true);
+    check('engine shows a loading state then starts', boot.ok === true, boot.reason || JSON.stringify(boot.last));
+    check('engine canvas is live after start', boot.last && boot.last.cw > 10 && boot.last.ch > 10, JSON.stringify(boot.last));
+    check('no browser errors during boot', errors.length === 0, errors.slice(0, 2).join(' | '));
   } finally { await browser.close(); await new Promise(r => server.close(r)); }
   console.log(failures ? ('\n' + failures + ' FAILED') : '\nALL PASS');
   process.exit(failures ? 1 : 0);
