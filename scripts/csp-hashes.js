@@ -13,6 +13,9 @@ const APPLY = process.argv.includes('--apply');
 const CHECK = process.argv.includes('--check');
 const IGN = new Set(['node_modules', '.git', '.claude', 'tmp', 'quest-board-deploy',
   '.aider.tags.cache.v4', 'assets', 'partials']);
+// Vendored third-party exports: their own inline scripts and CSP contracts are
+// not ours to rewrite. The Godot web editor is a copied engine build.
+const SKIP_DIRS = new Set(['workshops/godot-lab/editor']);
 
 // A2625: the hashes a page needs for its inline scripts.
 function inlineHashes(s) {
@@ -84,7 +87,11 @@ const walk = (d) => {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     if (IGN.has(e.name)) continue;
     const q = path.join(d, e.name);
-    if (e.isDirectory()) walk(q);
+    if (e.isDirectory()) {
+      const rel = path.relative(ROOT, q).replace(/\\/g, '/');
+      if (SKIP_DIRS.has(rel)) continue;
+      walk(q);
+    }
     else if (e.name.endsWith('.html')) processFile(q);
   }
 };

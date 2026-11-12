@@ -302,10 +302,13 @@ function run({ verbose = true, intents = false, strict = false } = {}) {
       if (item.comingSoon) continue;
       if (!item.url) continue;
       checked++;
-      const rel = item.url.replace(/^\//, '').toLowerCase();
+      // Query-string presets (e.g. 3d-builder.html?preset=rocket) are the same
+      // indexed page, so compare the clean path only.
+      const baseUrl = item.url.split('#')[0].split('?')[0];
+      const rel = baseUrl.replace(/^\//, '').toLowerCase();
       if (indexed.has(rel)) continue;
       // Not in search index - is it intentionally noindex on disk?
-      if (isNoindex(item.url)) { skippedNoindex++; continue; }
+      if (isNoindex(baseUrl)) { skippedNoindex++; continue; }
       missing.push({ label, id: item.id || item.title, url: item.url });
     }
   }
