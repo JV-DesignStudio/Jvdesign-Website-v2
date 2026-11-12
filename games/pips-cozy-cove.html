@@ -25,7 +25,13 @@
 <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="../assets/fonts/fonts.css">
-<link rel="stylesheet" href="../style-game-pips-cozy-cove.css">
+<link rel="stylesheet" href="../game-system.css?v=18">
+<link rel="stylesheet" href="../style-game-pips-cozy-cove.css?v=4">
+<script src="../assets/js/theme-init.js"></script>
+<script defer src="../analytics-loader.js"></script>
+<script defer src="../game-system-score.js"></script>
+<script defer src="../game-system-save.js"></script>
+<script defer src="../game-system.js"></script>
 <script defer src="../audio-effects.js"></script>
 <script defer src="../sw-register.js"></script>
 <script defer src="../assets/js/inline/games-pips-cozy-cove.js"></script>
@@ -34,158 +40,9 @@
 </script>
 </head>
 <body>
-<div class="cove" id="cove">
-  <div id="a11yStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="game-shell"><header class="topbar"><div><p class="eyebrow">Calm fishing</p><h1>🎣 Pip's Cozy Cove</h1></div><div class="top-actions"><button class="round-btn" id="helpBtn" aria-label="Help">?</button><button class="round-btn" data-go="../arcade.html">🏠</button></div></header><main class="layout"><section class="panel"><div class="panel-head"><span id="levelName">Morning Cove</span><b id="starsBank">⭐ 0</b></div><div class="level-map" id="levelMap"></div><div class="mission"><p>Goal</p><h2 id="missionTitle">Catch 3 fish</h2><div class="goalbar"><i id="goalFill"></i></div></div><div class="cove-last"><p>Last catch</p><div id="lastFish" class="last-fish-name">-</div><b id="lastPts"></b></div></section><section class="stage-wrap"><div class="hud"><div><small>Score</small><b id="scoreVal">0</b></div><div><small>Caught</small><b id="catchVal">0</b></div><div><small>Combo</small><b id="comboVal">0</b></div><div><small>Best</small><b id="bestVal">0</b></div></div><canvas id="game" width="900" height="1100" aria-label="Pip's Cozy Cove fishing game"></canvas><p class="status" id="statusMsg" role="status" aria-live="polite">Ready to fish!</p><div class="reel-wrap" id="reelWrap" style="display:none"><p>Reel it in!</p><div class="reel-track"><div class="reel-bar" id="reelBar"></div></div></div></section><section class="panel"><div class="shot-card"><p>Tip</p><h2 id="tipTitle">Cast Anywhere</h2><span id="tipDetail">Flick upward from the bottom of the screen. Swipe left or right to aim sideways.</span></div><div class="legend"><span>🐟 Minnow · 50 pts</span><span>🐠 Perch · 120 pts</span><span>🐡 Bass · 250 pts</span><span>🌟 Golden Carp · 600 pts</span></div><button class="ghost" id="restartBtn">Restart Spot</button></section></main></div><div class="modal" id="modal"><div class="modal-card"><div class="modal-emoji" id="modalEmoji">🎣</div><h2 id="modalTitle">Pip's Cozy Cove</h2><p id="modalText">Cast your line and reel in a catch.</p><div class="modal-stats" id="modalStats"></div><button class="primary" id="modalPrimary">Start</button></div></div>
 
-  <header class="cove-head">
-    <div class="head-meta">
-      <p class="kicker">Pip's quiet dock</p>
-      <span class="condition" id="conditionLabel">Clear day</span>
-      <span class="tide" id="tideLabel">Low tide</span>
-    </div>
-    <h1>Pip's Cozy Cove</h1>
-    <p class="sub">Cast a line, wait for a nibble and reel in your catch. Nothing here is in a hurry.</p>
-  </header>
-
-  <section class="hud" aria-label="Your fishing stats">
-    <div class="stat"><b id="scoreHud">0</b><span>Score</span></div>
-    <div class="stat"><b id="bestHud">0</b><span>Best</span></div>
-    <div class="stat"><b id="caughtHud">0</b><span>Caught</span></div>
-    <div class="stat"><b id="streakHud">0</b><span>Streak</span></div>
-  </section>
-
-  <section class="tackle" aria-label="Tackle box">
-    <span class="tackle-label">Bait</span>
-    <div class="bait-row" role="group" aria-label="Choose bait">
-      <button class="bait" id="baitWorm" data-bait="worm" type="button" aria-pressed="true">🐛 Worm</button>
-      <button class="bait" id="baitCorn" data-bait="corn" type="button" aria-pressed="false">🌽 Corn</button>
-      <button class="bait" id="baitLure" data-bait="lure" type="button" aria-pressed="false">✨ Lure</button>
-    </div>
-    <div class="bait-row crafted-baits" id="craftedBaits" hidden></div>
-    <button class="mode" id="gentleBtn" type="button" aria-pressed="false" aria-label="Turn gentle mode on" title="Tap to reel instead of holding, and the line will not snap">Gentle: Off</button>
-    <span class="depth-tip" id="depthTip">Bites often, mostly common fish.</span>
-    <div class="unlocks" id="tackleStrip" aria-label="Tackle unlocks"></div>
-  </section>
-
-  <section class="scene" id="scene" aria-label="Cozy Cove play field">
-    <div class="sun" aria-hidden="true"></div>
-    <div class="water-lines" aria-hidden="true"></div>
-    <div class="tide-cover" id="tideCover" aria-hidden="true"></div>
-    <span class="story-star" id="storyStar" hidden aria-hidden="true"></span>
-    <div class="birds" id="birds" aria-hidden="true"></div>
-    <div class="weather-rain" id="rain" aria-hidden="true"></div>
-    <div class="fireflies" id="fireflies" aria-hidden="true"></div>
-    <span class="lily lily-1" aria-hidden="true"></span>
-    <span class="lily lily-2" aria-hidden="true"></span>
-    <span class="fish f1" aria-hidden="true">&#128031;</span>
-    <span class="fish f2" aria-hidden="true">&#128032;</span>
-    <span class="fish f3" aria-hidden="true">&#129416;</span>
-    <p class="status" id="statusText" role="status" aria-live="polite">Ready to fish. Press and hold to cast.</p>
-    <div class="dock" aria-hidden="true"></div>
-    <span class="dock-cat" id="dockCat" aria-hidden="true">&#128008;</span>
-    <svg class="rod" id="rod" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false" hidden>
-      <path id="rodLine" d="M 15 54 Q 38 16 63 62" fill="none" stroke="#5b3a1e" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
-    </svg>
-    <img class="pip" id="pip" src="../assets/mascots/pip-hero.webp" alt="Pip the little green turtle" width="400" height="400">
-    <div class="hotspots" id="hotspots" aria-hidden="true"></div>
-    <div class="bobber" id="bobber" hidden aria-hidden="true"></div>
-    <span class="catch-fish" id="catchFish" hidden aria-hidden="true"></span>
-    <div class="decor-layer" id="decorLayer" aria-hidden="true"></div>
-    <div class="decor-slots" id="decorSlots"></div>
-
-    <div class="meter power-meter" id="powerMeter" hidden aria-hidden="true">
-      <span class="meter-label" id="powerLabel">Cast power</span>
-      <div class="meter-track"><div class="meter-fill power-fill" id="powerFill"></div></div>
-    </div>
-
-    <div class="meter tension-meter" id="tensionMeter" hidden aria-hidden="true">
-      <span class="meter-label" id="tensionLabel">Line tension</span>
-      <div class="meter-track tension-track">
-        <div class="safe-zone"></div>
-        <div class="meter-fill tension-fill" id="tensionFill"></div>
-      </div>
-      <span class="meter-label" id="reelLabel">Reeled 0%</span>
-      <div class="meter-track reel-track"><div class="meter-fill reel-fill" id="reelFill"></div></div>
-    </div>
-
-    <div class="result-card" id="resultCard" hidden>
-      <span class="result-icon" id="resultIcon" aria-hidden="true">🐟</span>
-      <div class="result-body">
-        <b id="resultTitle">Common Carp</b>
-        <span id="resultDetail">1.2 kg, +14 points</span>
-        <span class="result-note" id="resultNote" hidden>Pip says: what a catch.</span>
-        <div class="result-actions">
-          <button class="card-btn" id="cardBtn" type="button">Save card</button>
-          <button class="card-btn card-btn-ghost" id="tankBtn" type="button">Keep in tank</button>
-          <button class="card-btn card-btn-ghost" id="shareBtn" type="button">Share link</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="photo-bar" id="photoBar" hidden>
-      <button class="photo-btn" id="photoSave" type="button">Save postcard</button>
-      <button class="photo-btn photo-exit" id="photoExit" type="button">Exit photo</button>
-    </div>
-  </section>
-
-  <section class="decorator" id="decorator" hidden aria-label="Decorate the cove">
-    <div class="decor-head">
-      <span class="decor-title">Decorate</span>
-      <span class="shell-count" id="decorShells" aria-label="Shells">🐚 0</span>
-      <button class="decor-done" id="decorDone" type="button">Done</button>
-    </div>
-    <div class="decor-palette" id="decorPalette" role="group" aria-label="Decor items"></div>
-    <p class="decor-help" id="decorHelp">Pick an item, then tap a spot in the water or on the dock.</p>
-  </section>
-
-  <div class="controls">
-    <button class="btn btn-primary" id="actionBtn" type="button">Hold to cast</button>
-    <button class="btn btn-ghost" id="pauseBtn" type="button" aria-pressed="false" aria-label="Pause game">Pause</button>
-    <button class="btn btn-ghost" id="soundBtn" type="button" aria-pressed="false" aria-label="Mute sound">Sound: On</button>
-    <button class="btn btn-ghost" id="resetBtn" type="button" aria-label="Empty the bucket and fish log">Empty bucket</button>
-  </div>
-
-  <nav class="side-tools" aria-label="Cove tools">
-    <button class="tool-link" id="guideBtn" type="button" aria-label="Open Lumo's field guide">Guide</button>
-    <button class="tool-link" id="albumBtn" type="button" aria-label="Open the catch album">Album <span class="tool-count" id="albumCount">0</span></button>
-    <button class="tool-link" id="tankBtnPanel" type="button" aria-label="Open the aquarium">Tank</button>
-    <button class="tool-link" id="decorBtn" type="button" aria-label="Decorate the cove">Decorate</button>
-    <button class="tool-link" id="craftBtn" type="button" aria-label="Open the bait bench">Bait</button>
-    <button class="tool-link" id="shelfBtn" type="button" aria-label="Open the trophy shelf">Shelf</button>
-    <button class="tool-link" id="storyBtn" type="button" aria-label="Open Stardust's story">Story</button>
-    <button class="tool-link" id="photoBtn" type="button" aria-label="Open photo mode">Photo</button>
-    <button class="tool-link" id="settingsBtn" type="button" aria-label="Open save and settings">Save</button>
-    <span class="shell-count" id="shellHud" aria-label="Shells">🐚 0</span>
-  </nav>
-
-  <section class="bucket" aria-label="Fish log">
-    <div class="bucket-head">
-      <h2>Fish log <span class="count" id="bucketCount">0</span></h2>
-      <span class="art-note">Prototype art: emoji sprites, hand-drawn art coming.</span>
-    </div>
-    <div class="request" id="requestCard" aria-label="Character request"></div>
-    <div class="daily" id="daily" aria-label="Today's bucket list">
-      <span class="daily-title">Today's list</span>
-      <div class="daily-goals" id="dailyGoals"></div>
-    </div>
-    <div class="trophy-strip" id="trophyStrip" aria-label="Trophies"></div>
-    <ul class="bucket-list" id="bucketList"></ul>
-    <p class="bucket-empty" id="bucketEmpty">Your log is empty. Cast a line to fill it.</p>
-    <p class="bucket-empty" id="foundCount" hidden>0 of 15 fish found.</p>
-    <div class="areas" id="areas" aria-label="Cove areas"></div>
-  </section>
-
-  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
-    <div class="panel-head">
-      <h2 id="panelTitle">Field guide</h2>
-      <button class="panel-close" id="panelClose" type="button" aria-label="Close panel">&times;</button>
-    </div>
-    <div class="panel-body" id="panelBody"></div>
-  </div>
-</div>
-
-<noscript>
-  <p style="padding:16px;text-align:center;color:#f0ead6">Pip's Cozy Cove needs JavaScript to run. It works offline once the page has loaded.</p>
-</noscript>
+<script defer src="../cookie-consent.js"></script>
+<script defer src="../game-shell.js"></script>
 </body>
 </html>

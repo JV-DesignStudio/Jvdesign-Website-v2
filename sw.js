@@ -54,7 +54,8 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v60';
+// v61: ship the rebuilt Pip's Cozy Cove arcade page (new HTML/CSS with the canvas game).
+const CACHE='jvds-v61';
 const CORE=[
   '/',
   '/offline.html',
