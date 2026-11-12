@@ -247,7 +247,8 @@ window.CW_CONFIG = {
           'Wider roads use too much memory'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'Change <code>car_x = 270</code> so your car starts at a different spot on the road. Change <code>car_w = 60</code> and <code>car_h = 40</code> to make your car a different shape - a wide tank, a narrow bike, whatever fits your game.'
     },
     {
       num: 2,
@@ -278,7 +279,8 @@ window.CW_CONFIG = {
           'Godot requires gradual changes'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'Change <code>car_speed += 0.15</code> to make your car accelerate faster or slower. Change the steer value <code>3</code> to make steering tight or floaty. What feel suits your game?'
     },
     {
       num: 3,
@@ -309,7 +311,8 @@ window.CW_CONFIG = {
           'Drawing more pixels per frame'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'The road dashes scroll every 40 pixels. Try changing that number - shorter gaps make the road feel faster, longer gaps feel slower. What speed feels right for your game?'
     },
     {
       num: 4,
@@ -340,7 +343,8 @@ window.CW_CONFIG = {
           'New obstacles would be the same colour'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'Change <code>range(3)</code> to <code>range(5)</code> for more obstacles, or <code>range(1)</code> for just one. Change the starting X spread (<code>randi() % 160</code>) to control how much obstacles dodge across the lane. What makes your version more fun to dodge?'
     },
     {
       num: 5,
@@ -371,7 +375,8 @@ window.CW_CONFIG = {
           'Multiplication is faster than assignment'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'Change <code>0.3</code> to decide how brutal your crashes are - <code>0.1</code> is a massive wipeout, <code>0.7</code> is a gentle bump. Does your game punish mistakes hard or let the player recover quickly?'
     },
     {
       num: 6,
@@ -402,7 +407,8 @@ window.CW_CONFIG = {
           'Godot only supports one timer'
         ],
         correct: 1
-      }
+      },
+      makeItYours: 'Change <code>3000</code> to make your track longer or shorter. Change <code>lap >= 3</code> to decide how many laps your race has. Try a 1-lap sprint or a 5-lap endurance race - which suits your game?'
     },
     {
       num: 7,
@@ -424,7 +430,81 @@ window.CW_CONFIG = {
       fills: {
         text: 'At home I will open ___ and my max speed will be ___.',
         answers: ['Godot', '10']
-      }
+      },
+      makeItYours: 'Replace every <code>___</code> with your own answers. This is your game plan - the choices you write here are the ones you\'ll build in Godot at home.'
     }
   ]
 };
+
+/* Intake card - runs once the DOM is ready */
+(function() {
+  var STORE_KEY = 'jvds-racing-intake';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch(e) { return null; }
+  }
+  function save(d) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch(e) {}
+  }
+
+  function applyData(d) {
+    var nameEl = document.getElementById('cwYGName');
+    var carEl  = document.getElementById('cwYGCar');
+    var sw     = document.getElementById('cwYGSwatch');
+    if (nameEl) nameEl.textContent = d.gameName || 'My Game';
+    if (carEl)  carEl.textContent  = d.carName  || 'My Car';
+    if (sw) { sw.style.background = d.carColor || '#60a5fa'; }
+    var yg = document.getElementById('cwYourGame');
+    var intake = document.getElementById('cwIntake');
+    if (yg) yg.hidden = false;
+    if (intake) intake.hidden = true;
+    /* forward to the mod card step so the user's name pre-fills */
+    if (window.CW_CONFIG && window.CW_CONFIG.steps) {
+      var step7 = window.CW_CONFIG.steps.find(function(s) { return s.num === 7; });
+      if (step7 && d.gameName) {
+        step7.starter = step7.starter.replace('Game name: ___', 'Game name: ' + d.gameName);
+      }
+    }
+  }
+
+  function domReady(fn) {
+    if (document.readyState !== 'loading') { fn(); } else { document.addEventListener('DOMContentLoaded', fn); }
+  }
+  domReady(function() {
+    var intake  = document.getElementById('cwIntake');
+    var goBtn   = document.getElementById('cwIntakeGo');
+    var skipBtn = document.getElementById('cwIntakeSkip');
+    var editBtn = document.getElementById('cwYGEdit');
+    var colorIn = document.getElementById('cwCarColor');
+    var hexLbl  = document.getElementById('cwColorHex');
+
+    var saved = load();
+    if (saved) { applyData(saved); return; }
+
+    if (colorIn && hexLbl) {
+      colorIn.addEventListener('input', function() { hexLbl.textContent = colorIn.value; });
+    }
+
+    function commit() {
+      var gn = (document.getElementById('cwGameName').value.trim() || 'My Game').slice(0,30);
+      var cn = (document.getElementById('cwCarName').value.trim()  || 'My Car').slice(0,20);
+      var cc = colorIn ? colorIn.value : '#60a5fa';
+      var d  = { gameName: gn, carName: cn, carColor: cc };
+      save(d);
+      applyData(d);
+    }
+
+    if (goBtn)   goBtn.addEventListener('click', commit);
+    if (skipBtn) skipBtn.addEventListener('click', function() {
+      var intake2 = document.getElementById('cwIntake');
+      if (intake2) intake2.hidden = true;
+    });
+    if (editBtn) editBtn.addEventListener('click', function() {
+      var intake2 = document.getElementById('cwIntake');
+      var yg = document.getElementById('cwYourGame');
+      if (intake2) intake2.hidden = false;
+      if (yg) yg.hidden = true;
+      try { localStorage.removeItem(STORE_KEY); } catch(e) {}
+    });
+  });
+}());

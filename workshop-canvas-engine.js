@@ -1066,6 +1066,11 @@ function renderSteps() {
       card.innerHTML += qHtml;
     }
 
+    if (step.makeItYours && (isActive || isDone)) {
+      card.innerHTML += '<div class="cw-miy"><div class="cw-miy-head">🎨 Make it yours</div>' +
+        '<p class="cw-miy-body">' + step.makeItYours + '</p></div>';
+    }
+
     if (step.solutionNotes && solutionSeen[step.num] && (isActive || isDone)) {
       card.innerHTML += '<div class="cw-sol-notes"><div class="cw-sol-notes-head">Why each line is there</div><ul>' +
         step.solutionNotes.map(function(n) { return '<li>' + n + '</li>'; }).join('') + '</ul></div>';
