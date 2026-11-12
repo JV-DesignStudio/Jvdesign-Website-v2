@@ -434,9 +434,60 @@ function wait(ms) {
   await wait(500);
   const reopened = await page.evaluate(() => ({
     name: document.getElementById('ttBoardName').value,
-    rows: document.querySelectorAll('#ttLib .tt-lib-row').length
+    rows: document.querySelectorAll('#ttLib .tt-lib-row').length,
+    undoDisabled: document.getElementById('ttUndo').disabled,
+    redoDisabled: document.getElementById('ttRedo').disabled
   }));
   check('opening another board restores its name', reopened.name === twoBoards.otherName, JSON.stringify(reopened));
+  check('switching boards clears undo and redo history', reopened.undoDisabled && reopened.redoDisabled, JSON.stringify(reopened));
+
+  await page.evaluate(() => {
+    window.__svgBlobs = [];
+    const original = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = function (blob) {
+      window.__svgBlobs.push(blob);
+      return original(blob);
+    };
+  });
+  await page.evaluate(() => {
+    document.getElementById('ttExportSvg').closest('details').open = true;
+    document.getElementById('ttSize').closest('details').open = true;
+  });
+  await page.select('#ttSize', '12x9');
+  await wait(300);
+  await page.click('[data-template="dungeon"]');
+  await wait(400);
+  await page.click('#ttExportSvg');
+  await wait(250);
+  const boardSvg = await page.evaluate(async () => {
+    const blobs = window.__svgBlobs;
+    return blobs.length ? await blobs[blobs.length - 1].text() : '';
+  });
+  check('square board SVG has a mm viewBox', /<svg[^>]+viewBox="0 0 960 720"/.test(boardSvg) && /width="240mm"/.test(boardSvg), boardSvg.slice(0, 140));
+  check('square board SVG exports separate tiles', (boardSvg.match(/class="tile"/g) || []).length > 20, String((boardSvg.match(/class="tile"/g) || []).length));
+  check('board SVG includes pieces as separate shapes', /id="pieces"/.test(boardSvg) && /data-piece="/.test(boardSvg));
+
+  await page.evaluate(() => { document.getElementById('ttShape').closest('details').open = true; });
+  await page.select('#ttShape', 'hex');
+  await wait(400);
+  await page.click('#ttExportSvg');
+  await wait(250);
+  const hexSvg = await page.evaluate(async () => {
+    const blobs = window.__svgBlobs;
+    return blobs.length ? await blobs[blobs.length - 1].text() : '';
+  });
+  check('hex board SVG exports hexagon polygons', /<polygon class="tile"/.test(hexSvg) && /data-terrain="/.test(hexSvg), hexSvg.slice(0, 160));
+
+  await page.click('#ttExportPiecesSvg');
+  await wait(250);
+  const piecesSvg = await page.evaluate(async () => {
+    const blobs = window.__svgBlobs;
+    return blobs.length ? await blobs[blobs.length - 1].text() : '';
+  });
+  check('piece sheet SVG lists every piece', (piecesSvg.match(/data-piece="/g) || []).length === 18, String((piecesSvg.match(/data-piece="/g) || []).length));
+  check('piece sheet SVG names the characters', /Stardust/.test(piecesSvg) && /Barnaby/.test(piecesSvg));
+  check('World Builder 3D link present', /href="\/workshops\/world-builder-3d.html"/.test(await page.content()));
+  await page.select('#ttShape', 'square');
 
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });

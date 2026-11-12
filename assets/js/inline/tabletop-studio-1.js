@@ -11,6 +11,7 @@
   var LIB_KEY = 'jvds-tabletop-v2';
   var MAX_BOARDS = 12;
   var CELL = 80;
+  var SVG_MM_PER_CELL = 20;
   var MAX_DICE = 6;
 
   var PIECE_DEFS = [
@@ -1103,6 +1104,12 @@
     if (redoBtn) redoBtn.disabled = redos.length === 0;
   }
 
+  function clearHistory() {
+    undos.length = 0;
+    redos.length = 0;
+    updateHistoryButtons();
+  }
+
   function markDirty() {
     dirty = true;
     updateSaveState('Tap Save', true);
@@ -1308,13 +1315,17 @@
     var target = null;
     library.boards.forEach(function (b) { if (b.id === id) target = b; });
     if (!target || !target.data) return;
-    saveBoard(true);
+    if (dirty && !saveBoard(true)) {
+      toast('Could not switch boards: this browser storage is full.');
+      return;
+    }
     library.activeId = id;
     writeLibrary();
     if (!applyBoardData(target.data)) {
       toast('That board could not be opened.');
       return;
     }
+    clearHistory();
     emptyDismissed = true;
     firstSteps.dismissed = true;
     setBgImage(S.bg);
@@ -1326,12 +1337,16 @@
   }
 
   function newBoard() {
-    saveBoard(true);
+    if (dirty && !saveBoard(true)) {
+      toast('Could not make a new board: this browser storage is full.');
+      return;
+    }
     if (library.boards.length >= MAX_BOARDS) {
       toast('You have ' + MAX_BOARDS + ' boards. Delete one before making another.');
       return;
     }
     resetToBlank();
+    clearHistory();
     var board = { id: newBoardId(), name: 'New board', updated: Date.now(), data: null };
     library.boards.unshift(board);
     library.activeId = board.id;
@@ -1347,7 +1362,10 @@
   }
 
   function duplicateBoard() {
-    saveBoard(true);
+    if (dirty && !saveBoard(true)) {
+      toast('Could not copy the board: this browser storage is full.');
+      return;
+    }
     var src = activeBoard();
     if (!src || !src.data) {
       toast('Save the board first.');
@@ -1369,6 +1387,7 @@
     library.boards.unshift(board);
     library.activeId = board.id;
     applyBoardData(copy);
+    clearHistory();
     emptyDismissed = true;
     firstSteps.dismissed = true;
     setBgImage(S.bg);
@@ -1396,6 +1415,7 @@
     if (library.activeId === id) {
       library.activeId = library.boards[0].id;
       applyBoardData(library.boards[0].data);
+      clearHistory();
       emptyDismissed = true;
       firstSteps.dismissed = true;
       setBgImage(S.bg);
@@ -1961,6 +1981,7 @@
     S.selectedId = 0;
     S.turn = 1;
     S.round = 1;
+    S.rules = '';
   }
 
   function fillTiles(terrain) {
@@ -2085,7 +2106,6 @@
     else if (id === 'island') buildIslandTemplate();
     else if (id === 'surprise') buildSurpriseTemplate();
     S.deck = makeDeck();
-    if (id !== 'blank') S.rules = '';
     hideEmpty();
     S.selectedId = 0;
     if (S.mode !== 'build') setMode('build');
@@ -2522,6 +2542,174 @@
       link.remove();
       toast('Play sheet saved.');
     }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* SVG export for paper and 3D printing                                */
+  /* ------------------------------------------------------------------ */
+
+  function escapeXml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  function svgNumber(value) {
+    return String(Math.round(Number(value) * 100) / 100);
+  }
+
+  function polygonPoints(cx, cy, r, sides, rotation) {
+    var points = [];
+    for (var i = 0; i < sides; i++) {
+      var angle = ((rotation || 0) + (360 / sides) * i) * Math.PI / 180;
+      points.push(svgNumber(cx + r * Math.cos(angle)) + ',' + svgNumber(cy + r * Math.sin(angle)));
+    }
+    return points.join(' ');
+  }
+
+  function starPoints(cx, cy, r, innerRatio) {
+    var points = [];
+    for (var i = 0; i < 10; i++) {
+      var radius = (i % 2) ? r * innerRatio : r;
+      var angle = (-90 + i * 36) * Math.PI / 180;
+      points.push(svgNumber(cx + radius * Math.cos(angle)) + ',' + svgNumber(cy + radius * Math.sin(angle)));
+    }
+    return points.join(' ');
+  }
+
+  function pieceSvgShape(def, r) {
+    var colour = def.color || '#c98a2e';
+    var kind = def.id;
+    if (def.counter) {
+      return '<rect x="' + svgNumber(-r) + '" y="' + svgNumber(-r) + '" width="' + svgNumber(r * 2) +
+        '" height="' + svgNumber(r * 2) + '" rx="' + svgNumber(r * 0.2) + '" fill="' + colour + '"/>';
+    }
+    if (kind === 'treasure') return '<polygon points="' + polygonPoints(0, 0, r, 4, 0) + '" fill="' + colour + '"/>';
+    if (kind === 'star') return '<polygon points="' + starPoints(0, 0, r, 0.45) + '" fill="' + colour + '"/>';
+    if (kind === 'monster') return '<polygon points="' + starPoints(0, 0, r, 0.62) + '" fill="' + colour + '"/>';
+    if (kind === 'flag') return '<polygon points="' + polygonPoints(0, 0, r, 3, -90) + '" fill="' + colour + '"/>';
+    if (kind === 'castle' || kind === 'rock') {
+      return '<rect x="' + svgNumber(-r) + '" y="' + svgNumber(-r) + '" width="' + svgNumber(r * 2) +
+        '" height="' + svgNumber(r * 2) + '" rx="' + svgNumber(kind === 'castle' ? r * 0.18 : r * 0.55) +
+        '" fill="' + colour + '"/>';
+    }
+    if (def.img) return '<polygon points="' + polygonPoints(0, 0, r, 6, 0) + '" fill="' + colour + '"/>';
+    return '<circle cx="0" cy="0" r="' + svgNumber(r) + '" fill="' + colour + '"/>';
+  }
+
+  function buildBoardSVG() {
+    var size = boardSize();
+    var gap = 1.5;
+    var mmW = (size.W / CELL) * SVG_MM_PER_CELL;
+    var mmH = (size.H / CELL) * SVG_MM_PER_CELL;
+    var out = [];
+    out.push('<?xml version="1.0" encoding="UTF-8"?>');
+    out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size.W + ' ' + size.H +
+      '" width="' + svgNumber(mmW) + 'mm" height="' + svgNumber(mmH) +
+      '" role="img" aria-label="Tabletop board ready for 3D printing">');
+    out.push('  <title>' + escapeXml(S.name || 'Tabletop board') + '</title>');
+    out.push('  <desc>Each tile is a separate shape at 20 mm per cell. Import into Tinkercad and extrude.</desc>');
+    out.push('  <g id="terrain">');
+    for (var row = 0; row < S.rows; row++) {
+      for (var col = 0; col < S.cols; col++) {
+        var key = S.tiles[row * S.cols + col];
+        if (!key || !TERRAIN[key]) continue;
+        var centre = centerOf(col, row);
+        if (S.shape === 'square') {
+          out.push('    <rect class="tile" data-terrain="' + key +
+            '" x="' + svgNumber(col * CELL + gap) + '" y="' + svgNumber(row * CELL + gap) +
+            '" width="' + svgNumber(CELL - gap * 2) + '" height="' + svgNumber(CELL - gap * 2) +
+            '" rx="2.5" fill="' + TERRAIN[key].color + '"/>');
+        } else {
+          out.push('    <polygon class="tile" data-terrain="' + key +
+            '" points="' + polygonPoints(centre.x, centre.y, hexMetrics().r - gap, 6, -90) +
+            '" fill="' + TERRAIN[key].color + '"/>');
+        }
+      }
+    }
+    out.push('  </g>');
+
+    if (S.tokens.length) {
+      out.push('  <g id="pieces">');
+      S.tokens.forEach(function (t) {
+        var transform = 'translate(' + svgNumber(t.x) + ' ' + svgNumber(t.y) + ') rotate(' +
+          svgNumber(t.rot || 0) + ') scale(' + svgNumber(t.scale || 1) + ')';
+        if (t.type === 'card') {
+          var cw = CELL * 0.36;
+          var ch = CELL * 0.5;
+          out.push('    <g class="piece card" data-piece="card" transform="' + transform + '">');
+          out.push('      <title>' + escapeXml(cardLabel(t)) + '</title>');
+          out.push('      <rect x="' + svgNumber(-cw / 2) + '" y="' + svgNumber(-ch / 2) +
+            '" width="' + svgNumber(cw) + '" height="' + svgNumber(ch) +
+            '" rx="3.5" fill="' + (t.faceDown ? '#70A3A7' : cardBorder(t)) + '"/>');
+          out.push('    </g>');
+        } else {
+          var def = pieceDef(t.kind);
+          out.push('    <g class="piece" data-piece="' + def.id + '" transform="' + transform + '">');
+          out.push('      <title>' + escapeXml(tokenLabel(t)) + '</title>');
+          out.push('      ' + pieceSvgShape(def, CELL * 0.3));
+          out.push('    </g>');
+        }
+      });
+      out.push('  </g>');
+    }
+    out.push('</svg>');
+    return out.join('\n');
+  }
+
+  function buildPiecesSVG() {
+    var cols = 6;
+    var cellW = 96;
+    var cellH = 118;
+    var top = 64;
+    var rows = Math.ceil(PIECE_DEFS.length / cols);
+    var W = cols * cellW;
+    var H = top + rows * cellH;
+    var mmW = (W / CELL) * SVG_MM_PER_CELL;
+    var mmH = (H / CELL) * SVG_MM_PER_CELL;
+    var out = [];
+    out.push('<?xml version="1.0" encoding="UTF-8"?>');
+    out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H +
+      '" width="' + svgNumber(mmW) + 'mm" height="' + svgNumber(mmH) +
+      '" role="img" aria-label="Tabletop Studio piece sheet">');
+    out.push('  <title>Tabletop Studio piece sheet</title>');
+    out.push('  <text x="16" y="28" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#1a1208">Tabletop Studio pieces</text>');
+    out.push('  <text x="16" y="46" font-family="Inter, sans-serif" font-size="11" fill="#4e4a42">Extrude each shape. One board square is 20 mm.</text>');
+    PIECE_DEFS.forEach(function (def, i) {
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      var cx = col * cellW + cellW / 2;
+      var cy = top + row * cellH + 32;
+      out.push('  <g class="piece" data-piece="' + def.id + '" transform="translate(' + cx + ' ' + cy + ')">');
+      out.push('    <title>' + escapeXml(def.label) + '</title>');
+      out.push('    ' + pieceSvgShape(def, 24));
+      out.push('  </g>');
+      out.push('  <text x="' + cx + '" y="' + (cy + 44) +
+        '" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#1a1208">' +
+        escapeXml(def.label) + '</text>');
+    });
+    out.push('</svg>');
+    return out.join('\n');
+  }
+
+  function downloadSvg(text, filename) {
+    var blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+    downloadBlob(blob, filename);
+  }
+
+  function exportBoardSVG() {
+    downloadSvg(buildBoardSVG(), safeName() + '-board.svg');
+    toast('Board SVG saved. Open it in Tinkercad and extrude the tiles.');
+    announce('Board SVG saved for 3D printing.');
+  }
+
+  function exportPiecesSVG() {
+    downloadSvg(buildPiecesSVG(), safeName() + '-pieces.svg');
+    toast('Piece sheet SVG saved. Extrude each piece.');
+    announce('Piece sheet SVG saved for 3D printing.');
   }
 
   /* ------------------------------------------------------------------ */
@@ -2981,10 +3169,15 @@
     byId('ttTurnUp').addEventListener('click', function () { changeTurn(1); });
     if (rulesInput) rulesInput.addEventListener('input', onRulesInput);
     byId('ttExportSheet').addEventListener('click', exportSheetPNG);
+    byId('ttExportSvg').addEventListener('click', exportBoardSVG);
+    byId('ttExportPiecesSvg').addEventListener('click', exportPiecesSVG);
     if (turnChip) turnChip.addEventListener('click', function () {
       if (window.matchMedia('(max-width: 980px)').matches) openSidebar();
       var sec = byId('ttRules').closest('details');
-      if (sec) sec.open = true;
+      if (sec) {
+        sec.open = true;
+        try { sec.scrollIntoView({ block: 'nearest' }); } catch (err) { /* scroll is optional */ }
+      }
     });
 
     if (libList) {
