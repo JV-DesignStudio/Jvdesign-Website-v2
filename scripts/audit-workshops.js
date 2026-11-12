@@ -58,8 +58,8 @@ function detect(html, entry) {
   const canonical = /<link[^>]+rel=["']canonical["']/i.test(html);
   const mobile = /<meta[^>]+name=["']viewport["']/i.test(html);
   const steps = /cw-step|data-step=|class=["'][^"']*\bstep\b|workshop-engine\.js|<ol\b|step-by-step|lesson-step|workshop-step/i.test(html);
-  const preview = /workshop-canvas-engine\.js|<canvas\b|<iframe\b|gameFrame|workshop-canvas\.html|data-preview|preview-canvas|builder-(extras|templates)\.js|studio-liveedit\.js|unity-studio\.js/i.test(html);
-  const share = /workshop-canvas-engine\.js|downloadGame|downloadProject|projectCode|CW\.projectCode|data-on=["']CW\.download/i.test(html);
+  const preview = /workshop-canvas-engine\.js|engine-feel\.js|<canvas\b|<iframe\b|gameFrame|workshop-canvas\.html|data-preview|preview-canvas|builder-(extras|templates)\.js|studio-liveedit\.js|unity-studio\.js/i.test(html);
+  const share = /workshop-canvas-engine\.js|engine-feel\.js|downloadGame|downloadProject|projectCode|CW\.projectCode|data-on=["']CW\.download/i.test(html);
   const outcome = /WS-OUTCOME|ws-outcome/i.test(html);
   const stuck = /WS-STUCK|ws-stuck/i.test(html);
   const next = /WS-NEXT|next-route/i.test(html);
