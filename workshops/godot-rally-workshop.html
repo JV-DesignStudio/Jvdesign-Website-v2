@@ -342,7 +342,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
 </script>
 <script defer src="../player-profile.js"></script>
 </head>
-<body>
+<body data-steps-key="godot-rally">
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -498,80 +498,191 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
     <div class="rally-note"><b>Project setup tip:</b> use metres in Blender and in Godot. A rally car is about 1.8 m wide and 4 m long. If your first import looks like a toy, check the scale before you touch the physics.</div>
   </section>
 
-  <div class="rally-steps">
+<!-- WS-STUCK:START -->
+<section class="ws-stuck" aria-labelledby="ws-stuck-title" data-workshop-stuck="godot-rally">
+  <div class="ws-stuck-inner">
+    <p class="ws-stuck-kicker"><img src="/assets/mascots/echo-badge.webp" alt="" width="22" height="22" loading="lazy"> Echo's recovery check</p>
+    <h2 class="ws-stuck-title" id="ws-stuck-title">Stuck? Try this</h2>
+    <p class="ws-stuck-intro">These are the three things that most often stop a first 3D rally game. Check the symptom first, then try the fix.</p>
+    <details class="ws-stuck-item">
+      <summary>The car falls through the stage or sinks into it</summary>
+      <p><strong>What you'll see:</strong> the car drops out of the world, or the wheels disappear under the road.</p>
+      <p><strong>Fix:</strong> check that the stage has a StaticBody3D with a collision shape, and that the car's collision box is above the wheels, not inside them. If the whole world looks tiny, your Blender export scale is wrong. Re-export with Apply Modifiers and check the scale in Godot.</p>
+    </details>
+    <details class="ws-stuck-item">
+      <summary>The car spins on gravel and will not straighten up</summary>
+      <p><strong>What you'll see:</strong> every small steering input turns into a spin, and the rear steps out on a straight.</p>
+      <p><strong>Fix:</strong> raise the rear wheel friction slip, reduce the steering angle, or lower the engine force. Also check that the rear wheels are the only traction wheels. If all four wheels drive and steer, the car becomes nervous.</p>
+    </details>
+    <details class="ws-stuck-item">
+      <summary>The camera clips into hills or jitters</summary>
+      <p><strong>What you'll see:</strong> the camera jumps inside a bank, or shakes even when the car is still.</p>
+      <p><strong>Fix:</strong> give the SpringArm3D a SphereShape3D, exclude the car from its collision, and make sure the smoothing uses delta time. If the camera jitters when parked, the shake trauma is not returning to zero, or the spring arm is colliding with the car.</p>
+    </details>
+    <p class="ws-stuck-note">Still stuck? Drop the car and camera into an empty scene with one flat plane. If it drives there, the problem is the stage. If it does not, the problem is the car setup.</p>
+  </div>
+</section>
+<!-- WS-STUCK:END -->
 
-    <article class="rstep" id="step-1">
-      <div class="rstep-top">
-        <div class="rstep-num">1</div>
-        <div>
-          <h2 class="rstep-title">Block out a stage worth driving</h2>
-          <p class="rstep-goal">A start gate, three sectors and a finish. Rough is good at this stage.</p>
-        </div>
-      </div>
-      <div class="rstep-body">
-        <p>Rally is not a race track. It is a narrow road across the ground, with blind crests, a surface that changes under the wheels, and corners you have to read before you reach them. Keep the first stage short: 60 to 90 seconds is plenty.</p>
-        <ul>
-          <li><strong>Width:</strong> about 7 m. Wide enough for mistakes, narrow enough to feel tight.</li>
-          <li><strong>Surface:</strong> tarmac for the first section, gravel in the middle, maybe mud near the finish.</li>
-          <li><strong>Corners:</strong> one fast sweeper, one hairpin and one blind crest. Do not build twenty corners on day one.</li>
-          <li><strong>Markers:</strong> put a visible gate at the start, a board at each sector and a big finish banner.</li>
-        </ul>
-        <p><strong>Fast way to start:</strong> block the road out in the browser with the <a href="world-builder-3d.html" style="color:var(--rally-teal);font-weight:700">3D World Builder</a>, export the OBJ, then import it into Godot. Nothing to install and you can see the shape before you commit.</p>
-        <p><strong>Godot way:</strong> add a <span class="rinline">CSGBox3D</span> or a <span class="rinline">GridMap</span> for the road, and a large <span class="rinline">StaticBody3D</span> with a <span class="rinline">ConcavePolygonShape3D</span> for the ground. Give the gravel sections a group name so the car can find them later.</p>
-        <div class="rcode"><pre><code># Name the meshes so the car can read the surface.
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">Your Progress</span>
+    <span class="progress-count" id="progressCount">0 / 6 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<div class="workshop" id="workshopArea">
+
+<!-- -- STEP 1 -- -->
+<div class="step-card open active-step" id="step-1" data-step="1">
+<div class="step-header" data-on="toggleStep">
+  <div class="step-num sn-sky">1</div>
+  <div class="step-title-wrap">
+    <div class="step-emoji">🏁</div>
+    <div class="step-title">Block out a stage worth driving</div>
+    <div class="step-blurb">A start gate, three sectors and a finish. Rough is good at this stage.</div>
+  </div>
+  <span class="step-status ss-active">Active</span>
+</div>
+<div class="step-body">
+  <div class="big-goal">
+    <div class="big-goal-icon">🎯</div>
+    <div class="big-goal-text">
+      <strong>Goal: A driveable stage layout</strong>
+      <p>Rally is not a race track. It is a narrow road across the ground, with blind crests, a surface that changes under the wheels, and corners you have to read before you reach them.</p>
+    </div>
+  </div>
+
+  <p>Keep the first stage short: 60 to 90 seconds is plenty.</p>
+  <ul>
+    <li><strong>Width:</strong> about 7 m. Wide enough for mistakes, narrow enough to feel tight.</li>
+    <li><strong>Surface:</strong> tarmac for the first section, gravel in the middle, maybe mud near the finish.</li>
+    <li><strong>Corners:</strong> one fast sweeper, one hairpin and one blind crest. Do not build twenty corners on day one.</li>
+    <li><strong>Markers:</strong> put a visible gate at the start, a board at each sector and a big finish banner.</li>
+  </ul>
+  <p><strong>Fast way to start:</strong> block the road out in the browser with the <a href="world-builder-3d.html" style="color:var(--rally-teal);font-weight:700">3D World Builder</a>, export the OBJ, then import it into Godot. Nothing to install and you can see the shape before you commit.</p>
+  <p><strong>Godot way:</strong> add a <span class="rinline">CSGBox3D</span> or a <span class="rinline">GridMap</span> for the road, and a large <span class="rinline">StaticBody3D</span> with a <span class="rinline">ConcavePolygonShape3D</span> for the ground. Give the gravel sections a group name so the car can find them later.</p>
+  <div class="rcode"><pre><code># Name the meshes so the car can read the surface.
 # Select the gravel road mesh, then in the Node tab:
 # Groups -> add "gravel"
 # Do the same for "mud" and leave tarmac ungrouped.</code></pre></div>
-        <div class="rally-note win"><b>Pip's play test:</b> walk the stage at running speed before you drive it. If you cannot see the next corner, the camera will not save it. Move a rock, widen one bend, or cut the crest.</div>
-      </div>
-    </article>
+  <div class="rally-note win"><b>Pip's play test:</b> walk the stage at running speed before you drive it. If you cannot see the next corner, the camera will not save it. Move a rock, widen one bend, or cut the crest.</div>
 
-    <article class="rstep" id="step-2">
-      <div class="rstep-top">
-        <div class="rstep-num">2</div>
-        <div>
-          <h2 class="rstep-title">Model a low-poly rally car in Blender</h2>
-          <p class="rstep-goal">One body, four wheels, under about 1,500 triangles.</p>
-        </div>
-      </div>
-      <div class="rstep-body">
-        <p>Low-poly does not mean lazy. It means every shape has a job. Build the body from a cube, then add a cabin, wheel arches, lights and a small spoiler. Keep the wheels as separate objects so Godot can spin and steer them.</p>
-        <ol>
-          <li>Delete the default cube and add a new cube. Scale it to about <span class="rinline">1.8 x 0.9 x 4.0</span> (X, Y, Z in Blender).</li>
-          <li>Add a smaller cube for the cabin. Move it up and slightly back, then join it to the body.</li>
-          <li>Make one wheel from a cylinder with 12 sides. Rotate it so it rolls around the X axis. Duplicate it four times.</li>
-          <li>Name the body <span class="rinline">CarBody</span> and the wheels <span class="rinline">Wheel_FL</span>, <span class="rinline">Wheel_FR</span>, <span class="rinline">Wheel_RL</span> and <span class="rinline">Wheel_RR</span>.</li>
-          <li>Put the origin of every wheel at the centre of that wheel. Put the car origin at the middle of the chassis, at ground level.</li>
-          <li>Apply rotation and scale to everything with <span class="rinline">Ctrl+A</span>.</li>
-        </ol>
-        <div class="rally-note warn"><b>Which way is forward?</b> Point the nose of the car along Blender <strong>-Y</strong>. The glTF exporter turns that into Godot <strong>+Z</strong>, which is VehicleBody3D's forward. If the car drives backwards later, rotate the model 180 degrees before you touch the code.</div>
-        <p>Add a little colour with materials. Flat colours suit low-poly. Give the body a bright rally colour, the glass a dark blue, and the wheels a dark grey.</p>
-        <div class="rcode"><pre><code># Export
+  <div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ==">
+    <div class="quiz-header">
+      <div class="quiz-icon">❓</div>
+      <div class="quiz-title">Knowledge Check</div>
+      <div class="quiz-xp-badge">+15 XP</div>
+    </div>
+    <div class="quiz-question">What scale system should you use so the car looks right after import?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" data-idx="0" data-on="selectQuizOpt"><span class="opt-letter">A</span><span>Centimetres in both</span></div>
+      <div class="quiz-opt" data-idx="1" data-on="selectQuizOpt"><span class="opt-letter">B</span><span>Metres in both Blender and Godot</span></div>
+      <div class="quiz-opt" data-idx="2" data-on="selectQuizOpt"><span class="opt-letter">C</span><span>Inches in Blender, pixels in Godot</span></div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
+    <button class="quiz-next-btn" data-on="completeStep" data-on-arg="1" data-on-num data-on-plain>✅ Correct! Next Step ▶️</button>
+  </div>
+</div>
+</div>
+
+<!-- -- STEP 2 -- -->
+<div class="step-card locked" id="step-2" data-step="2">
+<div class="step-header" data-on="toggleStep">
+  <div class="step-num sn-green">2</div>
+  <div class="step-title-wrap">
+    <div class="step-emoji">🏎️</div>
+    <div class="step-title">Model a low-poly rally car in Blender</div>
+    <div class="step-blurb">One body, four wheels, under about 1,500 triangles</div>
+  </div>
+  <span class="step-status ss-todo">Locked</span>
+</div>
+<div class="step-body">
+  <div class="big-goal">
+    <div class="big-goal-icon">🎯</div>
+    <div class="big-goal-text">
+      <strong>Goal: A car model ready to export</strong>
+      <p>Low-poly does not mean lazy. It means every shape has a job.</p>
+    </div>
+  </div>
+
+  <p>Build the body from a cube, then add a cabin, wheel arches, lights and a small spoiler. Keep the wheels as separate objects so Godot can spin and steer them.</p>
+  <ol>
+    <li>Delete the default cube and add a new cube. Scale it to about <span class="rinline">1.8 x 0.9 x 4.0</span> (X, Y, Z in Blender).</li>
+    <li>Add a smaller cube for the cabin. Move it up and slightly back, then join it to the body.</li>
+    <li>Make one wheel from a cylinder with 12 sides. Rotate it so it rolls around the X axis. Duplicate it four times.</li>
+    <li>Name the body <span class="rinline">CarBody</span> and the wheels <span class="rinline">Wheel_FL</span>, <span class="rinline">Wheel_FR</span>, <span class="rinline">Wheel_RL</span> and <span class="rinline">Wheel_RR</span>.</li>
+    <li>Put the origin of every wheel at the centre of that wheel. Put the car origin at the middle of the chassis, at ground level.</li>
+    <li>Apply rotation and scale to everything with <span class="rinline">Ctrl+A</span>.</li>
+  </ol>
+  <div class="rally-note warn"><b>Which way is forward?</b> Point the nose of the car along Blender <strong>-Y</strong>. The glTF exporter turns that into Godot <strong>+Z</strong>, which is VehicleBody3D's forward. If the car drives backwards later, rotate the model 180 degrees before you touch the code.</div>
+  <p>Add a little colour with materials. Flat colours suit low-poly. Give the body a bright rally colour, the glass a dark blue, and the wheels a dark grey.</p>
+  <div class="rcode"><pre><code># Export
 File -> Export -> glTF 2.0 (.glb)
 Include: Selected Objects
 Transform: +Y Up (leave default)
 Data: Apply Modifiers
 Name it: rally-car.glb</code></pre></div>
-        <p>Save the Blender file as <span class="rinline">rally-car.blend</span> next to the export. You will come back to it when you want a second car or a livery.</p>
-        <div class="callout info" style="margin-bottom:0">
-          <span class="callout-icon">🎨</span>
-          <div><strong>Ember's tip:</strong> if you want a livery, use flat colour materials now and paint the details later in <a href="../tools/pixel-studio.html" style="color:var(--rally-teal);font-weight:700">Pixel Studio</a>. A clean silhouette reads better at rally speed than a busy texture.</div>
-        </div>
-      </div>
-    </article>
+  <p>Save the Blender file as <span class="rinline">rally-car.blend</span> next to the export. You will come back to it when you want a second car or a livery.</p>
+  <div class="callout info" style="margin-bottom:0">
+    <span class="callout-icon">🎨</span>
+    <div><strong>Ember's tip:</strong> if you want a livery, use flat colour materials now and paint the details later in <a href="../tools/pixel-studio.html" style="color:var(--rally-teal);font-weight:700">Pixel Studio</a>. A clean silhouette reads better at rally speed than a busy texture.</div>
+  </div>
 
-    <article class="rstep" id="step-3">
-      <div class="rstep-top">
-        <div class="rstep-num">3</div>
-        <div>
-          <h2 class="rstep-title">Import the car and make it drive</h2>
-          <p class="rstep-goal">A VehicleBody3D with four wheels that moves, steers and stops.</p>
-        </div>
-      </div>
-      <div class="rstep-body">
-        <p>Create a new Godot 4 project called <span class="rinline">LowPolyRally</span>. Copy <span class="rinline">rally-car.glb</span> into the project folder and let Godot import it.</p>
-        <p>Build this scene tree. The names matter, because the script looks them up.</p>
-        <div class="rcode"><pre><code>RallyStage (Node3D)              # main scene
+  <div class="quiz-gate" id="quiz-2" data-step="2" data-k="MQ==">
+    <div class="quiz-header">
+      <div class="quiz-icon">❓</div>
+      <div class="quiz-title">Knowledge Check</div>
+      <div class="quiz-xp-badge">+15 XP</div>
+    </div>
+    <div class="quiz-question">Why should a rally car model be about 1.8 m wide and 4 m long?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" data-idx="0" data-on="selectQuizOpt"><span class="opt-letter">A</span><span>Because Godot only supports those sizes</span></div>
+      <div class="quiz-opt" data-idx="1" data-on="selectQuizOpt"><span class="opt-letter">B</span><span>Real rally car proportions make physics work best at real scale</span></div>
+      <div class="quiz-opt" data-idx="2" data-on="selectQuizOpt"><span class="opt-letter">C</span><span>Because smaller models render faster</span></div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
+    <button class="quiz-next-btn" data-on="completeStep" data-on-arg="2" data-on-num data-on-plain>✅ Correct! Next Step ▶️</button>
+  </div>
+</div>
+</div>
+
+<!-- -- STEP 3 -- -->
+<div class="step-card locked" id="step-3" data-step="3">
+<div class="step-header" data-on="toggleStep">
+  <div class="step-num sn-yellow">3</div>
+  <div class="step-title-wrap">
+    <div class="step-emoji">🔧</div>
+    <div class="step-title">Import the car and make it drive</div>
+    <div class="step-blurb">A VehicleBody3D with four wheels that moves, steers and stops</div>
+  </div>
+  <span class="step-status ss-todo">Locked</span>
+</div>
+<div class="step-body">
+  <div class="big-goal">
+    <div class="big-goal-icon">🎯</div>
+    <div class="big-goal-text">
+      <strong>Goal: A driving car in Godot</strong>
+      <p>Create a new Godot 4 project called <span class="rinline">LowPolyRally</span>. Copy <span class="rinline">rally-car.glb</span> into the project folder and let Godot import it.</p>
+    </div>
+  </div>
+
+  <p>Build this scene tree. The names matter, because the script looks them up.</p>
+  <div class="rcode"><pre><code>RallyStage (Node3D)              # main scene
 ├── WorldEnvironment
 ├── DirectionalLight3D
 ├── Stage (imported mesh or CSG)
@@ -588,32 +699,32 @@ Name it: rally-car.glb</code></pre></div>
 │           └── Camera3D
 ├── HUD (CanvasLayer)
 └── StageTimer (Node)            # script: stage_timer.gd</code></pre></div>
-        <p>For each wheel, put a <span class="rinline">MeshInstance3D</span> of that wheel inside the <span class="rinline">VehicleWheel3D</span>. Set <span class="rinline">use_as_steering</span> on the two front wheels and <span class="rinline">use_as_traction</span> on the two rear wheels.</p>
-        <p>Start with these wheel values, then adjust them in step 4:</p>
-        <div class="rtable-wrap">
-          <table class="rally-table">
-            <thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
-            <tbody>
-              <tr><td>Wheel radius</td><td>0.35 m</td><td>Matches a chunky rally tyre.</td></tr>
-              <tr><td>Suspension travel</td><td>0.25 m</td><td>Enough bump for gravel, not a boat.</td></tr>
-              <tr><td>Suspension stiffness</td><td>35</td><td>Firm enough to corner.</td></tr>
-              <tr><td>Damping compression</td><td>2.5</td><td>Stops the car bouncing after a crest.</td></tr>
-              <tr><td>Damping relaxation</td><td>3.5</td><td>Lets the wheel drop back down.</td></tr>
-              <tr><td>Wheel friction slip</td><td>3.0</td><td>Grip on tarmac. Lower it for gravel.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p>Add these actions in <strong>Project &gt; Project Settings &gt; Input Map</strong>:</p>
-        <div class="rally-pills" style="margin-bottom:14px">
-          <span class="rally-pill"><span class="rinline">accelerate</span> W / Up</span>
-          <span class="rally-pill"><span class="rinline">brake</span> S / Down</span>
-          <span class="rally-pill"><span class="rinline">steer_left</span> A / Left</span>
-          <span class="rally-pill"><span class="rinline">steer_right</span> D / Right</span>
-          <span class="rally-pill"><span class="rinline">handbrake</span> Space</span>
-          <span class="rally-pill"><span class="rinline">reset</span> R</span>
-          <span class="rally-pill"><span class="rinline">camera_next</span> C</span>
-        </div>
-        <div class="rcode"><pre><code>extends VehicleBody3D
+  <p>For each wheel, put a <span class="rinline">MeshInstance3D</span> of that wheel inside the <span class="rinline">VehicleWheel3D</span>. Set <span class="rinline">use_as_steering</span> on the two front wheels and <span class="rinline">use_as_traction</span> on the two rear wheels.</p>
+  <p>Start with these wheel values, then adjust them in step 4:</p>
+  <div class="rtable-wrap">
+    <table class="rally-table">
+      <thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Wheel radius</td><td>0.35 m</td><td>Matches a chunky rally tyre.</td></tr>
+        <tr><td>Suspension travel</td><td>0.25 m</td><td>Enough bump for gravel, not a boat.</td></tr>
+        <tr><td>Suspension stiffness</td><td>35</td><td>Firm enough to corner.</td></tr>
+        <tr><td>Damping compression</td><td>2.5</td><td>Stops the car bouncing after a crest.</td></tr>
+        <tr><td>Damping relaxation</td><td>3.5</td><td>Lets the wheel drop back down.</td></tr>
+        <tr><td>Wheel friction slip</td><td>3.0</td><td>Grip on tarmac. Lower it for gravel.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Add these actions in <strong>Project &gt; Project Settings &gt; Input Map</strong>:</p>
+  <div class="rally-pills" style="margin-bottom:14px">
+    <span class="rally-pill"><span class="rinline">accelerate</span> W / Up</span>
+    <span class="rally-pill"><span class="rinline">brake</span> S / Down</span>
+    <span class="rally-pill"><span class="rinline">steer_left</span> A / Left</span>
+    <span class="rally-pill"><span class="rinline">steer_right</span> D / Right</span>
+    <span class="rally-pill"><span class="rinline">handbrake</span> Space</span>
+    <span class="rally-pill"><span class="rinline">reset</span> R</span>
+    <span class="rally-pill"><span class="rinline">camera_next</span> C</span>
+  </div>
+  <div class="rcode"><pre><code>extends VehicleBody3D
 class_name RallyCar
 # car.gd
 
@@ -699,20 +810,47 @@ func reset_to_start() -> void:
     global_transform = start_transform
     linear_velocity = Vector3.ZERO
     angular_velocity = Vector3.ZERO</code></pre></div>
-        <p>Add a <span class="rinline">RayCast3D</span> as a child of the car, pointing down, with <span class="rinline">target_position</span> about <span class="rinline">Vector3(0, -1.2, 0)</span>. Drag the CameraRig into the car's <span class="rinline">camera_rig</span> slot in the Inspector.</p>
-        <div class="rally-note warn"><b>If the car drives the wrong way:</b> flip the steering sign first. If it still fights you, the model is facing the wrong way. Fix the model, not the physics.</div>
-      </div>
-    </article>
+  <p>Add a <span class="rinline">RayCast3D</span> as a child of the car, pointing down, with <span class="rinline">target_position</span> about <span class="rinline">Vector3(0, -1.2, 0)</span>. Drag the CameraRig into the car's <span class="rinline">camera_rig</span> slot in the Inspector.</p>
+  <div class="rally-note warn"><b>If the car drives the wrong way:</b> flip the steering sign first. If it still fights you, the model is facing the wrong way. Fix the model, not the physics.</div>
 
-    <article class="rstep" id="step-4">
-      <div class="rstep-top">
-        <div class="rstep-num">4</div>
-        <div>
-          <h2 class="rstep-title">Tune the rally feel</h2>
-          <p class="rstep-goal">Grip that changes with the surface, a handbrake that rotates the car, and a reset that saves the run.</p>
-        </div>
-      </div>
-      <div class="rstep-body">
+  <div class="quiz-gate" id="quiz-3" data-step="3" data-k="Mg==">
+    <div class="quiz-header">
+      <div class="quiz-icon">❓</div>
+      <div class="quiz-title">Knowledge Check</div>
+      <div class="quiz-xp-badge">+15 XP</div>
+    </div>
+    <div class="quiz-question">What file format should you export from Blender to import into Godot?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" data-idx="0" data-on="selectQuizOpt"><span class="opt-letter">A</span><span>.blend</span></div>
+      <div class="quiz-opt" data-idx="1" data-on="selectQuizOpt"><span class="opt-letter">B</span><span>.obj</span></div>
+      <div class="quiz-opt" data-idx="2" data-on="selectQuizOpt"><span class="opt-letter">C</span><span>.glb</span></div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
+    <button class="quiz-next-btn" data-on="completeStep" data-on-arg="3" data-on-num data-on-plain>✅ Correct! Next Step ▶️</button>
+  </div>
+</div>
+</div>
+
+<!-- -- STEP 4 -- -->
+<div class="step-card locked" id="step-4" data-step="4">
+<div class="step-header" data-on="toggleStep">
+  <div class="step-num sn-pink">4</div>
+  <div class="step-title-wrap">
+    <div class="step-emoji">🎮</div>
+    <div class="step-title">Tune the rally feel</div>
+    <div class="step-blurb">Grip that changes with the surface, a handbrake that rotates the car, and a reset that saves the run</div>
+  </div>
+  <span class="step-status ss-todo">Locked</span>
+</div>
+<div class="step-body">
+  <div class="big-goal">
+    <div class="big-goal-icon">🎯</div>
+    <div class="big-goal-text">
+      <strong>Goal: A car that feels like a rally car</strong>
+      <p>A rally car should feel like it is moving on top of the road, not glued to it.</p>
+    </div>
+  </div>
         <p>A rally car should feel like it is moving on top of the road, not glued to it. Gravel has less grip than tarmac. Mud has less again. The handbrake should let the rear step out, not stop the car dead.</p>
         <h3 style="font-size:1rem;margin:0 0 6px">Grip per surface</h3>
         <div class="rtable-wrap">
@@ -745,18 +883,44 @@ func _apply_grip() -> void:
         <p>A sprint is one clean run from A to B. If you crash, press <span class="rinline">R</span> and start again. The sprint timer resets the car to its start transform, puts it back on the line and runs the countdown again. No checkpoints and no respawns halfway.</p>
         <div class="rally-note"><b>Why no checkpoints?</b> A checkpoint reset would let you skip the part you crashed on, which is not a sprint time. If you want a longer rally later, add service points that reset the car but add a penalty to the clock.</div>
         <div class="rally-note win"><b>Pip's test:</b> drive badly on purpose, roll the car, then press R. The car should be back at A, still, with the countdown running. If it keeps moving, the frozen flag is not being set.</div>
-      </div>
-    </article>
 
-    <article class="rstep" id="step-5">
-      <div class="rstep-top">
-        <div class="rstep-num">5</div>
-        <div>
-          <h2 class="rstep-title">Build the DiRT-style camera rig</h2>
-          <p class="rstep-goal">Three views, a spring that keeps the camera out of hills, corner look-ahead, speed FOV and impact shake.</p>
-        </div>
-      </div>
-      <div class="rstep-body" id="cameras">
+  <div class="quiz-gate" id="quiz-4" data-step="4" data-k="MQ==">
+    <div class="quiz-header">
+      <div class="quiz-icon">❓</div>
+      <div class="quiz-title">Knowledge Check</div>
+      <div class="quiz-xp-badge">+15 XP</div>
+    </div>
+    <div class="quiz-question">What happens when you lower a wheel's friction slip value?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" data-idx="0" data-on="selectQuizOpt"><span class="opt-letter">A</span><span>The wheel grips harder</span></div>
+      <div class="quiz-opt" data-idx="1" data-on="selectQuizOpt"><span class="opt-letter">B</span><span>The wheel slides more easily</span></div>
+      <div class="quiz-opt" data-idx="2" data-on="selectQuizOpt"><span class="opt-letter">C</span><span>The wheel spins faster</span></div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
+    <button class="quiz-next-btn" data-on="completeStep" data-on-arg="4" data-on-num data-on-plain>✅ Correct! Next Step ▶️</button>
+  </div>
+</div>
+</div>
+
+<div class="step-card locked" id="step-5" data-step="5">
+<div class="step-header" data-on="toggleStep">
+  <div class="step-num sn-blue">5</div>
+  <div class="step-title-wrap">
+    <div class="step-emoji">🎥</div>
+    <div class="step-title">Build the DiRT-style camera rig</div>
+    <div class="step-blurb">Three views, a spring that keeps the camera out of hills, corner look-ahead, speed FOV and impact shake</div>
+  </div>
+  <span class="step-status ss-todo">Locked</span>
+</div>
+<div class="step-body">
+  <div class="big-goal">
+    <div class="big-goal-icon">🎯</div>
+    <div class="big-goal-text">
+      <strong>Goal: A camera that makes the car feel fast</strong>
+      <p>The camera is the reason a rally game feels fast — it sits in the world, lags behind the car, leans into corners and shakes when you hit something.</p>
+    </div>
+  </div>
         <p>The camera is the reason a rally game feels fast. In games like DiRT Rally, the camera is not welded to the car. It sits in the world, lags behind the car, leans into corners and shakes when you hit something.</p>
 
         <h3 style="font-size:1.05rem;margin:0 0 8px">The three views</h3>
