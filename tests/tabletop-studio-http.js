@@ -515,6 +515,115 @@ function wait(ms) {
   }));
   check('pieces button opens the toolbox on mobile', drawer.open && drawer.expanded === 'true' && drawer.pieceVisible, JSON.stringify(drawer));
 
+  const devices = [
+    { label: '320 phone', width: 320, height: 568, mobile: true, touch: true, drawer: true },
+    { label: '360 phone', width: 360, height: 640, mobile: true, touch: true, drawer: true },
+    { label: '412 Android', width: 412, height: 915, mobile: true, touch: true, drawer: true },
+    { label: '768 tablet', width: 768, height: 1024, mobile: true, touch: true, drawer: true },
+    { label: '1024 Chromebook', width: 1024, height: 600, mobile: false, touch: false, drawer: false },
+    { label: '1366 Chromebook', width: 1366, height: 768, mobile: false, touch: false, drawer: false }
+  ];
+  for (const d of devices) {
+    await page.setViewport({ width: d.width, height: d.height, isMobile: d.mobile, hasTouch: d.touch });
+    await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await page.waitForSelector('#ttTerrain .tt-swatch', { timeout: 10000 });
+    await wait(200);
+    const m = await page.evaluate(() => {
+      const stage = document.getElementById('ttStage');
+      const canvas = document.getElementById('ttBoard');
+      const zoom = document.getElementById('ttZoomIn').getBoundingClientRect();
+      const drawer = document.getElementById('ttSidebarOpen');
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        stageScroll: stage.scrollWidth,
+        stageClient: stage.clientWidth,
+        canvasWidth: canvas.clientWidth,
+        zoomW: Math.round(zoom.width),
+        zoomH: Math.round(zoom.height),
+        drawerShown: getComputedStyle(drawer).display !== 'none'
+      };
+    });
+    check('no horizontal overflow at ' + d.label, m.scrollWidth <= m.clientWidth + 2, m.scrollWidth + '/' + m.clientWidth);
+    check('board fits ' + d.label, m.canvasWidth <= m.stageClient + 1 && m.stageScroll <= m.stageClient + 1, JSON.stringify(m));
+    check('zoom target is touch sized at ' + d.label, m.zoomW >= 40 && m.zoomH >= 40, m.zoomW + 'x' + m.zoomH);
+    check('toolbox mode correct at ' + d.label, m.drawerShown === d.drawer, String(m.drawerShown));
+    if (d.drawer) {
+      await page.click('#ttSidebarOpen');
+      await wait(300);
+      const open = await page.evaluate(() => ({
+        open: document.getElementById('ttSidebar').classList.contains('open'),
+        expanded: document.getElementById('ttSidebarOpen').getAttribute('aria-expanded')
+      }));
+      check('toolbox drawer opens at ' + d.label, open.open && open.expanded === 'true', JSON.stringify(open));
+      await page.click('#ttSidebarClose');
+      await wait(200);
+    }
+  }
+
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await page.setViewport({ width: 1024, height: 600 });
+  await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await page.waitForSelector('#ttQuickRoll', { timeout: 10000 });
+  await page.click('#ttQuickRoll');
+  await wait(500);
+  const reduced = await page.evaluate(() => ({
+    overlay: !!document.querySelector('.tt-roll-overlay'),
+    result: document.getElementById('ttDiceResult').textContent
+  }));
+  check('reduced motion skips the big roll animation', !reduced.overlay && /You rolled \d+/.test(reduced.result), JSON.stringify(reduced));
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await page.waitForSelector('#ttTerrain .tt-swatch', { timeout: 10000 });
+  await wait(250);
+  await page.click('#ttSidebarOpen');
+  await wait(300);
+  await page.click('.tt-starters [data-template="dungeon"]');
+  await wait(400);
+  await page.click('[data-terrain="lava"]');
+  await page.click('#ttSidebarClose');
+  await wait(300);
+  const touchRect = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height, scrollY: window.scrollY };
+  });
+  const beforeTouch = await page.evaluate(() => ({
+    canvas: document.getElementById('ttBoard').toDataURL().length,
+    scrollY: window.scrollY
+  }));
+  const cdp = await page.target().createCDPSession();
+  const ty = touchRect.y + touchRect.h * 0.5;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchRect.x + touchRect.w * 0.25, y: ty, id: 0 }] });
+  for (let i = 1; i <= 6; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: touchRect.x + touchRect.w * (0.25 + i * 0.06), y: ty, id: 0 }] });
+    await wait(35);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(250);
+  const afterTouch = await page.evaluate(() => ({
+    canvas: document.getElementById('ttBoard').toDataURL().length,
+    scrollY: window.scrollY
+  }));
+  check('touch painting changes the board without scrolling the page', afterTouch.canvas !== beforeTouch.canvas && afterTouch.scrollY === beforeTouch.scrollY, JSON.stringify({ beforeTouch, afterTouch }));
+
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchRect.x + touchRect.w * 0.4, y: ty, id: 0 }, { x: touchRect.x + touchRect.w * 0.6, y: ty, id: 1 }] });
+  for (let i = 1; i <= 8; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: touchRect.x + touchRect.w * (0.4 - i * 0.02), y: ty, id: 0 }, { x: touchRect.x + touchRect.w * (0.6 + i * 0.02), y: ty, id: 1 }] });
+    await wait(35);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(250);
+  const pinch = await page.evaluate(() => ({
+    width: document.getElementById('ttScale').style.width,
+    doc: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth
+  }));
+  check('two-finger pinch zooms without page overflow', pinch.width !== '100%' && pinch.doc <= pinch.client + 2, JSON.stringify(pinch));
+  await page.click('#ttZoomFit');
+  await wait(150);
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
 
   await browser.close();

@@ -6,6 +6,21 @@
 
 const POSTS = [
     {
+        id: 535,
+        date: '12 November 2026',
+        tag: 'tools',
+        emoji: '🎲',
+        title: 'Tabletop Studio: paint a board, add characters and play',
+        excerpt: 'A new browser studio lets you paint a square or hex board, place characters and cards, roll dice, then print or 3D print your game.',
+        image: '/assets/devlog/535-tools-tabletop-studio.webp',
+        links: [
+            { label: 'Open Tabletop Studio', href: '/tools/tabletop-studio.html' },
+            { label: 'Make a 3D piece in World Builder', href: '/workshops/world-builder-3d.html' }
+        ],
+        content: 'Tabletop Studio is a new home for the games you invent on paper. Paint a board, add characters, cards and counters, then play it right there in the browser. Everything saves on your device as you go, so you can stop and come back later.\n\nStart with a one tap board: a meadow with grass and trees, a dungeon with stone and lava, an island with water and sand, or a surprise. Then paint your own tiles with friendly symbols, or fill a whole area at once. The board can be square or hex, and you can zoom in to place small pieces exactly where you want them.\n\nThe characters came to play too. Stardust, Lumo, Ember, Pip, Echo and Barnaby can stand on the board as pieces, and a castle, a counter and a star are ready to join them. You can draw your own cards, invent new ones with a name and a rule, and keep a deck beside the board. Dice cover d4 to d20, and every roll shows a big result and lands in a short roll history.\n\nWhen you have made something, Save keeps the board and My Stuff collects it with your other work. You can import a board file, undo and redo your moves, print a play sheet for the table, or export the whole board as JSON. The Make it real panel saves an SVG of the board or a sheet of every piece, sized at 20 mm per cell. Open it in Tinkercad, extrude the shapes and you can 3D print your game. World Builder 3D is linked for anyone who wants to design a custom piece.\n\nIt all runs in a browser on a school computer, with nothing to install and no account.'
+    },
+
+    {
         id: 530,
         date: '11 November 2026',
         tag: 'tools',
