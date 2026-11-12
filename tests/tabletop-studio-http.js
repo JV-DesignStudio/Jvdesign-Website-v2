@@ -71,6 +71,7 @@ function wait(ms) {
   await page.evaluate(() => {
     try {
       localStorage.removeItem('jvds-tabletop-v1');
+      localStorage.removeItem('jvds-tabletop-v2');
       localStorage.setItem('jvds-cookie-consent', 'declined');
     } catch (err) {}
   });
@@ -90,12 +91,17 @@ function wait(ms) {
     dice: document.querySelectorAll('#ttDiceTypes .tt-die-chip').length,
     modes: document.querySelectorAll('.tt-mode-btn').length,
     templates: document.querySelectorAll('#ttEmpty [data-template]').length,
+    pieceImgs: document.querySelectorAll('#ttPieces img').length,
+    libraryRows: document.querySelectorAll('#ttLib .tt-lib-row').length,
+    zoom: !!document.getElementById('ttZoomIn'),
+    sheet: !!document.getElementById('ttExportSheet'),
+    cardMaker: !!document.getElementById('ttCardAdd'),
     print: !!document.getElementById('ttPrint'),
     loadFile: !!document.getElementById('ttLoadFile'),
     emptyVisible: !document.getElementById('ttEmpty').hidden,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
-    cleanText: !/[âÃï�]/.test(document.body.innerText)
+    cleanText: !/[ǽǟ�]/.test(document.body.innerText)
   }));
 
   check('title loads', /Tabletop Studio/.test(initial.title), initial.title);
@@ -104,11 +110,16 @@ function wait(ms) {
   check('board canvas exists', initial.canvas);
   check('token layer exists', initial.tokensLayer);
   check('terrain swatches present (9 + erase)', initial.swatches === 10, String(initial.swatches));
-  check('player and prop pieces present', initial.pieces === 13, String(initial.pieces));
+  check('characters, players and props present', initial.pieces === 18, String(initial.pieces));
   check('paint and fill tools present', initial.tools === 2, String(initial.tools));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
   check('four starter boards offered', initial.templates === 4, String(initial.templates));
+  check('character sprites are pieces', initial.pieceImgs === 6, String(initial.pieceImgs));
+  check('saved-board library starts with one board', initial.libraryRows === 1, String(initial.libraryRows));
+  check('zoom control present', initial.zoom);
+  check('play-sheet export present', initial.sheet);
+  check('card maker present', initial.cardMaker);
   check('print action present', initial.print);
   check('board file import present', initial.loadFile);
   check('empty state shows on a new board', initial.emptyVisible);
@@ -236,6 +247,17 @@ function wait(ms) {
   });
   check('undo restores a moved piece instead of deleting it', afterUndo === tokenBox.left, afterUndo + ' vs ' + tokenBox.left);
 
+  await page.click('#ttRedo');
+  await wait(200);
+  const afterRedo = await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token');
+    return el ? el.style.left : null;
+  });
+  check('redo puts the moved piece back', afterRedo === moved.left, afterRedo + ' vs ' + moved.left);
+
+  await page.click('#ttUndo');
+  await wait(150);
+
   await page.click('.tt-mode-btn[data-mode="play"]');
   await wait(150);
   const playPressed = await page.evaluate(() => document.querySelector('.tt-mode-btn[data-mode="play"]').getAttribute('aria-pressed'));
@@ -255,9 +277,69 @@ function wait(ms) {
   const flipped = await page.evaluate(() => document.querySelector('#ttTokens .tt-token--card').classList.contains('is-down'));
   check('tapping a card in play mode flips it', flipped);
 
+  await page.evaluate(() => {
+    const add = document.getElementById('ttCardAdd');
+    add.closest('details').open = true;
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      el.value = value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    set('ttCardName', 'Moon Beam');
+    set('ttCardText', 'Move two spaces');
+    set('ttCardIcon', '🌙');
+  });
+  await page.click('#ttCardAdd');
+  await wait(200);
+  const cardRows = await page.evaluate(() => document.querySelectorAll('#ttCardList .tt-card-row').length);
+  check('custom card appears in the deck list', cardRows === 1, String(cardRows));
+
+  await page.click('#ttDrawCard');
+  await wait(250);
+  const customCard = await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token--custom');
+    return el ? { label: el.getAttribute('aria-label'), text: el.textContent } : null;
+  });
+  check('custom card draws onto the board', !!customCard && /Moon Beam/.test(customCard.label || ''), JSON.stringify(customCard));
+
+  await page.click('[data-piece="counter"]');
+  await wait(200);
+  const counter = await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token--counter');
+    return el ? { text: el.textContent, buttons: !document.getElementById('ttValueUp').hidden } : null;
+  });
+  check('counter piece starts at 1 with value buttons', !!counter && counter.text === '1' && counter.buttons, JSON.stringify(counter));
+  await page.click('#ttValueUp');
+  await wait(150);
+  const counterValue = await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token--counter');
+    return el ? el.textContent : null;
+  });
+  check('counter raises its number', counterValue === '2', String(counterValue));
+  await page.click('[data-piece-act="remove"]');
+  await wait(150);
+
+  await page.evaluate(() => { document.getElementById('ttTurnUp').closest('details').open = true; });
+  await page.click('#ttTurnUp');
+  await wait(150);
+  const turnNow = await page.evaluate(() => document.getElementById('ttTurn').textContent);
+  check('turn counter advances', turnNow === '2', String(turnNow));
+
+  await page.click('#ttZoomIn');
+  await wait(150);
+  const zoomed = await page.evaluate(() => document.getElementById('ttScale').style.width);
+  check('zoom widens the board', zoomed === '125%', zoomed);
+  await page.click('#ttZoomFit');
+  await wait(150);
+
   await page.click('[data-sides="20"]');
   await page.click('#ttRoll');
-  await wait(1300);
+  await wait(200);
+  const overlayUp = await page.evaluate(() => !!document.querySelector('.tt-roll-overlay'));
+  check('dice roll animates across the screen', overlayUp);
+  await wait(1200);
+  const overlayGone = await page.evaluate(() => !document.querySelector('.tt-roll-overlay'));
+  check('roll animation clears itself', overlayGone);
   const rolled = await page.evaluate(() => document.getElementById('ttDiceResult').textContent);
   check('d20 roll reports a result', /You rolled \d+/.test(rolled), rolled);
   const history = await page.evaluate(() => document.querySelectorAll('#ttDiceHistory span').length);
@@ -280,7 +362,7 @@ function wait(ms) {
     const data = JSON.parse(raw);
     return { tokens: data.tokens.length, tiles: data.tiles.filter(Boolean).length, name: data.name };
   });
-  check('save writes the board to localStorage', !!saved && saved.tokens === 2, saved ? JSON.stringify(saved) : 'no save');
+  check('save writes the board to localStorage', !!saved && saved.tokens === 3, saved ? JSON.stringify(saved) : 'no save');
   check('save stores the board name', !!saved && saved.name === 'Test board', saved && saved.name);
 
   await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -291,7 +373,7 @@ function wait(ms) {
     savedLabel: document.getElementById('ttSaved').textContent,
     emptyHidden: document.getElementById('ttEmpty').hidden
   }));
-  check('saved board reloads', restored.tokens === 2, JSON.stringify(restored));
+  check('saved board reloads', restored.tokens === 3, JSON.stringify(restored));
   check('reload hides the empty state', restored.emptyHidden);
   const restoredName = await page.evaluate(() => document.getElementById('ttBoardName').value);
   check('board name reloads', restoredName === 'Test board', restoredName);
@@ -329,6 +411,32 @@ function wait(ms) {
   }));
   check('clear board removes tokens', cleared.tokens === 0, String(cleared.tokens));
   check('clear board restores the empty state', cleared.emptyVisible);
+
+  await page.evaluate(() => { document.getElementById('ttLib').closest('details').open = true; });
+  await wait(150);
+  await page.click('#ttNewBoard');
+  await wait(400);
+  const twoBoards = await page.evaluate(() => {
+    const rows = Array.from(document.querySelectorAll('#ttLib .tt-lib-row'));
+    const other = rows.find(row => !row.classList.contains('is-active'));
+    return {
+      rows: rows.length,
+      active: document.querySelector('#ttLib .tt-lib-row.is-active .tt-lib-name')?.textContent || '',
+      otherName: other ? other.querySelector('.tt-lib-name').textContent : ''
+    };
+  });
+  check('new board adds a second board to the library', twoBoards.rows === 2 && twoBoards.active === 'New board', JSON.stringify(twoBoards));
+  await page.evaluate((name) => {
+    const rows = Array.from(document.querySelectorAll('#ttLib .tt-lib-row'));
+    const target = rows.find(row => (row.querySelector('.tt-lib-name') || {}).textContent === name);
+    if (target) target.querySelector('.tt-lib-open').click();
+  }, twoBoards.otherName);
+  await wait(500);
+  const reopened = await page.evaluate(() => ({
+    name: document.getElementById('ttBoardName').value,
+    rows: document.querySelectorAll('#ttLib .tt-lib-row').length
+  }));
+  check('opening another board restores its name', reopened.name === twoBoards.otherName, JSON.stringify(reopened));
 
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });

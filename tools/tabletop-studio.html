@@ -138,6 +138,7 @@
         <button type="button" id="ttExport" class="tt-btn" title="Save a picture of the board (PNG)">📷 Picture</button>
         <button type="button" id="ttPrint" class="tt-btn tt-btn--quiet" title="Print the board">Print</button>
         <button type="button" id="ttUndo" class="tt-btn tt-btn--quiet" title="Undo (Ctrl+Z)" disabled>Undo</button>
+        <button type="button" id="ttRedo" class="tt-btn tt-btn--quiet" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
         <button type="button" id="ttClear" class="tt-btn tt-btn--danger">Clear board</button>
       </div>
     </div>
@@ -198,7 +199,7 @@
         </details>
 
         <details class="tt-sec" open>
-          <summary><span>🃏 Cards</span><span class="tt-sec-hint">52 deck</span></summary>
+          <summary><span>🃏 Cards</span><span class="tt-sec-hint">draw or make</span></summary>
           <div class="tt-sec-body">
             <div class="tt-deck">
               <div class="tt-deck-card" aria-hidden="true"><span>★</span></div>
@@ -207,6 +208,33 @@
                 <p class="tt-help" id="ttDeckLeft" style="margin-top:8px">52 cards left. Tap a card on the board to flip it.</p>
               </div>
             </div>
+
+            <details class="tt-subsec">
+              <summary>✏️ Make a card</summary>
+              <div class="tt-subsec-body">
+                <div class="tt-field">
+                  <label class="tt-label" for="ttCardName">Card name</label>
+                  <input type="text" id="ttCardName" class="tt-input" maxlength="24" placeholder="Fireball" autocomplete="off">
+                </div>
+                <div class="tt-field">
+                  <label class="tt-label" for="ttCardText">What it does</label>
+                  <input type="text" id="ttCardText" class="tt-input" maxlength="60" placeholder="Deals 3 damage" autocomplete="off">
+                </div>
+                <div class="tt-row tt-row--between">
+                  <div class="tt-field tt-field--mini">
+                    <label class="tt-label" for="ttCardIcon">Icon</label>
+                    <input type="text" id="ttCardIcon" class="tt-input tt-input--emoji" maxlength="4" value="⭐" autocomplete="off">
+                  </div>
+                  <div class="tt-field tt-field--mini">
+                    <label class="tt-label" for="ttCardColor">Colour</label>
+                    <input type="color" id="ttCardColor" class="tt-color" value="#BC4749">
+                  </div>
+                </div>
+                <button type="button" id="ttCardAdd" class="tt-btn tt-btn--secondary tt-btn--wide">Add to deck</button>
+                <p class="tt-help">Your card joins the deck. Draw one to place it on the board.</p>
+                <div class="tt-card-list" id="ttCardList" role="list" aria-label="Your cards"></div>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -229,8 +257,48 @@
         </details>
 
         <details class="tt-sec">
+          <summary><span>🎯 Play aids</span><span class="tt-sec-hint">turns and rules</span></summary>
+          <div class="tt-sec-body">
+            <div class="tt-tracker">
+              <div class="tt-tracker-item">
+                <span class="tt-label">Round</span>
+                <div class="tt-count">
+                  <button type="button" id="ttRoundDown" aria-label="Previous round">−</button>
+                  <output id="ttRound" aria-live="polite">1</output>
+                  <button type="button" id="ttRoundUp" aria-label="Next round">+</button>
+                </div>
+              </div>
+              <div class="tt-tracker-item">
+                <span class="tt-label">Turn</span>
+                <div class="tt-count">
+                  <button type="button" id="ttTurnDown" aria-label="Previous turn">−</button>
+                  <output id="ttTurn" aria-live="polite">1</output>
+                  <button type="button" id="ttTurnUp" aria-label="Next turn">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="tt-field">
+              <label class="tt-label" for="ttRules">Rules and notes</label>
+              <textarea id="ttRules" class="tt-input tt-input--area" maxlength="800" rows="5" placeholder="How to win, what each card does, anything players need to know."></textarea>
+            </div>
+            <button type="button" id="ttExportSheet" class="tt-btn tt-btn--wide tt-btn--quiet">📄 Save play sheet (PNG)</button>
+          </div>
+        </details>
+
+        <details class="tt-sec">
           <summary><span>🗺️ Board</span><span class="tt-sec-hint">size and map</span></summary>
           <div class="tt-sec-body">
+            <div class="tt-lib">
+              <div class="tt-row tt-row--between">
+                <span class="tt-label">My boards</span>
+                <span class="tt-lib-count" id="ttLibCount">1</span>
+              </div>
+              <div class="tt-lib-list" id="ttLib" role="group" aria-label="Saved boards"></div>
+              <div class="tt-lib-actions">
+                <button type="button" id="ttNewBoard" class="tt-btn tt-btn--quiet">New board</button>
+                <button type="button" id="ttDupBoard" class="tt-btn tt-btn--quiet">Duplicate</button>
+              </div>
+            </div>
             <div class="tt-field">
               <label class="tt-label" for="ttBoardName">Board name</label>
               <input type="text" id="ttBoardName" class="tt-input" maxlength="40" placeholder="My board" autocomplete="off">
@@ -290,8 +358,10 @@
       </div>
 
       <div class="tt-stage" id="ttStage" data-mode="build">
-        <canvas id="ttBoard" tabindex="0" role="application" aria-label="Game board. Use the toolbox to paint tiles. Arrow keys move a cursor, Space paints and Backspace erases." aria-describedby="ttBoardHelp"></canvas>
-        <div id="ttTokens" class="tt-tokens" role="group" aria-label="Pieces on the board"></div>
+        <div class="tt-scale" id="ttScale">
+          <canvas id="ttBoard" tabindex="0" role="application" aria-label="Game board. Use the toolbox to paint tiles. Arrow keys move a cursor, Space paints and Backspace erases." aria-describedby="ttBoardHelp"></canvas>
+          <div id="ttTokens" class="tt-tokens" role="group" aria-label="Pieces on the board"></div>
+        </div>
 
         <div class="tt-empty" id="ttEmpty">
           <div class="tt-empty-card">
@@ -329,6 +399,8 @@
           <button type="button" data-piece-act="rotate" aria-label="Rotate piece">↻ Rotate</button>
           <button type="button" data-piece-act="smaller" aria-label="Make piece smaller">−</button>
           <button type="button" data-piece-act="bigger" aria-label="Make piece bigger">+</button>
+          <button type="button" data-piece-act="value-down" id="ttValueDown" aria-label="Lower counter" hidden>−1</button>
+          <button type="button" data-piece-act="value-up" id="ttValueUp" aria-label="Raise counter" hidden>+1</button>
           <button type="button" data-piece-act="flip" id="ttFlipBtn" aria-label="Flip card">Flip</button>
           <button type="button" data-piece-act="remove" class="tt-danger-text" aria-label="Remove piece">Remove</button>
         </div>
@@ -340,6 +412,13 @@
         <button type="button" id="ttQuickCard" class="tt-btn tt-btn--secondary">🃏 Draw card</button>
         <button type="button" id="ttPiecesOpen" class="tt-btn tt-btn--quiet">🧩 Pieces</button>
         <button type="button" id="ttHelpBtn" class="tt-btn tt-btn--quiet">❓ How to play</button>
+        <button type="button" class="tt-turn-chip" id="ttTurnChip" title="Open Play aids">Round 1 · Turn 1</button>
+        <div class="tt-zoom" role="group" aria-label="Zoom">
+          <button type="button" id="ttZoomOut" class="tt-zoom-btn" aria-label="Zoom out">−</button>
+          <output id="ttZoomVal" aria-live="polite">100%</output>
+          <button type="button" id="ttZoomIn" class="tt-zoom-btn" aria-label="Zoom in">+</button>
+          <button type="button" id="ttZoomFit" class="tt-zoom-btn tt-zoom-btn--fit">Fit</button>
+        </div>
         <span class="tt-bar-hint" id="ttBarHint">Drag a piece onto the board.</span>
       </div>
 
@@ -358,9 +437,10 @@
       </div>
       <ol class="tt-help-steps">
         <li><strong>Paint.</strong> Pick a colour, then tap or drag on the board. Fill floods a whole area.</li>
-        <li><strong>Add a piece.</strong> Drag a piece from the toolbox, or tap it to drop it in the middle.</li>
-        <li><strong>Play.</strong> Switch to Play, drag pieces anywhere and tap a card to flip it.</li>
-        <li><strong>Save.</strong> It saves as you go. Print it or save a picture to keep a copy.</li>
+        <li><strong>Add a piece.</strong> Pick a character or a prop, then drag it onto the board. Tap a counter to raise or lower its number.</li>
+        <li><strong>Make cards.</strong> In Cards, write your own card, add it to the deck, then draw it. Tap a card on the board to flip it.</li>
+        <li><strong>Play.</strong> Switch to Play, drag pieces anywhere, and use Play aids to track rounds, turns and your rules.</li>
+        <li><strong>Save.</strong> It saves as you go. Keep several boards, print one, or save a picture and a play sheet.</li>
       </ol>
       <button type="button" class="tt-btn tt-btn--primary tt-btn--wide" id="ttHelpStart">Let's paint</button>
     </section>

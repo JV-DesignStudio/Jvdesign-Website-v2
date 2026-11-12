@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v59 - A2967: Tabletop Studio characters, custom
+// cards, a board library, zoom, play aids and a full-screen dice roll.
 // JVDesignStudio Service Worker v58 - A2965: refresh Tabletop Studio with undo
 // for pieces, autosave, board file import, player colours, fill and print.
 // JVDesignStudio Service Worker v57 - A2960: refresh Tabletop Studio with
@@ -50,7 +52,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v58';
+const CACHE='jvds-v59';
 const CORE=[
   '/',
   '/offline.html',
