@@ -76,7 +76,7 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
       check(vp.name+': mobile quick-grid exposes templates', shell.mobButtons >= 15, String(shell.mobButtons));
       const missing = TEMPLATES.filter(t=>!shell.wiredTypes.includes(t));
       check(vp.name+': every template is wired to quickBuild', missing.length === 0, missing.join(','));
-      check(vp.name+': mobile tab bar uses .mob-tab (swipe fix)', shell.mobToolbar === 5, String(shell.mobToolbar));
+      check(vp.name+': mobile tab bar uses .mob-tab (swipe fix)', shell.mobToolbar === 6, String(shell.mobToolbar));
       check(vp.name+': engine leaves the loading state (ready or clear error)', /ready|error|could not|failed|webgl|startup|refresh/i.test(shell.engineStatus), shell.engineStatus || '(empty)');
       check(vp.name+': export preview modal present', shell.exportModal);
       check(vp.name+': screenshot export control present', shell.photoExport);

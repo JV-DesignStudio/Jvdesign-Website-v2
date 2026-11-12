@@ -1,7 +1,8 @@
 // BuildLab A2727: a Simple / Pro mode toggle. First-time visitors start in
-// Simple mode, which hides exact coordinates, materials, lighting, outliner,
-// groups, mirror, array and advanced export while keeping colour, shape,
-// templates and basic export. The choice persists. Works on desktop and mobile.
+// Simple mode, which hides exact coordinates, materials, lighting, groups,
+// mirror, array and advanced export while keeping colour, shape, templates,
+// basic export and the Layers list (A2970). The choice persists. Works on
+// desktop and mobile.
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -60,7 +61,7 @@ async function state(page) {
       mobilePressed: mob ? mob.getAttribute('aria-pressed') : null,
       stored: (() => { try { return localStorage.getItem('buildlab_kidmode'); } catch (e) { return null; } })(),
       stats: section('Stats'),
-      outliner: section('Outliner'),
+      layers: section('Layers'),
       lighting: section('Lighting & Rendering'),
       assetLibrary: section('Asset Library'),
       groups: section('Groups'),
@@ -100,8 +101,9 @@ async function state(page) {
       check(vp.name + ': first visit starts in Simple mode', first.kid === true && first.stored === '1', 'kid=' + first.kid + ' stored=' + first.stored);
       if (!vp.m) {
         check('desktop: Simple toggle reports pressed', first.desktopPressed === 'true', String(first.desktopPressed));
-        check('desktop: advanced sections are tagged pro-only', first.stats.pro && first.outliner.pro && first.lighting.pro && first.assetLibrary.pro && first.groups.pro && first.mirror.pro && first.array.pro, JSON.stringify(first.stats) + JSON.stringify(first.array));
-        check('desktop: advanced sections are hidden in Simple', first.stats.display === 'none' && first.outliner.display === 'none' && first.lighting.display === 'none', 'stats=' + first.stats.display + ' outliner=' + first.outliner.display + ' lighting=' + first.lighting.display);
+        check('desktop: advanced sections are tagged pro-only', first.stats.pro && first.lighting.pro && first.assetLibrary.pro && first.groups.pro && first.mirror.pro && first.array.pro, JSON.stringify(first.stats) + JSON.stringify(first.array));
+        check('desktop: advanced sections are hidden in Simple', first.stats.display === 'none' && first.lighting.display === 'none', 'stats=' + first.stats.display + ' lighting=' + first.lighting.display);
+        check('desktop: Layers stays visible in Simple', first.layers.exists && !first.layers.pro && first.layers.display !== 'none', JSON.stringify(first.layers));
         check('desktop: colour stays visible', first.colour);
         check('desktop: shape stays visible', first.shape);
         check('desktop: templates stay visible', first.templates);
@@ -118,7 +120,8 @@ async function state(page) {
         });
         check('desktop: toggle switches to Pro', pro.kid === false && pro.stored === '0' && pro.pressed === 'false', JSON.stringify(pro));
         const proState = await state(page);
-        check('desktop: Pro shows the advanced sections', proState.stats.display !== 'none' && proState.outliner.display !== 'none' && proState.lighting.display !== 'none', 'stats=' + proState.stats.display + ' outliner=' + proState.outliner.display);
+        check('desktop: Pro shows the advanced sections', proState.stats.display !== 'none' && proState.lighting.display !== 'none', 'stats=' + proState.stats.display + ' lighting=' + proState.lighting.display);
+        check('desktop: Layers stays visible in Pro', proState.layers.display !== 'none', JSON.stringify(proState.layers));
         await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
         await load(page);
         const persisted = await state(page);
@@ -148,6 +151,29 @@ async function state(page) {
         });
         check('mobile: toggle returns to Simple', mobBack.kid === true && mobBack.stored === '1', JSON.stringify(mobBack));
       }
+
+      const layers = await page.evaluate(async (isMobile) => {
+        window.clearAll(true);
+        window.addBlock(0, 0.5, 0, 1, 1, 1, '#aa3355', 'box');
+        window.addBlock(0, 0.5, 0, 1, 1, 1, '#33aa55', 'wedge');
+        window.renderOutliner();
+        if (isMobile && typeof window.mobTab === 'function') window.mobTab('layers');
+        const rows = isMobile
+          ? document.querySelectorAll('#mobLayersList [data-on="mobSelectLayer"]')
+          : document.querySelectorAll('#outlinerList [data-block-id]');
+        const before = window.selectedBlock && window.selectedBlock.userData.blockId;
+        if (rows[0]) rows[0].click();
+        await new Promise(r => setTimeout(r, 120));
+        return {
+          rows: rows.length,
+          before,
+          after: window.selectedBlock && window.selectedBlock.userData.blockId,
+          mobVisible: isMobile ? !!document.querySelector('#mob-panel-layers') && getComputedStyle(document.querySelector('#mob-panel-layers')).display !== 'none' : true
+        };
+      }, vp.m);
+      check(vp.name + ': Layers lists every block in Simple mode', layers.rows === 2, String(layers.rows));
+      check(vp.name + ': Layers picks a block by clicking its row', !!layers.after && layers.after !== layers.before, JSON.stringify(layers));
+      if (vp.m) check('mobile: Layers tab opens its panel', layers.mobVisible, JSON.stringify({ mobVisible: layers.mobVisible }));
 
       check(vp.name + ': no horizontal overflow', first.overflow <= 2, String(first.overflow));
       check(vp.name + ': zero runtime errors', errors.length === 0, errors.slice(0, 2).join(' | '));

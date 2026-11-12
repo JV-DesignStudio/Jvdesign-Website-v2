@@ -98,6 +98,32 @@ async function ready(page){
       check(vp.name+' pyramid: square base spans width=2 and height=2', Math.abs(built.pyramid.sx-2)<0.001 && Math.abs(built.pyramid.sy-2)<0.001, JSON.stringify({sx:built.pyramid.sx,sy:built.pyramid.sy}));
       check(vp.name+' pyramid: apex geometry has 18 vertices (6 tris)', built.pyramid.verts===18, String(built.pyramid.verts));
 
+      // -- wedge is a closed solid with every face pointing outward (A2970) --
+      const wedge = await page.evaluate(()=>{
+        window.clearAll(true);
+        window.setShape('wedge');
+        window.addBlock(0, 1, 0, 2, 2, 2, '#3366cc', 'wedge');
+        const m = window.blocks[window.blocks.length-1];
+        const pos = m.geometry.attributes.position;
+        let inward = 0, degenerate = 0;
+        for (let i=0; i<pos.count; i+=3) {
+          const a = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+          const b = [pos.getX(i+1), pos.getY(i+1), pos.getZ(i+1)];
+          const c = [pos.getX(i+2), pos.getY(i+2), pos.getZ(i+2)];
+          const u = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+          const v = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
+          const n = [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+          const len = Math.hypot(n[0], n[1], n[2]);
+          const centroid = [(a[0]+b[0]+c[0])/3, (a[1]+b[1]+c[1])/3, (a[2]+b[2]+c[2])/3];
+          const dot = n[0]*centroid[0] + n[1]*centroid[1] + n[2]*centroid[2];
+          if (len < 1e-6) degenerate++;
+          else if (dot < -1e-9) inward++;
+        }
+        return { verts: pos.count, tris: pos.count/3, inward, degenerate };
+      });
+      check(vp.name+' wedge: eight triangles close the slope and sides', wedge.verts===24 && wedge.tris===8, JSON.stringify(wedge));
+      check(vp.name+' wedge: every face points outward (clickable from outside)', wedge.inward===0 && wedge.degenerate===0, JSON.stringify(wedge));
+
       // -- per-part material controls write to the part AND the export --
       const mat = await page.evaluate(()=>{
         window.clearAll(true);
