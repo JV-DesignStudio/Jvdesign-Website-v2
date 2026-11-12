@@ -55,7 +55,7 @@
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
 // v61: ship the rebuilt Pip's Cozy Cove arcade page (new HTML/CSS with the canvas game).
-const CACHE='jvds-v61';
+const CACHE='jvds-v62';
 const CORE=[
   '/',
   '/offline.html',
@@ -117,6 +117,17 @@ const CORE=[
   '/style-tool-tabletop-studio.css',
   '/assets/js/inline/tabletop-studio-1.js',
   '/assets/css/studio-shell.css?v=1',
+  // A2320: shared Studio Core (drawer, storage guard, share, templates).
+  '/assets/css/studio-core.css',
+  '/assets/js/studio-core.js',
+  '/assets/js/studio/studio-storage.js',
+  '/assets/js/studio/studio-bundle.js',
+  '/assets/js/studio/studio-preview.js',
+  '/assets/js/studio/studio-inspector.js',
+  '/assets/js/studio/studio-templates.js',
+  '/assets/preview-host.html',
+  '/assets/js/studio/preview-host.js',
+  '/content/studio-templates.json',
   '/assets/fonts/inter-400-normal-latin-6ab57b19.woff2',
   '/assets/fonts/fredoka-400-normal-latin-a4a694ae.woff2',
   '/assets/mascots/echo-badge.webp',
@@ -243,6 +254,17 @@ const MAKER_DEPS=[
   '/assets/css/tokens.css',
   '/assets/css/immersive-tool.css',
   '/assets/css/studio-shell.css?v=1',
+  // A2320: shared Studio Core (drawer, storage guard, share, templates).
+  '/assets/css/studio-core.css',
+  '/assets/js/studio-core.js',
+  '/assets/js/studio/studio-storage.js',
+  '/assets/js/studio/studio-bundle.js',
+  '/assets/js/studio/studio-preview.js',
+  '/assets/js/studio/studio-inspector.js',
+  '/assets/js/studio/studio-templates.js',
+  '/assets/preview-host.html',
+  '/assets/js/studio/preview-host.js',
+  '/content/studio-templates.json',
   '/assets/fonts/inter-400-normal-latin-6ab57b19.woff2',
   '/assets/fonts/fredoka-400-normal-latin-a4a694ae.woff2',
   '/arcade.webmanifest',

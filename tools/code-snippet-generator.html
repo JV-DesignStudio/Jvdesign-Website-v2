@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-VcfROjTBKJg+BfQl0GDrhMC0rXWY1L1MVAje3k9r5bk=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-Z+W+fQIXp/ZBrQgW4+irlyZ0bWUQW78iLiJiKS1Aazg=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -1324,6 +1324,7 @@ function cardHtml(s){
           <span class="lang-badge">${s.lang.toUpperCase()}</span>
           <button class="mini-btn save-img-btn" type="button" data-img-id="${s.id}" title="Save this snippet as an image">Image</button>
           <button class="mini-btn board-btn" type="button" data-board-id="${s.id}" title="Send this snippet to your Game Planner">Board</button>
+          ${s.lang==='js' ? '<button class="mini-btn preview-btn" type="button" data-on="previewCode" data-on-args="this|s:'+encodeURIComponent(s.id)+'" title="Run this snippet in a safe sandbox">Preview</button>' : ''}
           <button class="copy-btn" data-on="copyCode" data-on-args="this|s:${encodeURIComponent(s.id)}">Copy</button>
         </div>
       </div>
@@ -1395,6 +1396,13 @@ function copyCode(btn,id){
     const s=snippetById(id);
     if(s) postActivity('copy',s);
   }).catch(()=>{});
+}
+function previewCode(btn,id){
+  const s=snippetById(id);
+  const code=adaptedCode[id]!=null?adaptedCode[id]:'';
+  if(!s||!code){ showToast('Nothing to preview yet'); return; }
+  if(!window.JVDSStudio||!window.JVDSStudio.preview){ showToast('Preview needs the Studio tools to load'); return; }
+  window.JVDSStudio.preview.open(code,{type:'js'});
 }
 function copyAll(){
   const filtered=filteredSnippets();
@@ -1929,6 +1937,8 @@ try{
 </div>
 
 <!-- BUILD:footer-tools -->
+<link rel="stylesheet" href="/assets/css/studio-core.css">
+<script defer src="/assets/js/studio-core.js"></script>
 <footer class="jvds-tools-footer">
     <a href="/">🏠 Home</a>
     <a href="/workshop">🔧 Workshop</a>
