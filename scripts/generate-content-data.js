@@ -86,6 +86,11 @@ function generateWorkshops() {
     // Skip non-workshop pages
     if (slug === 'my-progress') continue;
 
+    // A2962: the Godot Lab launcher and its embedded editor are reached from the
+    // Godot hub, not the catalogue. They are noindex, and both are index.html,
+    // so including them collides on the id "index".
+    if (rel.startsWith('godot-lab/')) continue;
+
     // A1540: engine hub pages (workshops/engine-*.html) are navigation, not
     // workshops, so they must not be counted or listed in the catalogue.
       if (/<meta\s+name=["']jvds-kind["']\s+content=["'](engine-hub|builder-shell)["']/i.test(html)) continue;

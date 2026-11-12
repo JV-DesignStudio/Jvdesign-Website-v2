@@ -14,6 +14,8 @@
  *   node scripts/generate-social-card.js --check      # report only
  *   node scripts/generate-social-card.js --all
  *   node scripts/generate-social-card.js --force      # overwrite
+ *   node scripts/generate-social-card.js --id 530 --sizes all
+ *       # square 1080, X/OG 1200x630 and portrait 1080x1350
  */
 
 const fs = require('fs');
@@ -51,6 +53,10 @@ function parseArgs() {
     if (a[i] === '--check') o.check = true;
     if (a[i] === '--all') o.all = true;
     if (a[i] === '--force') o.force = true;
+    if (a[i] === '--sizes') {
+      const value = String(a[i + 1] || 'square');
+      o.sizes = value === 'all' ? ['square', 'wide', 'portrait'] : value.split(',').map((size) => size.trim()).filter(Boolean);
+    }
   }
   if (!o.latest && !o.id && !o.all) o.latest = 5;
   return o;
@@ -97,6 +103,21 @@ function photoBox(post) {
   if (!post.image) return null;
   const abs = path.join(ROOT, post.image.replace(/^\//, ''));
   if (!fs.existsSync(abs)) return null;
+  return { x: 120, y: 150, w: 840, h: 430, r: 22, file: abs };
+}
+
+const SIZES = {
+  square: { key: 'square', w: 1080, h: 1080, suffix: '' },
+  wide: { key: 'wide', w: 1200, h: 630, suffix: '-1200x630' },
+  portrait: { key: 'portrait', w: 1080, h: 1350, suffix: '-1080x1350' },
+};
+
+function photoBoxFor(post, sizeKey) {
+  if (!post.image) return null;
+  const abs = path.join(ROOT, post.image.replace(/^\//, ''));
+  if (!fs.existsSync(abs)) return null;
+  if (sizeKey === 'wide') return { x: 56, y: 150, w: 510, h: 400, r: 18, file: abs };
+  if (sizeKey === 'portrait') return { x: 120, y: 170, w: 840, h: 480, r: 22, file: abs };
   return { x: 120, y: 150, w: 840, h: 430, r: 22, file: abs };
 }
 
@@ -210,14 +231,105 @@ function buildSvg(post) {
 </svg>`;
 }
 
-async function generateCard(post, outPath) {
-  const svg = buildSvg(post);
+function buildWideSvg(post) {
+  const W = 1200, H = 630, pad = 56;
+  const accent = TAG_ACCENT[post.tag] || TAG_ACCENT.site;
+  const label = TAG_LABEL[post.tag] || post.tag.toUpperCase();
+  const iso = shortDate(post.date);
+  const photo = photoBoxFor(post, 'wide');
+  const colX = 620;
+  const titleLines = wrapText(post.title, 27).slice(0, 4);
+  const excerptLines = wrapText(post.excerpt, 50).slice(0, 3);
+  const titleSize = 36, titleLineH = 42;
+  const titleY = 205;
+  const excerptY = titleY + titleLines.length * titleLineH + 24;
+  const url = `jvdesignstudio.co.uk/devlog#post-${post.id}`;
+  const titleTspans = titleLines.map((l, i) => `<tspan x="${colX}" dy="${i === 0 ? 0 : titleLineH}">${escXml(l)}</tspan>`).join('');
+  const excerptTspans = excerptLines.map((l, i) => `<tspan x="${colX}" dy="${i === 0 ? 0 : 28}">${escXml(l)}</tspan>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>${escXml(post.emoji + ' ' + post.title)}</title>
+  <defs>
+    <radialGradient id="glow" cx="24%" cy="24%" r="70%">
+      <stop offset="0%" stop-color="${accent}" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="#1a1612"/>
+  <rect width="${W}" height="${H}" fill="url(#glow)"/>
+  <rect x="0" y="0" width="${W}" height="6" fill="${accent}"/>
+  <text x="${pad}" y="64" font-family="'Fredoka','Segoe UI',sans-serif" font-size="22" font-weight="800" fill="#F0EAD6">JVDesignStudio</text>
+  <text x="${W - pad}" y="64" font-family="'Inter',sans-serif" font-size="13" font-weight="700" fill="#F0EAD6" opacity="0.55" text-anchor="end">${escXml(iso)} - ${escXml(label)}</text>
+  <g transform="translate(${pad},96)">
+    <rect width="150" height="30" rx="15" fill="${accent}" opacity="0.18" stroke="${accent}" stroke-width="1.2"/>
+    <text x="75" y="20" font-family="'Inter',sans-serif" font-size="12" font-weight="800" fill="${accent}" text-anchor="middle" letter-spacing="0.8">${escXml(label)}</text>
+  </g>
+  ${photo ? `<rect x="${photo.x}" y="${photo.y}" width="${photo.w}" height="${photo.h}" rx="${photo.r}" fill="${accent}" opacity="0.08" stroke="${accent}" stroke-width="2"/>`
+    : `<text x="${pad + 260}" y="360" font-family="sans-serif" font-size="120" text-anchor="middle">${escXml(post.emoji)}</text>`}
+  <text x="${colX}" y="${titleY}" font-family="'Fredoka','Segoe UI',sans-serif" font-size="${titleSize}" font-weight="800" fill="#ffffff" letter-spacing="-0.5">${titleTspans}</text>
+  <rect x="${colX}" y="${excerptY - 22}" width="56" height="3" rx="1.5" fill="${accent}"/>
+  <text x="${colX}" y="${excerptY + 16}" font-family="'Inter',sans-serif" font-size="20" font-weight="500" fill="#F0EAD6" opacity="0.72">${excerptTspans}</text>
+  <g transform="translate(${colX},${H - 112})">
+    <rect width="360" height="48" rx="24" fill="${accent}"/>
+    <text x="180" y="31" font-family="'Fredoka','Inter',sans-serif" font-size="18" font-weight="800" fill="#1a1612" text-anchor="middle">Read the note</text>
+  </g>
+  <text x="${colX}" y="${H - 38}" font-family="'Inter',sans-serif" font-size="14" font-weight="600" fill="#F0EAD6" opacity="0.42">${escXml(url)}</text>
+</svg>`;
+}
+
+function buildPortraitSvg(post) {
+  const W = 1080, H = 1350, pad = 60;
+  const accent = TAG_ACCENT[post.tag] || TAG_ACCENT.site;
+  const label = TAG_LABEL[post.tag] || post.tag.toUpperCase();
+  const iso = shortDate(post.date);
+  const photo = photoBoxFor(post, 'portrait');
+  const titleLines = wrapText(post.title, 30).slice(0, 3);
+  const excerptLines = wrapText(post.excerpt, 62).slice(0, 4);
+  const titleY = photo ? 735 : 360;
+  const titleLineH = 56;
+  const excerptY = titleY + titleLines.length * titleLineH + 30;
+  const url = `jvdesignstudio.co.uk/devlog#post-${post.id}`;
+  const titleTspans = titleLines.map((l, i) => `<tspan x="${W / 2}" dy="${i === 0 ? 0 : titleLineH}">${escXml(l)}</tspan>`).join('');
+  const excerptTspans = excerptLines.map((l, i) => `<tspan x="${W / 2}" dy="${i === 0 ? 0 : 30}">${escXml(l)}</tspan>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>${escXml(post.emoji + ' ' + post.title)}</title>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="20%" r="70%">
+      <stop offset="0%" stop-color="${accent}" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="#1a1612"/>
+  <rect width="${W}" height="${H}" fill="url(#glow)"/>
+  <rect x="0" y="0" width="${W}" height="6" fill="${accent}"/>
+  <text x="${pad}" y="72" font-family="'Fredoka','Segoe UI',sans-serif" font-size="22" font-weight="800" fill="#F0EAD6">JVDesignStudio</text>
+  <text x="${W - pad}" y="72" font-family="'Inter',sans-serif" font-size="13" font-weight="700" fill="#F0EAD6" opacity="0.55" text-anchor="end">${escXml(iso)} - ${escXml(label)}</text>
+  <g transform="translate(${W / 2 - 90},110)">
+    <rect width="180" height="34" rx="17" fill="${accent}" opacity="0.18" stroke="${accent}" stroke-width="1.2"/>
+    <text x="90" y="23" font-family="'Inter',sans-serif" font-size="13" font-weight="800" fill="${accent}" text-anchor="middle" letter-spacing="0.8">${escXml(label)}</text>
+  </g>
+  ${photo ? `<rect x="${photo.x}" y="${photo.y}" width="${photo.w}" height="${photo.h}" rx="${photo.r}" fill="${accent}" opacity="0.08" stroke="${accent}" stroke-width="2"/>`
+    : `<text x="${W / 2}" y="320" font-family="sans-serif" font-size="110" text-anchor="middle">${escXml(post.emoji)}</text>`}
+  <text x="${W / 2}" y="${titleY}" font-family="'Fredoka','Segoe UI',sans-serif" font-size="46" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5">${titleTspans}</text>
+  <rect x="${W / 2 - 32}" y="${titleY + titleLines.length * titleLineH - 18}" width="64" height="3" rx="1.5" fill="${accent}" opacity="0.9"/>
+  <text x="${W / 2}" y="${excerptY}" font-family="'Inter',sans-serif" font-size="22" font-weight="500" fill="#F0EAD6" opacity="0.72" text-anchor="middle">${excerptTspans}</text>
+  <g transform="translate(${W / 2 - 210},${H - 170})">
+    <rect width="420" height="54" rx="27" fill="${accent}"/>
+    <text x="210" y="36" font-family="'Fredoka','Inter',sans-serif" font-size="20" font-weight="800" fill="#1a1612" text-anchor="middle">Read the note</text>
+  </g>
+  <text x="${W / 2}" y="${H - 78}" font-family="'Inter',sans-serif" font-size="16" font-weight="600" fill="#F0EAD6" opacity="0.42" text-anchor="middle">${escXml(url)}</text>
+  <text x="${W / 2}" y="${H - 38}" font-family="'Inter',sans-serif" font-size="11" font-weight="600" fill="#F0EAD6" opacity="0.26" text-anchor="middle" letter-spacing="2">BOOKS - GAMES - CREATIVE ADVENTURES</text>
+</svg>`;
+}
+
+async function generateCard(post, outPath, sizeKey) {
+  const spec = SIZES[sizeKey] || SIZES.square;
+  const svg = sizeKey === 'wide' ? buildWideSvg(post) : sizeKey === 'portrait' ? buildPortraitSvg(post) : buildSvg(post);
   // sharp needs explicit density for emoji/text crisp
   const png = await require('sharp')(Buffer.from(svg), { density: 300 }).png({ compressionLevel: 9 }).toBuffer();
   // Ensure 1080x1080 exactly (sharp from SVG viewBox should already be, but resize as guard)
-  let card = await require('sharp')(png).resize(1080,1080,{fit:'cover'}).png().toBuffer();
+  let card = await require('sharp')(png).resize(spec.w,spec.h,{fit:'cover'}).png().toBuffer();
   // Composite the post's screenshot into the frame when it exists.
-  const photo = photoBox(post);
+  const photo = photoBoxFor(post, sizeKey);
   if (photo) {
     const inset = 2;
     const iw = photo.w - inset * 2, ih = photo.h - inset * 2;
@@ -253,55 +365,51 @@ async function main() {
   const existing = new Set(fs.existsSync(QUEUE_DIR) ? fs.readdirSync(QUEUE_DIR) : []);
   const existingIds = new Set([...existing].map(f=> (f.match(/^\d{4}-\d{2}-\d{2}-(\d+)-/)||[])[1]).filter(Boolean));
 
+  const sizes = (opts.sizes && opts.sizes.length ? opts.sizes : ['square']).filter((size) => SIZES[size]);
   let created=0, skipped=0, would=0;
   for (const p of selected) {
     const iso = shortDate(p.date);
     const slug = slugify(p.title) || `post-${p.id}`;
-    const pngName = `${iso}-${p.id}-${slug}.png`;
-    const outPath = path.join(QUEUE_DIR, pngName);
-    // dedupe: if any png for this id exists, treat as existing (even with different slug)
-    const sameIdPng = [...existing].find(f=> f.endsWith('.png') && f.match(new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${p.id}-`)));
-    const target = sameIdPng && !opts.force ? path.join(QUEUE_DIR, sameIdPng) : outPath;
-    const exists = sameIdPng ? true : fs.existsSync(outPath);
+    for (const sizeKey of sizes) {
+      const spec = SIZES[sizeKey] || SIZES.square;
+      const pngName = `${iso}-${p.id}-${slug}${spec.suffix}.png`;
+      const outPath = path.join(QUEUE_DIR, pngName);
+      const exists = fs.existsSync(outPath);
 
-    if (opts.check) {
-      if (exists && !opts.force) { console.log(`✓ exists: ${relPath(target)} (id=${p.id})`); skipped++; }
-      else { console.log(`○ would create: ${relPath(outPath)} - "${p.title}" (${p.date})`); would++; }
-      continue;
-    }
-    if (exists && !opts.force) { console.log(`↷ skip exists: ${relPath(target)}`); skipped++; continue; }
-    const finalPath = opts.force ? outPath : (sameIdPng ? path.join(QUEUE_DIR, sameIdPng) : outPath);
-    // if forcing and the slug/date changed, remove the old file
-    if (opts.force && sameIdPng && sameIdPng !== path.basename(finalPath)) {
-      try { fs.unlinkSync(path.join(QUEUE_DIR, sameIdPng)); }catch{}
-    }
-    try {
-      await generateCard(p, finalPath);
-      const stat = fs.statSync(finalPath);
-      console.log(`✓ card: ${relPath(finalPath)} - "${p.title}" (${p.date}) ${Math.round(stat.size/1024)}kB 1080x1080`);
-      created++;
-      existing.add(path.basename(finalPath));
-      existingIds.add(p.id);
-      // If markdown draft exists, patch its image suggestion line to point to real card
-      const mdSame = [...existing].find(f=> f.endsWith('.md') && f.includes(`-${p.id}-`));
-      if (mdSame) {
-        const mdPath = path.join(QUEUE_DIR, mdSame);
-        try {
-          let md = fs.readFileSync(mdPath,'utf8');
-          const rel = `social-posts/queue/${path.basename(finalPath)}`;
-          if (md.includes('image suggestion:')) {
-            md = md.replace(/- image suggestion:.*/, `- image: ${rel} (1080x1080 auto-generated via generate-social-card.js)`);
-            md = md.replace(/- image: social-posts\/queue\/.*1080x1080.*/, `- image: ${rel} (1080x1080 auto-generated via generate-social-card.js)`);
-            fs.writeFileSync(mdPath, md);
-          } else if (!md.includes(rel)) {
-            // inject image line after source block
-            md = md.replace(/(queue_file:.*\n)/, `$1image: ${rel}\n`);
-            fs.writeFileSync(mdPath, md);
-          }
-        } catch(e) { console.log(`  [md patch skip] ${e.message}`); }
+      if (opts.check) {
+        if (exists && !opts.force) { console.log(`✓ exists: ${relPath(outPath)} (id=${p.id}, ${spec.w}x${spec.h})`); skipped++; }
+        else { console.log(`○ would create: ${relPath(outPath)} - "${p.title}" (${p.date}, ${spec.w}x${spec.h})`); would++; }
+        continue;
       }
-    } catch(e) {
-      console.error(`✗ card failed id=${p.id}: ${e.message}`);
+      if (exists && !opts.force) { console.log(`↷ skip exists: ${relPath(outPath)}`); skipped++; continue; }
+      try {
+        await generateCard(p, outPath, sizeKey);
+        const stat = fs.statSync(outPath);
+        console.log(`✓ card: ${relPath(outPath)} - "${p.title}" (${p.date}) ${Math.round(stat.size/1024)}kB ${spec.w}x${spec.h}`);
+        created++;
+        existing.add(path.basename(outPath));
+        existingIds.add(p.id);
+        if (sizeKey === 'square') {
+          const mdSame = [...existing].find(f=> f.endsWith('.md') && f.includes(`-${p.id}-`));
+          if (mdSame) {
+            const mdPath = path.join(QUEUE_DIR, mdSame);
+            try {
+              let md = fs.readFileSync(mdPath,'utf8');
+              const rel = `social-posts/queue/${path.basename(outPath)}`;
+              if (md.includes('image suggestion:')) {
+                md = md.replace(/- image suggestion:.*/, `- image: ${rel} (1080x1080 auto-generated via generate-social-card.js)`);
+                md = md.replace(/- image: social-posts\/queue\/.*1080x1080.*/, `- image: ${rel} (1080x1080 auto-generated via generate-social-card.js)`);
+                fs.writeFileSync(mdPath, md);
+              } else if (!md.includes(rel)) {
+                md = md.replace(/(queue_file:.*\n)/, `$1image: ${rel}\n`);
+                fs.writeFileSync(mdPath, md);
+              }
+            } catch(e) { console.log(`  [md patch skip] ${e.message}`); }
+          }
+        }
+      } catch(e) {
+        console.error(`✗ card failed id=${p.id} ${sizeKey}: ${e.message}`);
+      }
     }
   }
 

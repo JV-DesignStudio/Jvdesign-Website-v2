@@ -6,6 +6,79 @@
 
 const POSTS = [
     {
+        id: 530,
+        date: '11 November 2026',
+        tag: 'tools',
+        emoji: '🚀',
+        title: 'Every 3D model in frame, softer light and a calmer screen',
+        excerpt: 'Models now open fully in view, the light is warmer, and the builders feel like the rest of the studio.',
+        image: '/assets/devlog/530-pages-3d-builders.webp',
+        links: [
+            { label: 'Open the 3D Builders', href: '/pages/3d-builders.html' },
+            { label: 'Try BuildLab', href: '/tools/buildlab.html' }
+        ],
+        content: 'The 3D builders are a place to make something real: a rocket, a robot, a castle, a ship, then take the model into Blender, Unity or Godot. This week is mostly about seeing what you made and feeling steady while you make it.\n\nModels used to open at whatever size the camera happened to be. A castle could fill the screen, a submarine could lose its nose off the edge, and a cannon could look cut in half. Now every builder frames the whole model when it opens, and again whenever you pick a template or apply a step, so it sits in view with a little room around it.\n\nThe light is softer. A gentle fill from above, soft shadows and a calmer tone make shapes easier to read on a school laptop. The header is calmer too: the duplicate workshop links and the reference banner are gone, so the model is the main thing on screen.\n\nYou can use the keyboard now. Tab to the canvas, use the arrow keys to orbit and plus or minus to zoom. When a step works, the preview pulses so you know it landed.\n\nThe 3D Builders hub has been rebuilt with the same header, footer, colours and fonts as the rest of the studio. All eleven guided projects are still there, plus the four browser studios, the age levels, the search and the Explore, Improve and Invent path.\n\nStart with the rocket and press a few steps. When you like it, download the model as OBJ, GLB, STL or FBX and keep it.'
+    },
+
+    {
+        id: 531,
+        date: '11 November 2026',
+        tag: 'tools',
+        emoji: '🧱',
+        title: 'BuildLab: drag, stack, frame and print a model',
+        excerpt: 'BuildLab now moves whole templates, paints and deletes by dragging, and exports a print-ready STL in real millimetres.',
+        image: '/assets/devlog/531-tools-buildlab.webp',
+        links: [
+            { label: 'Open BuildLab', href: '/tools/buildlab.html' }
+        ],
+        content: 'BuildLab is the free block builder that takes your model into Roblox Studio, Blender or Unreal. This update is about the small things that make a build feel steady in your hands.\n\nTemplates now arrive selected. You can move the whole thing as one piece, or resize it with scale handles, without losing your selection. Turning the grid off is safe, the floor stays finite, and blocks drop to the floor or stack on top of each other when you let go. Dragging paints blocks and dragging with the other button removes them. Hovering shows an outline and a small label with the size of the block.\n\nOn a trackpad, Alt or Space drags the camera and your usual gestures orbit. On a touch screen, a handle turns the build. Arrow keys nudge a block, Escape clears the selection and F frames everything. A three-step coach walks you through your first paint, resize and export, so the panels never feel like a wall.\n\nExport is clearer. You see a thumbnail and the real size of the build before you download. The new STL export is made for 3D printing: millimetres, centred on the print bed and sitting flat at zero height. Echo warns you if the build is too big to print, Ember cheers the download and Lumo has a starter tip.\n\nYour build still saves as you go, and there is a fast mode for older laptops. Open BuildLab and make a small tower. It takes about a minute.'
+    },
+
+    {
+        id: 532,
+        date: '11 November 2026',
+        tag: 'tools',
+        emoji: '🎵',
+        title: 'Game music, start to finish, in the Audio Studio',
+        excerpt: 'Cues, chords, jam mode, guided missions, a mix doctor and one-click game packs turn the sound studio into a full music room.',
+        image: '/assets/devlog/532-tools-sound-studio.webp',
+        links: [
+            { label: 'Open Audio Studio', href: '/tools/sound-studio.html' }
+        ],
+        content: 'Audio Studio began as a place to make a tune. This update makes it a place to finish one.\n\nStart with the 60-second guided run, or with a cue template for a menu, a jump, a win or a boss. A chord progression builder and arpeggiator give you an idea, and a bar-based timeline lets you move whole sections instead of single notes. Jam mode adds a metronome, a count-in and live recording. The loop library keeps every loop at the same tempo, so pieces fit together without maths.\n\nWhen you have a track, the Mix Doctor listens and tells you what to change in plain words. You can layer and blend takes, and the characters react to the beat while you play.\n\nExport is built for game makers. Choose an intro plus a loop, name the pack, pick mono or stereo and 44.1 or 48 kHz, and Audio Studio writes the audio with a sound.json file and a ready snippet for Unity, Godot, Defold or Scratch. A play-only share page lets a friend hear the track and remix it.\n\nThere are also badges for your first sound, guided missions, remix styles and a game jam challenge. Everything works offline after the page loads, and nothing needs an account.'
+    },
+
+    {
+        id: 533,
+        date: '11 November 2026',
+        tag: 'tools',
+        emoji: '🎮',
+        title: 'The Game Maker now starts with three simple choices',
+        excerpt: 'Pick jump and run, fly and blast, or dodge and collect, choose easy or tricky, then press one button to build and play a real game.',
+        image: '/assets/devlog/533-tools-arcade-game-maker.webp',
+        links: [
+            { label: 'Open the Game Maker', href: '/tools/arcade-game-maker.html' }
+        ],
+        content: 'Open a game maker and see twenty-two genres. Exciting if you already know what you want, a lot if you do not. The first screen now asks one small question instead.\n\nPick an idea in plain words: jump and run, fly and blast, or dodge and collect. Pick a difficulty in friendly words. Press Build and Play. The maker loads a finished game from your choice and starts it, so the first thing you do is play something you made.\n\nThe four example templates are still there as a second option, and the 30-second tour only appears if you ask for it. Returning makers keep their projects and saves, and nothing changes about how the maker works after the first screen.\n\nThe flow uses real buttons and labels, works with a keyboard and a screen reader, and stays readable on a phone. There is no sideways scrolling at 390px, and the game boots without console errors.\n\nTry it with a class: choose jump and run, press Start, and let everyone play for a minute before changing anything. The first game is the hardest part. After that, every change makes sense.'
+    },
+
+    {
+        id: 534,
+        date: '11 November 2026',
+        tag: 'games',
+        emoji: '🎣',
+        title: 'New in the arcade: a fishing cove, two Lumo games and fresh art',
+        excerpt: 'Pip\'s Cozy Cove is a calm fishing game, the two Lumo games now play completely differently, and every arcade card has new art.',
+        image: '/assets/devlog/534-games-pips-cozy-cove.webp',
+        links: [
+            { label: 'Fish at Cozy Cove', href: '/games/pips-cozy-cove.html' },
+            { label: 'Play Lumo\'s Hive Strike', href: '/games/lumo-hive.html' },
+            { label: 'Play Firefly Shooter', href: '/games/lumo_firefly_night.html' }
+        ],
+        content: 'Three things landed in the arcade this week: a new fishing game, two Lumo games that no longer feel like twins, and a fresh set of covers and thumbnails.\n\nPip\'s Cozy Cove is a calm fishing game. Cast, wait for a bite, then reel at the right moment. The tide changes which fish are about, and your bucket keeps your catches on this device. There is a photo mode that turns a catch into a postcard, an aquarium that grows as you keep fish, a bait bench for making bait, a trophy shelf for your best weights and a sound mixer for waves, gulls and music. Stardust sets three small treasure goals, and a catch link lets you show a friend exactly what you found.\n\nThe two Lumo games have found their own voices. Lumo\'s Hive Strike is now a tactical defence game: link hives to mark priority targets, spend honey, build turrets between waves, draft a boon after each wave and fight bosses in phases. Firefly Shooter is a cosy hex match puzzle: launch fireflies, match three, rescue trapped fireflies and meet daily objectives. Each has its own first-run coach and its own look.\n\nThe art got a pass too. Both Lumo games have new covers and arcade thumbnails that show what they actually are, the Cozy Cove card has its own art, and the arcade prefers a real gameplay picture on each cabinet. Garden Defense also had a big week: a crash fix, a visual overhaul and 25 changes to how it plays and reads. Crossy Crew had a fairness and performance pass.\n\nOpen the arcade and pick one you have not tried. Cozy Cove is the calmest place to start.'
+    },
+
+    {
         id: 529,
         date: '7 November 2026',
         tag: 'apps',

@@ -126,7 +126,7 @@
         Ember's tabletop corner
       </div>
       <h1>Tabletop Studio</h1>
-      <p class="tt-sub">Paint a board, drop in pieces and roll the dice. Everything saves on this device, so you can close the tab and come back later.</p>
+      <p class="tt-sub">Make a board, add pieces and play. It saves on this device.</p>
     </div>
     <div class="tt-head-tools">
       <div class="tt-mode" role="group" aria-label="Build or play">
@@ -135,7 +135,7 @@
       </div>
       <div class="tt-file-actions">
         <button type="button" id="ttSave" class="tt-btn tt-btn--primary">Save</button>
-        <button type="button" id="ttExport" class="tt-btn">Export PNG</button>
+        <button type="button" id="ttExport" class="tt-btn" title="Save a picture of the board (PNG)">📷 Picture</button>
         <button type="button" id="ttUndo" class="tt-btn tt-btn--quiet" title="Undo (Ctrl+Z)" disabled>Undo</button>
         <button type="button" id="ttClear" class="tt-btn tt-btn--danger">Clear board</button>
       </div>
@@ -152,6 +152,20 @@
       <div class="tt-sidebar-scroll">
 
         <details class="tt-sec" open>
+          <summary><span>✨ Starter boards</span><span class="tt-sec-hint">one tap</span></summary>
+          <div class="tt-sec-body">
+            <div class="tt-starters">
+              <button type="button" class="tt-starter" data-template="meadow">🌿 Meadow</button>
+              <button type="button" class="tt-starter" data-template="dungeon">🗡️ Dungeon</button>
+              <button type="button" class="tt-starter" data-template="island">🏝️ Island</button>
+              <button type="button" class="tt-starter" data-template="surprise">🎲 Surprise</button>
+            </div>
+            <button type="button" class="tt-btn tt-btn--wide tt-btn--quiet" data-template="blank">Start blank</button>
+            <p class="tt-help" style="margin-top:8px">Tap a board, then change anything you like.</p>
+          </div>
+        </details>
+
+        <details class="tt-sec" open>
           <summary><span>🎨 Terrain</span><span class="tt-sec-hint">Lumo</span></summary>
           <div class="tt-sec-body">
             <p class="tt-help" id="ttTerrainHelp">Pick a colour, then paint the board.</p>
@@ -159,8 +173,8 @@
             <div class="tt-row">
               <span class="tt-label">Brush</span>
               <div class="tt-seg" role="group" aria-label="Brush size">
-                <button type="button" data-brush="1" aria-pressed="true">1</button>
-                <button type="button" data-brush="3" aria-pressed="false">3</button>
+                <button type="button" data-brush="1" aria-pressed="true" aria-label="Small brush">Small</button>
+                <button type="button" data-brush="3" aria-pressed="false" aria-label="Big brush">Big</button>
               </div>
             </div>
             <button type="button" id="ttClearTiles" class="tt-btn tt-btn--wide tt-btn--quiet">Clear tiles</button>
@@ -201,7 +215,7 @@
               <button type="button" id="ttRoll" class="tt-btn tt-btn--primary">Roll d6</button>
             </div>
             <div class="tt-dice-stage" id="ttDiceStage" aria-hidden="true"></div>
-            <p class="tt-dice-result" id="ttDiceResult" role="status">Ready when you are.</p>
+            <p class="tt-dice-result" id="ttDiceResult">Ready when you are.</p>
             <div class="tt-history" id="ttDiceHistory" role="group" aria-label="Recent rolls"></div>
           </div>
         </details>
@@ -235,9 +249,9 @@
         <details class="tt-sec">
           <summary><span>❓ How to play</span></summary>
           <div class="tt-sec-body tt-help">
-            <p><strong>Build</strong> paints tiles and snaps pieces to the grid. <strong>Play</strong> lets everyone drag pieces freely and flip cards.</p>
-            <p>Keyboard: arrow keys move the board cursor, Space paints, Backspace erases, Ctrl and Z undo.</p>
-            <p>A trackpad or a finger both work. Drag a piece from the toolbox, or tap it to drop it in the middle.</p>
+            <p><strong>Build</strong> paints tiles. <strong>Play</strong> moves pieces.</p>
+            <p>Tap a colour, then tap or drag on the board. Drag a piece in, then roll the dice.</p>
+            <p>Keyboard: arrow keys move the cursor, Space paints, Backspace erases, Ctrl and Z undo.</p>
           </div>
         </details>
 
@@ -253,6 +267,13 @@
         <p class="tt-save-state" id="ttSaved">Not saved yet</p>
       </div>
 
+      <div class="tt-steps" id="ttSteps" role="group" aria-label="First steps" hidden>
+        <span class="tt-step" data-step="paint"><span class="tt-step-num">1</span><span class="tt-step-text">Paint a tile</span></span>
+        <span class="tt-step" data-step="piece"><span class="tt-step-num">2</span><span class="tt-step-text">Add a piece</span></span>
+        <span class="tt-step" data-step="roll"><span class="tt-step-num">3</span><span class="tt-step-text">Roll the dice</span></span>
+        <button type="button" class="tt-icon-btn tt-steps-close" id="ttStepsClose" aria-label="Hide first steps">✕</button>
+      </div>
+
       <div class="tt-stage" id="ttStage" data-mode="build">
         <canvas id="ttBoard" tabindex="0" role="application" aria-label="Game board. Use the toolbox to paint tiles. Arrow keys move a cursor, Space paints and Backspace erases." aria-describedby="ttBoardHelp"></canvas>
         <div id="ttTokens" class="tt-tokens" role="group" aria-label="Pieces on the board"></div>
@@ -262,13 +283,30 @@
             <div class="tt-empty-char">
               <img src="/assets/mascots/lumo-badge.webp" alt="" width="36" height="36" loading="lazy">
             </div>
-            <h2>Start with a tiny world</h2>
-            <p>Lumo says a few tiles are enough. Paint a meadow, drop in a hero and roll a d6. You can grow it later.</p>
-            <div class="tt-empty-actions">
-              <button type="button" id="ttStartMeadow" class="tt-btn tt-btn--secondary">Paint a meadow</button>
-              <button type="button" id="ttStartBlank" class="tt-btn tt-btn--primary">Start with a blank board</button>
+            <h2>Make your first board</h2>
+            <p>Pick a starter board, or paint your own. Lumo will keep you company.</p>
+            <div class="tt-templates" role="group" aria-label="Starter boards">
+              <button type="button" class="tt-template" data-template="meadow" id="ttStartMeadow">
+                <span class="tt-template-emoji" aria-hidden="true">🌿</span>
+                <span class="tt-template-body"><strong>Meadow</strong><small>Grass, a path and trees</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="dungeon">
+                <span class="tt-template-emoji" aria-hidden="true">🗡️</span>
+                <span class="tt-template-body"><strong>Dungeon</strong><small>Stone, lava and treasure</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="island">
+                <span class="tt-template-emoji" aria-hidden="true">🏝️</span>
+                <span class="tt-template-body"><strong>Island</strong><small>Water, sand and a castle</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="surprise">
+                <span class="tt-template-emoji" aria-hidden="true">🎲</span>
+                <span class="tt-template-body"><strong>Surprise me</strong><small>A random little world</small></span>
+              </button>
             </div>
-            <p class="tt-empty-tip">Ember will keep an eye on the map. Echo handles the rules.</p>
+            <div class="tt-empty-foot">
+              <button type="button" id="ttStartBlank" class="tt-btn tt-btn--quiet">Start blank</button>
+              <button type="button" id="ttEmptyHelp" class="tt-btn tt-btn--quiet">How to play</button>
+            </div>
           </div>
         </div>
 
@@ -282,15 +320,35 @@
       </div>
 
       <div class="tt-board-bar">
-        <button type="button" id="ttQuickRoll" class="tt-btn tt-btn--secondary">🎲 Quick roll</button>
+        <button type="button" id="ttQuickRoll" class="tt-btn tt-btn--primary">🎲 Roll d6</button>
+        <span class="tt-bar-result" id="ttBarResult" aria-hidden="true"></span>
         <button type="button" id="ttQuickCard" class="tt-btn tt-btn--secondary">🃏 Draw card</button>
-        <label class="tt-check"><input type="checkbox" id="ttSnap" checked> Snap pieces</label>
+        <button type="button" id="ttPiecesOpen" class="tt-btn tt-btn--quiet">🧩 Pieces</button>
+        <button type="button" id="ttHelpBtn" class="tt-btn tt-btn--quiet">❓ How to play</button>
         <span class="tt-bar-hint" id="ttBarHint">Drag a piece onto the board.</span>
       </div>
 
       <p class="tt-sr" id="ttBoardHelp">Paint tiles with the terrain colours. In Play mode, drag pieces anywhere on the board.</p>
     </section>
 
+  </div>
+
+  <div class="tt-modal" id="ttHelp" hidden>
+    <div class="tt-modal-backdrop" id="ttHelpBackdrop"></div>
+    <section class="tt-modal-card" role="dialog" aria-modal="true" aria-labelledby="ttHelpTitle">
+      <div class="tt-modal-head">
+        <img src="/assets/mascots/lumo-badge.webp" alt="" width="38" height="38" loading="lazy">
+        <h2 id="ttHelpTitle">How to play</h2>
+        <button type="button" class="tt-icon-btn" id="ttHelpClose" aria-label="Close help">✕</button>
+      </div>
+      <ol class="tt-help-steps">
+        <li><strong>Paint.</strong> Pick a colour, then tap or drag on the board.</li>
+        <li><strong>Add a piece.</strong> Drag a piece from the toolbox, or tap it to drop it in the middle.</li>
+        <li><strong>Play.</strong> Switch to Play, drag pieces anywhere and tap a card to flip it.</li>
+        <li><strong>Save.</strong> Press Save so your board comes back later.</li>
+      </ol>
+      <button type="button" class="tt-btn tt-btn--primary tt-btn--wide" id="ttHelpStart">Let's paint</button>
+    </section>
   </div>
 
   <div class="tt-toast" id="ttToast" role="status" aria-live="polite"></div>

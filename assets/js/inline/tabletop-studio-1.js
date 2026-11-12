@@ -12,7 +12,7 @@
   var MAX_DICE = 6;
 
   var PIECE_DEFS = [
-    { id: 'meeple',   label: 'Meeple',     glyph: '🧍', color: '#BC4749' },
+    { id: 'meeple',   label: 'Player',     glyph: '🧍', color: '#BC4749' },
     { id: 'hero',     label: 'Fox hero',   glyph: '🦊', color: '#3f6e71' },
     { id: 'tiger',    label: 'Tiger hero', glyph: '🐯', color: '#c98a2e' },
     { id: 'monster',  label: 'Monster',    glyph: '👾', color: '#7a5aa8' },
@@ -25,14 +25,15 @@
   ];
 
   var TERRAIN = {
-    grass:  { name: 'Meadow', color: '#8FBF6A' },
-    water:  { name: 'Water',  color: '#6FA9C9' },
-    sand:   { name: 'Sand',   color: '#E3CD8F' },
-    forest: { name: 'Forest', color: '#5E8C5A' },
-    stone:  { name: 'Stone',  color: '#B9B4A8' },
-    path:   { name: 'Path',   color: '#C9A97D' },
-    lava:   { name: 'Lava',   color: '#D46A4A' },
-    snow:   { name: 'Snow',   color: '#EDF2F4' }
+    grass:  { name: 'Meadow', color: '#8FBF6A', icon: '🌿' },
+    water:  { name: 'Water',  color: '#6FA9C9', icon: '💧' },
+    sand:   { name: 'Sand',   color: '#E3CD8F', icon: '🏖️' },
+    forest: { name: 'Forest', color: '#5E8C5A', icon: '🌲' },
+    stone:  { name: 'Stone',  color: '#B9B4A8', icon: '🪨' },
+    path:   { name: 'Path',   color: '#C9A97D', icon: '🛤️' },
+    lava:   { name: 'Lava',   color: '#D46A4A', icon: '🌋' },
+    snow:   { name: 'Snow',   color: '#EDF2F4', icon: '❄️' },
+    wall:   { name: 'Wall',   color: '#6B6257', icon: '🧱' }
   };
 
   var SUITS = [
@@ -71,6 +72,15 @@
   var countUpBtn = document.getElementById('ttCountUp');
   var deckLeftEl = document.getElementById('ttDeckLeft');
   var flipBtn = document.getElementById('ttFlipBtn');
+  var stepsEl = document.getElementById('ttSteps');
+  var stepsClose = document.getElementById('ttStepsClose');
+  var barResultEl = document.getElementById('ttBarResult');
+  var quickRollBtn = document.getElementById('ttQuickRoll');
+  var helpEl = document.getElementById('ttHelp');
+  var helpBtn = document.getElementById('ttHelpBtn');
+  var helpClose = document.getElementById('ttHelpClose');
+  var helpStart = document.getElementById('ttHelpStart');
+  var helpBackdrop = document.getElementById('ttHelpBackdrop');
 
   var S = blankState();
   var bgImg = null;
@@ -94,6 +104,7 @@
   var dieCount = 1;
   var rolling = false;
   var diceHistoryLog = [];
+  var firstSteps = { paint: false, piece: false, roll: false, dismissed: false, celebrated: false };
 
   /* ------------------------------------------------------------------ */
   /* Small helpers                                                       */
@@ -546,6 +557,7 @@
     hideEmpty();
     markDirty();
     selectToken(t.id);
+    markStep('piece');
     toast(pieceDef(kind).label + ' placed.');
     announce(pieceDef(kind).label + ' placed on ' + posLabel(t) + '.');
   }
@@ -560,6 +572,7 @@
     markDirty();
     updateDeckLabel();
     selectToken(t.id);
+    markStep('piece');
     toast('You drew the ' + cardLabel(t) + '.');
     announce('Drew the ' + cardLabel(t) + '.');
   }
@@ -582,7 +595,7 @@
 
   function updatePieceBar() {
     var t = tokenById(S.selectedId);
-    pieceBar.hidden = !t;
+    pieceBar.hidden = !t || S.mode === 'play';
     if (t) flipBtn.hidden = t.type !== 'card';
   }
 
@@ -700,6 +713,7 @@
     else paintCell(cell.col, cell.row, terrain);
     lastPaintCell = cell;
     hideEmpty();
+    markStep('paint');
     scheduleDraw();
   }
 
@@ -774,7 +788,7 @@
   }
 
   function markDirty() {
-    updateSaveState('Unsaved changes', true);
+    updateSaveState('Tap Save', true);
   }
 
   function updateSaveState(text, dirty) {
@@ -888,7 +902,7 @@
     S.mode = data.mode === 'play' ? 'play' : 'build';
     S.terrain = TERRAIN[data.terrain] ? data.terrain : 'grass';
     S.brush = Number(data.brush) === 3 ? 3 : 1;
-    S.snap = data.snap !== false;
+    S.snap = true;
     S.selectedId = 0;
 
     var size = boardSize();
@@ -1021,6 +1035,11 @@
       chips[i].setAttribute('aria-pressed', Number(chips[i].dataset.sides) === sides ? 'true' : 'false');
     }
     rollBtn.textContent = 'Roll d' + sides;
+    if (quickRollBtn) quickRollBtn.textContent = '🎲 Roll d' + sides;
+    if (barResultEl) {
+      barResultEl.textContent = '';
+      barResultEl.classList.remove('is-on');
+    }
     announce('Ready to roll a d' + sides + '.');
   }
 
@@ -1138,6 +1157,13 @@
         text = 'You rolled ' + results.join(', ') + ' on ' + results.length + 'd' + useSides + ' (total ' + total + ').';
       }
       diceResult.textContent = text;
+      if (barResultEl) {
+        barResultEl.textContent = results.length === 1
+          ? 'You rolled ' + results[0]
+          : 'Total ' + total;
+        barResultEl.classList.add('is-on');
+      }
+      markStep('roll');
       announce(text);
 
       var entry = results.length === 1
@@ -1209,11 +1235,11 @@
 
   function updateStatus() {
     if (S.mode === 'play') {
-      statusEl.textContent = 'Play mode: drag pieces anywhere. Tap a card to flip it.';
+      statusEl.textContent = 'Drag pieces. Tap a card to flip it.';
       barHint.textContent = 'Pieces move freely in Play mode.';
       byId('ttTerrainHelp').textContent = 'Play mode is on. Switch to Build to paint.';
     } else {
-      statusEl.textContent = 'Build mode: paint tiles, then drag pieces into place.';
+      statusEl.textContent = 'Paint a tile, then add a piece.';
       barHint.textContent = 'Drag a piece onto the board.';
       byId('ttTerrainHelp').textContent = 'Pick a colour, then paint the board.';
     }
@@ -1229,6 +1255,7 @@
     }
     var show = !emptyDismissed && !S.bg && !hasTiles && S.tokens.length === 0;
     emptyEl.hidden = !show;
+    updateSteps();
   }
 
   function hideEmpty() {
@@ -1236,51 +1263,181 @@
       emptyDismissed = true;
       emptyEl.hidden = true;
     }
+    updateSteps();
   }
 
-  function startMeadow() {
-    pushUndo();
-    S.tiles = [];
-    var i;
-    for (i = 0; i < S.cols * S.rows; i++) S.tiles.push('grass');
+  function markStep(name) {
+    if (!firstSteps[name]) {
+      firstSteps[name] = true;
+      updateSteps();
+    }
+  }
 
+  function updateSteps() {
+    if (!stepsEl) return;
+    var keys = ['paint', 'piece', 'roll'];
+    var all = firstSteps.paint && firstSteps.piece && firstSteps.roll;
+    var steps = stepsEl.querySelectorAll('.tt-step');
+    for (var i = 0; i < steps.length; i++) {
+      var key = steps[i].dataset.step;
+      var done = !!firstSteps[key];
+      steps[i].classList.toggle('is-done', done);
+      var num = steps[i].querySelector('.tt-step-num');
+      if (num) num.textContent = done ? '✓' : String(keys.indexOf(key) + 1);
+    }
+    stepsEl.hidden = firstSteps.dismissed || all || !emptyEl.hidden;
+    if (all && !firstSteps.celebrated) {
+      firstSteps.celebrated = true;
+      toast('You made a board game. Press Save to keep it.');
+      announce('You finished the first steps. Press Save to keep your board.');
+    }
+  }
+
+  function resetBoardDoc() {
+    var i;
+    for (i = 0; i < S.tiles.length; i++) S.tiles[i] = null;
+    S.tokens = [];
+    S.bg = null;
+    bgImg = null;
+    S.selectedId = 0;
+  }
+
+  function fillTiles(terrain) {
+    for (var i = 0; i < S.tiles.length; i++) S.tiles[i] = terrain;
+  }
+
+  function setTileAt(col, row, terrain) {
+    if (col < 0 || row < 0 || col >= S.cols || row >= S.rows) return;
+    S.tiles[row * S.cols + col] = terrain;
+  }
+
+  function addPieceAtCell(kind, col, row) {
+    var c = centerOf(clamp(col, 0, S.cols - 1), clamp(row, 0, S.rows - 1));
+    addPiece(kind, c.x, c.y);
+  }
+
+  function buildMeadowTemplate() {
+    fillTiles('grass');
     var pathRow = Math.floor(S.rows / 2);
     for (var c = 0; c < S.cols; c++) {
-      S.tiles[pathRow * S.cols + c] = 'path';
-      if (c % 3 === 0 && pathRow + 1 < S.rows) S.tiles[(pathRow + 1) * S.cols + c] = 'path';
+      setTileAt(c, pathRow, 'path');
+      if (c % 3 === 0) setTileAt(c, pathRow + 1, 'path');
     }
-
     var pond = [[S.cols - 4, 1], [S.cols - 3, 1], [S.cols - 4, 2], [S.cols - 3, 2]];
-    pond.forEach(function (p) {
-      if (p[0] >= 0 && p[1] >= 0 && p[0] < S.cols && p[1] < S.rows) {
-        S.tiles[p[1] * S.cols + p[0]] = 'water';
-      }
-    });
-
+    pond.forEach(function (p) { setTileAt(p[0], p[1], 'water'); });
     var forest = [[1, 1], [2, 1], [1, 2], [2, 2], [S.cols - 2, S.rows - 2], [S.cols - 3, S.rows - 2]];
-    forest.forEach(function (p) {
-      if (p[0] >= 0 && p[1] >= 0 && p[0] < S.cols && p[1] < S.rows) {
-        S.tiles[p[1] * S.cols + p[0]] = 'forest';
+    forest.forEach(function (p) { setTileAt(p[0], p[1], 'forest'); });
+    addPieceAtCell('hero', 1, pathRow);
+    addPieceAtCell('meeple', 2, pathRow);
+    addPieceAtCell('tree', 2, 2);
+    addPieceAtCell('star', S.cols - 2, 2);
+  }
+
+  function buildDungeonTemplate() {
+    fillTiles('stone');
+    var c;
+    var r;
+    for (c = 0; c < S.cols; c++) {
+      setTileAt(c, 0, 'wall');
+      setTileAt(c, S.rows - 1, 'wall');
+    }
+    for (r = 0; r < S.rows; r++) {
+      setTileAt(0, r, 'wall');
+      setTileAt(S.cols - 1, r, 'wall');
+    }
+    var midRow = Math.floor(S.rows / 2);
+    var midCol = Math.floor(S.cols / 2);
+    for (c = 1; c < S.cols - 1; c++) setTileAt(c, midRow, 'path');
+    for (r = 1; r < S.rows - 1; r++) setTileAt(midCol, r, 'path');
+    var lavaCol = Math.max(2, S.cols - 4);
+    var lavaRow = Math.max(2, Math.floor(S.rows / 3));
+    setTileAt(lavaCol, lavaRow, 'lava');
+    setTileAt(lavaCol + 1, lavaRow, 'lava');
+    setTileAt(lavaCol, lavaRow + 1, 'lava');
+    addPieceAtCell('hero', 2, midRow);
+    addPieceAtCell('monster', S.cols - 3, S.rows - 3);
+    addPieceAtCell('treasure', lavaCol + 2, lavaRow);
+    addPieceAtCell('rock', midCol - 1, midRow - 1);
+  }
+
+  function buildIslandTemplate() {
+    fillTiles('water');
+    var cx = Math.floor(S.cols / 2);
+    var cy = Math.floor(S.rows / 2);
+    var rx = Math.max(2, Math.floor(S.cols * 0.3));
+    var ry = Math.max(2, Math.floor(S.rows * 0.3));
+    var c;
+    var r;
+    for (r = 0; r < S.rows; r++) {
+      for (c = 0; c < S.cols; c++) {
+        if (Math.abs(c - cx) <= rx && Math.abs(r - cy) <= ry) setTileAt(c, r, 'sand');
+        if (Math.abs(c - cx) <= rx - 1 && Math.abs(r - cy) <= ry - 1) setTileAt(c, r, 'grass');
       }
+    }
+    [[cx - 2, cy], [cx - 2, cy - 1], [cx + 1, cy + 1]].forEach(function (p) {
+      setTileAt(p[0], p[1], 'forest');
     });
+    addPieceAtCell('castle', cx, cy - 2);
+    addPieceAtCell('meeple', cx - 1, cy + 1);
+    addPieceAtCell('tree', cx - 2, cy);
+    addPieceAtCell('flag', cx + 2, cy);
+  }
 
-    S.tokens = [];
-    S.deck = makeDeck();
-    var heroSpot = centerOf(1, pathRow);
-    var meepleSpot = centerOf(2, pathRow);
-    var treeSpot = centerOf(2, 2);
-    var starSpot = centerOf(S.cols - 2, 2);
-    addPiece('hero', heroSpot.x, heroSpot.y);
-    addPiece('meeple', meepleSpot.x, meepleSpot.y);
-    addPiece('tree', treeSpot.x, treeSpot.y);
-    addPiece('star', starSpot.x, starSpot.y);
+  function buildSurpriseTemplate() {
+    var bases = ['grass', 'stone', 'sand', 'water'];
+    var base = bases[Math.floor(Math.random() * bases.length)];
+    fillTiles(base);
+    var keys = Object.keys(TERRAIN).filter(function (k) { return k !== base; });
+    var blobs = Math.max(2, Math.floor(S.cols * S.rows / 18));
+    for (var i = 0; i < blobs; i++) {
+      var col = 1 + Math.floor(Math.random() * (S.cols - 2));
+      var row = 1 + Math.floor(Math.random() * (S.rows - 2));
+      var key = keys[Math.floor(Math.random() * keys.length)];
+      setTileAt(col, row, key);
+      if (Math.random() > 0.45) setTileAt(col + 1, row, key);
+      if (Math.random() > 0.45) setTileAt(col, row + 1, key);
+    }
+    var pieces = ['hero', 'monster', 'treasure', 'tree', 'flag', 'star', 'castle', 'rock'];
+    for (var p = 0; p < 4; p++) {
+      var spot = freeSpot();
+      addPiece(pieces[Math.floor(Math.random() * pieces.length)], spot.x, spot.y);
+    }
+  }
 
-    S.selectedId = 0;
+  function applyTemplate(id) {
+    var names = {
+      meadow: 'Meadow',
+      dungeon: 'Dungeon',
+      island: 'Island',
+      surprise: 'Surprise board',
+      blank: 'Blank board'
+    };
+    var hadContent = !!(S.bg || S.tokens.length || S.tiles.some(function (t) { return !!t; }));
+    pushUndo();
+    resetBoardDoc();
+    if (id === 'meadow') buildMeadowTemplate();
+    else if (id === 'dungeon') buildDungeonTemplate();
+    else if (id === 'island') buildIslandTemplate();
+    else if (id === 'surprise') buildSurpriseTemplate();
+    else S.deck = makeDeck();
+    if (id !== 'blank' && (!Array.isArray(S.deck) || S.deck.length === 0)) S.deck = makeDeck();
     hideEmpty();
+    S.selectedId = 0;
+    if (S.mode !== 'build') setMode('build');
+    if (id !== 'blank') {
+      firstSteps.paint = true;
+      firstSteps.piece = true;
+    }
     renderAll();
     markDirty();
-    toast('A little meadow, ready to play.');
-    announce('Meadow board started with four pieces.');
+    var label = names[id] || 'Board';
+    var message = id === 'blank'
+      ? 'Blank board ready. Pick a colour and paint.'
+      : label + ' ready. ' + (firstSteps.roll ? 'Have fun!' : 'Roll the dice to play.');
+    if (hadContent) message += ' Press Undo to go back.';
+    toast(message);
+    announce(message);
+    updateSteps();
   }
 
   function clearBoard() {
@@ -1293,6 +1450,7 @@
     S.deck = [];
     S.selectedId = 0;
     emptyDismissed = false;
+    firstSteps = { paint: false, piece: false, roll: false, dismissed: firstSteps.dismissed, celebrated: false };
     deselect();
     renderAll();
     markDirty();
@@ -1426,7 +1584,7 @@
       b.style.setProperty('--sw', t.color);
       b.setAttribute('aria-pressed', key === S.terrain ? 'true' : 'false');
       b.setAttribute('aria-label', t.name);
-      b.innerHTML = '<span class="tt-swatch-chip" aria-hidden="true"></span><span class="tt-swatch-name">' + t.name + '</span>';
+      b.innerHTML = '<span class="tt-swatch-chip" aria-hidden="true"><span class="tt-swatch-icon">' + t.icon + '</span></span><span class="tt-swatch-name">' + t.name + '</span>';
       frag.appendChild(b);
     });
 
@@ -1460,7 +1618,6 @@
   function syncControls() {
     byId('ttShape').value = S.shape;
     byId('ttSize').value = S.cols + 'x' + S.rows;
-    byId('ttSnap').checked = !!S.snap;
 
     var modeButtons = document.querySelectorAll('.tt-mode-btn');
     for (var i = 0; i < modeButtons.length; i++) {
@@ -1546,6 +1703,38 @@
     sidebarOpen.setAttribute('aria-expanded', 'false');
     document.body.classList.remove('tt-drawer-open');
     try { sidebarOpen.focus({ preventScroll: true }); } catch (err) { sidebarOpen.focus(); }
+  }
+
+  function openPieces() {
+    if (window.matchMedia('(max-width: 980px)').matches) openSidebar();
+    var section = byId('ttPieces').closest('details');
+    if (section) {
+      section.open = true;
+      try { section.scrollIntoView({ block: 'nearest' }); } catch (err) { /* ignore */ }
+    }
+    var first = byId('ttPieces').querySelector('[data-piece]');
+    if (first) {
+      try { first.focus({ preventScroll: true }); } catch (err) { first.focus(); }
+    }
+  }
+
+  var helpTrigger = null;
+
+  function openHelp(event) {
+    helpTrigger = (event && event.currentTarget) ? event.currentTarget : helpBtn;
+    helpEl.hidden = false;
+    document.body.classList.add('tt-modal-open');
+    try { helpClose.focus({ preventScroll: true }); } catch (err) { helpClose.focus(); }
+  }
+
+  function closeHelp(focusBack) {
+    if (helpEl.hidden) return;
+    helpEl.hidden = true;
+    document.body.classList.remove('tt-modal-open');
+    if (focusBack !== false && helpTrigger && helpTrigger.offsetParent !== null) {
+      try { helpTrigger.focus({ preventScroll: true }); } catch (err) { helpTrigger.focus(); }
+    }
+    helpTrigger = null;
   }
 
   function handleTap(t) {
@@ -1710,6 +1899,13 @@
   }
 
   function onGlobalKeyDown(event) {
+    if (!helpEl.hidden) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeHelp();
+      }
+      return;
+    }
     var tag = (event.target.tagName || '').toLowerCase();
     var typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if ((event.ctrlKey || event.metaKey) && !typing && String(event.key).toLowerCase() === 'z') {
@@ -1805,22 +2001,47 @@
       toast('Map image removed.');
     });
 
-    byId('ttSnap').addEventListener('change', function (event) {
-      S.snap = event.target.checked;
-      announce(S.snap ? 'Snap on. Pieces click to the grid.' : 'Snap off. Pieces stay where you drop them.');
+    document.addEventListener('click', function (event) {
+      var tpl = event.target.closest('[data-template]');
+      if (!tpl) return;
+      applyTemplate(tpl.dataset.template || 'blank');
     });
 
-    byId('ttStartMeadow').addEventListener('click', startMeadow);
     byId('ttStartBlank').addEventListener('click', function () {
-      hideEmpty();
+      applyTemplate('blank');
       try { cv.focus({ preventScroll: true }); } catch (err) { cv.focus(); }
-      toast('Blank board ready. Pick a colour and paint.');
-      announce('Blank board ready. Pick a terrain colour and paint the board.');
     });
 
     sidebarOpen.addEventListener('click', openSidebar);
     byId('ttSidebarClose').addEventListener('click', closeSidebar);
     backdrop.addEventListener('click', closeSidebar);
+    byId('ttPiecesOpen').addEventListener('click', openPieces);
+
+    if (stepsClose) {
+      stepsClose.addEventListener('click', function () {
+        firstSteps.dismissed = true;
+        updateSteps();
+        announce('First steps hidden.');
+      });
+    }
+
+    helpBtn.addEventListener('click', openHelp);
+    byId('ttEmptyHelp').addEventListener('click', openHelp);
+    helpClose.addEventListener('click', function () { closeHelp(); });
+    helpBackdrop.addEventListener('click', function () { closeHelp(); });
+    helpStart.addEventListener('click', function () {
+      closeHelp(false);
+      if (emptyEl.hidden) {
+        if (S.mode === 'build') {
+          try { cv.focus({ preventScroll: true }); } catch (err) { cv.focus(); }
+        }
+        toast('Pick a colour and paint.');
+        announce('Pick a terrain colour and paint the board.');
+      } else {
+        toast('Pick a starter board.');
+        announce('Pick a starter board, or start with a blank one.');
+      }
+    });
 
     pieceBar.addEventListener('click', onPieceBarClick);
 
@@ -2011,6 +2232,7 @@
 
   function init() {
     var hadSave = loadBoard();
+    firstSteps.dismissed = hadSave;
 
     buildTerrainPalette();
     buildPieces();
@@ -2020,7 +2242,7 @@
     if (hadSave && S.bg) setBgImage(S.bg);
     syncControls();
     renderAll();
-    updateSaveState(hadSave ? 'Saved board loaded' : 'Not saved yet', false);
+    updateSaveState(hadSave ? 'Saved' : 'Not saved yet', false);
     if (hadSave) toast('Your saved board is back.');
   }
 

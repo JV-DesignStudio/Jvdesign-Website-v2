@@ -48,6 +48,11 @@ const TARGETS = {
   442: { url: '/tools/arcade-game-maker.html', note: 'browser game studios' },
   443: { url: '/games/critter-whack-page.html', note: 'Critter Whack' },
   525: { url: '/games/echos-flight.html?debug=1', note: "Echo's Swim", viewport: true, autopilot: 2200 },
+  530: { url: '/pages/3d-builders.html', note: '3D Builders hub' },
+  531: { url: '/tools/buildlab.html', note: 'BuildLab' },
+  532: { url: '/tools/sound-studio.html', note: 'Audio Studio' },
+  533: { url: '/tools/arcade-game-maker.html', note: 'Arcade Game Maker' },
+  534: { url: '/games/pips-cozy-cove.html', note: "Pip's Cozy Cove" },
 };
 
 const START_SELECTORS = [

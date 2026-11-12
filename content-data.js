@@ -4847,6 +4847,20 @@ window.JVDS_CONTENT = {
       "url": "/tools/story-player.html"
     },
     {
+      "id": "tabletop-studio",
+      "title": "Tabletop Studio: Free Board Game Maker and Simulator",
+      "desc": "Build a tabletop board, place meeples and tokens, draw cards and roll d4 to d20 dice. Free in your browser, saves on this device, no install or account.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/tabletop-studio.html",
+      "aliases": [
+        "board game maker",
+        "tabletop simulator",
+        "board maker"
+      ]
+    },
+    {
       "id": "trading-card-designer",
       "title": "Trading Card Designer: Free Card Maker for Games",
       "desc": "Design a trading card for your game: art, stats and text, then export it. Free browser card maker, no install.",
@@ -5615,10 +5629,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-11T18:10:50.000Z",
+    "generated": "2026-11-12T11:03:42.000Z",
     "workshops": 282,
     "games": 16,
-    "tools": 49,
+    "tools": 50,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -5644,7 +5658,7 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 4,
+      "General": 5,
       "Build & Ship": 3,
       "Make Art": 5,
       "Reference": 19,

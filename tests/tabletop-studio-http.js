@@ -68,7 +68,10 @@ function wait(ms) {
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto('http://127.0.0.1:' + port + '/tools/tabletop-studio.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.evaluate(() => {
-    try { localStorage.removeItem('jvds-tabletop-v1'); } catch (err) {}
+    try {
+      localStorage.removeItem('jvds-tabletop-v1');
+      localStorage.setItem('jvds-cookie-consent', 'declined');
+    } catch (err) {}
   });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForSelector('#ttTerrain .tt-swatch', { timeout: 10000 });
@@ -84,6 +87,7 @@ function wait(ms) {
     pieces: document.querySelectorAll('#ttPieces [data-piece]').length,
     dice: document.querySelectorAll('#ttDiceTypes .tt-die-chip').length,
     modes: document.querySelectorAll('.tt-mode-btn').length,
+    templates: document.querySelectorAll('#ttEmpty [data-template]').length,
     emptyVisible: !document.getElementById('ttEmpty').hidden,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
@@ -95,18 +99,47 @@ function wait(ms) {
   check('main target exists', initial.main);
   check('board canvas exists', initial.canvas);
   check('token layer exists', initial.tokensLayer);
-  check('terrain swatches present (8 + erase)', initial.swatches === 9, String(initial.swatches));
+  check('terrain swatches present (9 + erase)', initial.swatches === 10, String(initial.swatches));
   check('pieces present', initial.pieces === 10, String(initial.pieces));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
+  check('four starter boards offered', initial.templates === 4, String(initial.templates));
   check('empty state shows on a new board', initial.emptyVisible);
   check('no visible mojibake', initial.cleanText);
   check('no horizontal overflow at 1280px', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
 
+  await page.click('[data-template="dungeon"]');
+  await wait(300);
+  const dungeon = await page.evaluate(() => ({
+    tokens: document.querySelectorAll('#ttTokens .tt-token').length,
+    emptyHidden: document.getElementById('ttEmpty').hidden
+  }));
+  check('dungeon starter paints and places pieces', dungeon.tokens > 0 && dungeon.emptyHidden, JSON.stringify(dungeon));
+
+  await page.click('#ttClear');
+  await wait(120);
+  await page.click('#ttClear');
+  await wait(300);
+  const clearedStarter = await page.evaluate(() => !document.getElementById('ttEmpty').hidden);
+  check('clearing a starter brings the choices back', clearedStarter);
+
   await page.click('#ttStartBlank');
+  await wait(200);
+  const blank = await page.evaluate(() => ({
+    emptyHidden: document.getElementById('ttEmpty').hidden,
+    stepsVisible: !document.getElementById('ttSteps').hidden
+  }));
+  check('start blank hides the empty state', blank.emptyHidden);
+  check('first steps appear after starting', blank.stepsVisible);
+
+  await page.click('#ttHelpBtn');
+  await wait(200);
+  const helpOpen = await page.evaluate(() => !document.getElementById('ttHelp').hidden);
+  check('help dialog opens', helpOpen);
+  await page.click('#ttHelpClose');
   await wait(150);
-  const hiddenEmpty = await page.evaluate(() => document.getElementById('ttEmpty').hidden);
-  check('start blank hides the empty state', hiddenEmpty);
+  const helpClosed = await page.evaluate(() => document.getElementById('ttHelp').hidden);
+  check('help dialog closes', helpClosed);
 
   const beforePaint = await page.evaluate(() => document.getElementById('ttBoard').toDataURL().length);
   const box = await page.$eval('#ttBoard', el => {
@@ -121,11 +154,15 @@ function wait(ms) {
   await wait(200);
   const afterPaint = await page.evaluate(() => document.getElementById('ttBoard').toDataURL().length);
   check('painting a tile changes the canvas', afterPaint !== beforePaint, beforePaint + ' -> ' + afterPaint);
+  const paintStep = await page.evaluate(() => document.querySelector('[data-step="paint"]').classList.contains('is-done'));
+  check('painting ticks the first step', paintStep);
 
   await page.click('[data-piece="meeple"]');
   await wait(150);
   const afterPiece = await page.evaluate(() => document.querySelectorAll('#ttTokens .tt-token').length);
   check('tapping a piece adds a token', afterPiece === 1, String(afterPiece));
+  const pieceStep = await page.evaluate(() => document.querySelector('[data-step="piece"]').classList.contains('is-done'));
+  check('adding a piece ticks the second step', pieceStep);
 
   const tokenBox = await page.$eval('#ttTokens .tt-token', el => {
     const r = el.getBoundingClientRect();
@@ -168,6 +205,10 @@ function wait(ms) {
   check('d20 roll reports a result', /You rolled \d+/.test(rolled), rolled);
   const history = await page.evaluate(() => document.querySelectorAll('#ttDiceHistory span').length);
   check('dice history records the roll', history >= 1, String(history));
+  const barResult = await page.evaluate(() => document.getElementById('ttBarResult').textContent);
+  check('roll result shows beside the board', /You rolled \d+|Total \d+/.test(barResult), barResult);
+  const stepsDone = await page.evaluate(() => document.getElementById('ttSteps').hidden);
+  check('rolling finishes and hides the first steps', stepsDone);
 
   await page.click('#ttSave');
   await wait(200);
@@ -217,6 +258,15 @@ function wait(ms) {
   check('no horizontal overflow at 390px', mobile.scrollWidth <= mobile.clientWidth + 2, mobile.scrollWidth + '/' + mobile.clientWidth);
   check('board fits the phone width', mobile.canvasWidth <= mobile.clientWidth, mobile.canvasWidth + '/' + mobile.clientWidth);
   check('toolbox button shows on mobile', mobile.toolboxVisible);
+
+  await page.click('#ttPiecesOpen');
+  await wait(400);
+  const drawer = await page.evaluate(() => ({
+    open: document.getElementById('ttSidebar').classList.contains('open'),
+    expanded: document.getElementById('ttSidebarOpen').getAttribute('aria-expanded'),
+    pieceVisible: !!document.getElementById('ttPieces').querySelector('[data-piece]')
+  }));
+  check('pieces button opens the toolbox on mobile', drawer.open && drawer.expanded === 'true' && drawer.pieceVisible, JSON.stringify(drawer));
 
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
 
