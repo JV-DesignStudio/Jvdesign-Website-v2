@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v56 - A2960: precache Tabletop Studio so the
+// board maker opens and plays with the network down after one online visit.
 // JVDesignStudio Service Worker v55 - Call of the Cards v2: a faster card duel,
 // a device-friendly board, and the game is back in the arcade as an experiment.
 // JVDesignStudio Service Worker v54 - A2920: refresh the Lumo games again for
@@ -44,7 +46,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v55';
+const CACHE='jvds-v56';
 const CORE=[
   '/',
   '/offline.html',
@@ -102,6 +104,9 @@ const CORE=[
   // A-major: the GDD builder's fonts, icons and QR helper are proactively
   // cached so a first offline visit still has the full editor and art picker.
   '/qrcode-generator.js',
+  '/tools/tabletop-studio.html',
+  '/style-tool-tabletop-studio.css',
+  '/assets/js/inline/tabletop-studio-1.js',
   '/assets/css/studio-shell.css?v=1',
   '/assets/fonts/inter-400-normal-latin-6ab57b19.woff2',
   '/assets/fonts/fredoka-400-normal-latin-a4a694ae.woff2',
