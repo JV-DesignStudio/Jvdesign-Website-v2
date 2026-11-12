@@ -5629,7 +5629,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-12T11:03:42.000Z",
+    "generated": "2026-11-12T11:20:22.000Z",
     "workshops": 282,
     "games": 16,
     "tools": 50,
