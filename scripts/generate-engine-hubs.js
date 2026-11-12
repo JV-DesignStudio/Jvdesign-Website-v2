@@ -143,6 +143,51 @@ function say(voice, engine) {
     + '  </div>';
 }
 
+// A2959/A2962: the Godot hub embeds the real Godot editor. The block lives in
+// the generator so a later `npm run build` cannot wipe it, and only the Godot
+// hub gets the engine-feel replica and the lab scripts.
+function renderGodotLab(engine) {
+  if (engine.id !== 'godot') return '';
+  return `<!-- GODOT-LAB:START -->
+<section class="ef-wrap" aria-labelledby="godot-lab-title">
+  <div class="ef-head">
+    <p class="ef-kicker">Build with real GDScript</p>
+    <h2 id="godot-lab-title">Godot Lab: build in the real editor</h2>
+    <p>The replica below is the warm-up. When you are ready, download a starter project, open the official Godot editor in a new tab, and write the code that moves the game.</p>
+    <span class="ef-note">The real editor needs internet. The replica works offline.</span>
+  </div>
+  <div data-engine-feel="godot" data-ef-preset="starter"></div>
+  <div class="godot-lab-steps">
+    <div class="godot-lab-step">
+      <span class="godot-lab-num">1</span>
+      <div>
+        <strong>Download the starter project</strong>
+        <p>It contains project.godot, main.tscn and the player script you can open in the real engine.</p>
+      </div>
+      <button type="button" class="ef-btn ef-btn--main" data-godot-lab-download>Download starter project</button>
+    </div>
+    <div class="godot-lab-step">
+      <span class="godot-lab-num">2</span>
+      <div>
+        <strong>Open the Godot Lab</strong>
+        <p>The real editor, embedded. It loads the starter project for you.</p>
+      </div>
+      <a class="ef-btn ef-btn--main" href="/workshops/godot-lab/index.html">Open the Godot Lab</a>
+    </div>
+    <div class="godot-lab-step">
+      <span class="godot-lab-num">3</span>
+      <div>
+        <strong>If the school network blocks it</strong>
+        <p>Use the replica above, or open the official editor in a new tab and preload the ZIP yourself.</p>
+      </div>
+      <a class="ef-btn" href="https://editor.godotengine.org/latest/" target="_blank" rel="noopener">Open in a tab</a>
+    </div>
+  </div>
+  <p class="godot-lab-note" data-godot-lab-status role="status" aria-live="polite"></p>
+</section>
+<!-- GODOT-LAB:END -->`;
+}
+
 function renderLegacyNotice(engine) {
   if (!engine.legacy) return '';
   return '  <aside class="hub-legacy" role="note" aria-label="Legacy engine notice">\n'
@@ -204,6 +249,9 @@ function renderSections(engine, byId, showInstallPill) {
 
 function renderPage(engine, byId) {
   const id = engine.id;
+  const godotLab = renderGodotLab(engine);
+  const labCss = godotLab ? '<link rel="stylesheet" href="/assets/css/engine-feel.css">\n<link rel="stylesheet" href="/assets/css/godot-lab.css">\n' : '';
+  const labJs = godotLab ? '<script defer src="/assets/js/engine-feel.js"></script>\n<script defer src="/assets/js/godot-lab.js"></script>\n' : '';
   const sections = engine.sections
     .map((s) => ({ ...s, workshops: s.workshops.filter((wid) => byId.has(wid)) }))
     .filter((s) => s.workshops.length);
@@ -356,7 +404,7 @@ ${marker('head-icons', readPartial('head-icons'))}
 <link rel="stylesheet" href="../style-workshop-bundle.css?v=18">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="../style-workshop-hub.css?v=3">
-<style>
+${labCss}<style>
 .hub-crumbs{max-width:1100px;margin:0 auto;padding:14px 20px 0;font-size:.85rem;color:var(--text-secondary)}
 .hub-crumbs a{color:var(--teal-dk);font-weight:700}
 .hub-crumbs a:hover{text-decoration:underline}
@@ -424,7 +472,7 @@ ${marker('nav-content', readPartial('nav-content'))}
     ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote) + '</p>' : ''}
   </section>
 
-${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
+${godotLab ? godotLab + '\n\n' : ''}${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
 
 ${ladder}
 
@@ -445,7 +493,7 @@ ${marker('footer-content', readPartial('footer-content'))}
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/assets/js/engine-hub.js"></script>
 ${engine.checkpoint && engine.checkpoint.script ? '<script defer src="' + esc(engine.checkpoint.script) + '"></script>' : ''}
-</body>
+${labJs}</body>
 </html>
 `;
 
