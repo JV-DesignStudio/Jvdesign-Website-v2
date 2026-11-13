@@ -597,7 +597,7 @@ function drawChainTimer(){
   const frac=chainTimer/20;
   const cx=W-70,cy=WATER_TOP-30;
   ctx.save();ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.arc(cx,cy,22,0,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle=frac>0.4?'#22c55e':'#ef4444';ctx.beginPath();ctx.arc(cx,cy,-Math.PI/2,-Math.PI/2+frac*Math.PI*2,false);ctx.stroke();
+  ctx.strokeStyle=frac>0.4?'#22c55e':'#ef4444';ctx.beginPath();ctx.arc(cx,cy,22,-Math.PI/2,-Math.PI/2+frac*Math.PI*2,false);ctx.stroke();
   ctx.globalAlpha=0.9;ctx.fillStyle='#fff';ctx.font='bold 13px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('CHAIN',cx,cy-6);ctx.fillText(Math.ceil(chainTimer)+'s',cx,cy+9);
   ctx.restore();
 }
