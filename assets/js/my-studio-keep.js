@@ -13,6 +13,12 @@
 
   var ARCADE_KEY = 'jvds_my_arcade';
   var NOTES_KEY = 'jvds_report_notes';
+  var PIXEL_KEEP_KEY = 'jvds_pixel_keepsake';
+  var PALETTE_KEY = 'jvds_palettes';
+  var STORY_SLOTS_KEY = 'jvds_story_slots';
+  var LEVEL_KEY = 'jvds_level_autosave';
+  var GDD_KEY = 'jvds_gdd_last';
+  var CREATION_KEYS = [PIXEL_KEEP_KEY, PALETTE_KEY, STORY_SLOTS_KEY, LEVEL_KEY, GDD_KEY, ARCADE_KEY];
   var MAX_GAMES = 5;
   var MAX_BYTES = 1.5 * 1024 * 1024;
   var playTimer = null;
@@ -200,6 +206,19 @@
     if (!Array.isArray(list)) return [];
     return list.filter(function (g) {
       return g && g.id && (g.type === 'sprite' || g.type === 'game') && g.payload;
+    }).map(function (g) {
+      return {
+        type: g.type,
+        source: 'arcade',
+        ref: g.id,
+        id: g.id,
+        name: g.name || (g.type === 'sprite' ? 'My sprite' : 'My game'),
+        added: g.added || '',
+        thumb: g.thumb || (g.payload && g.payload.preview) || '',
+        payload: g.payload,
+        tool: g.type === 'game' ? 'Game Maker' : 'Pixel Studio',
+        toolUrl: g.type === 'game' ? '/tools/arcade-game-maker.html' : '/tools/pixel-studio.html'
+      };
     });
   }
   function saveArcade(list) {
@@ -212,23 +231,251 @@
     try { return new Date(value).toLocaleDateString(); } catch (e) { return value; }
   }
   function keepsakeItems() {
-    var keep = readJSON('jvds_pixel_keepsake', []);
+    var keep = readJSON(PIXEL_KEEP_KEY, []);
     if (!Array.isArray(keep)) return [];
     return keep.filter(function (k) { return k && k.project; }).slice(0, 6).map(function (k) {
       return {
         type: 'sprite',
+        source: 'keepsake',
+        ref: k.id,
         id: 'keep-' + (k.id || k.date || Math.random()),
         name: k.title || 'My sprite',
         added: k.date || '',
         thumb: k.thumb || '',
+        share: k.share || '',
         payload: k.project,
-        saved: true
+        saved: true,
+        tool: 'Pixel Studio',
+        toolUrl: '/tools/pixel-studio.html'
       };
     });
   }
-  function allItems() {
-    return keepsakeItems().concat(loadArcade());
+
+  function paletteItems() {
+    var list = readJSON(PALETTE_KEY, []);
+    if (!Array.isArray(list)) return [];
+    var out = [];
+    list.forEach(function (p, i) {
+      if (!p || !Array.isArray(p.cols) || !p.cols.length) return;
+      out.push({
+        type: 'palette',
+        source: 'palettes',
+        ref: i,
+        id: 'pal-' + i,
+        name: p.name || 'My palette',
+        added: p.date || '',
+        payload: p,
+        tool: 'Colour Palette',
+        toolUrl: '/tools/colour-palette.html'
+      });
+    });
+    return out;
   }
+
+  function storyItems() {
+    var slots = readJSON(STORY_SLOTS_KEY, []);
+    if (!Array.isArray(slots)) return [];
+    var out = [];
+    slots.forEach(function (s, i) {
+      if (!s) return;
+      var d = s.data || {};
+      out.push({
+        type: 'story',
+        source: 'story-slots',
+        ref: i,
+        id: 'story-' + i,
+        name: s.name || d.storyName || 'My story',
+        added: s.date || '',
+        payload: s,
+        tool: 'Story Editor',
+        toolUrl: '/tools/story-editor.html'
+      });
+    });
+    return out;
+  }
+
+  function levelItems() {
+    var d = readJSON(LEVEL_KEY, null);
+    if (!d || typeof d !== 'object' || !d.gridW || !Array.isArray(d.layers)) return [];
+    return [{
+      type: 'level',
+      source: 'level',
+      ref: 0,
+      id: 'level',
+      name: d.name || 'My level',
+      added: d.ts ? fmtDate(new Date(d.ts).toISOString()) : '',
+      payload: d,
+      tool: 'Level Designer',
+      toolUrl: '/tools/level-designer.html'
+    }];
+  }
+
+  function gddItems() {
+    var d = readJSON(GDD_KEY, null);
+    if (!d || typeof d !== 'object') return [];
+    return [{
+      type: 'gdd',
+      source: 'gdd',
+      ref: 0,
+      id: 'gdd',
+      name: d.title || 'My game plan',
+      added: d.ts ? fmtDate(new Date(d.ts).toISOString()) : '',
+      payload: d,
+      tool: 'Game Design Builder',
+      toolUrl: '/tools/gdd-builder.html'
+    }];
+  }
+
+  function toolItems() {
+    return paletteItems().concat(storyItems(), levelItems(), gddItems());
+  }
+
+  function allItems() {
+    return keepsakeItems().concat(toolItems(), loadArcade());
+  }
+  function labelFor(item) {
+    var map = { sprite: 'Pixel art', palette: 'Colour Palette', story: 'Story', level: 'Level', gdd: 'Game plan', game: 'Game project' };
+    return map[item.type] || 'Creation';
+  }
+
+  function describe(item) {
+    if (item.type === 'palette') {
+      var p = item.payload || {};
+      return (p.mood ? p.mood + ' palette, ' : '') + ((p.cols || []).length) + ' colours';
+    }
+    if (item.type === 'story') {
+      var d = (item.payload && item.payload.data) || {};
+      var n = (d.nodes || []).length;
+      return n + (n === 1 ? ' node' : ' nodes');
+    }
+    if (item.type === 'level') {
+      var l = item.payload || {};
+      return (l.gridW || 0) + ' x ' + (l.gridH || 0) + ' level';
+    }
+    if (item.type === 'gdd') {
+      var g = item.payload || {};
+      return g.genre ? 'Game plan: ' + g.genre : 'Game plan';
+    }
+    if (item.type === 'game') return 'Game project';
+    return 'Saved creation';
+  }
+
+  function storyExcerpt(slot, max) {
+    var d = (slot && slot.data) || {};
+    var nodes = Array.isArray(d.nodes) ? d.nodes : [];
+    var start = null;
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i] && nodes[i].type === 'start') { start = nodes[i]; break; }
+    }
+    if (!start) {
+      for (var j = 0; j < nodes.length; j++) {
+        if (nodes[j] && nodes[j].type === 'dialogue') { start = nodes[j]; break; }
+      }
+    }
+    if (!start && nodes.length) start = nodes[0];
+    var text = String((start && start.text) || slot.intro || '').replace(/\s+/g, ' ').trim();
+    return text.length > max ? text.slice(0, max - 1) + '…' : text;
+  }
+
+  function swatches(cols, compact) {
+    var wrap = document.createElement('div');
+    wrap.className = 'work-swatches';
+    cols.slice(0, compact ? 6 : 32).forEach(function (c) {
+      var s = document.createElement('span');
+      s.className = 'work-swatch';
+      s.style.background = /^#[0-9a-f]{3,8}$/i.test(String(c)) ? c : '#888';
+      s.title = String(c);
+      wrap.appendChild(s);
+    });
+    return wrap;
+  }
+
+  function renderLevelPreview(d, maxW) {
+    var gw = Math.max(1, Math.min(64, d.gridW || 20));
+    var gh = Math.max(1, Math.min(64, d.gridH || 15));
+    var layer = null;
+    (d.layers || []).forEach(function (l) {
+      if (!layer && l && l.visible !== false && Array.isArray(l.data)) layer = l;
+    });
+    if (!layer) layer = (d.layers || [])[0] || {};
+    var data = Array.isArray(layer.data) ? layer.data : [];
+    var canvas = document.createElement('canvas');
+    canvas.width = gw;
+    canvas.height = gh;
+    canvas.className = 'work-preview-canvas';
+    canvas.style.width = Math.min(maxW || 240, gw * 10) + 'px';
+    canvas.style.height = 'auto';
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1e1c18';
+    ctx.fillRect(0, 0, gw, gh);
+    for (var i = 0; i < data.length; i++) {
+      var v = data[i];
+      if (!v) continue;
+      ctx.fillStyle = 'hsl(' + ((v * 47) % 360) + ' 70% 55%)';
+      ctx.fillRect(i % gw, Math.floor(i / gw), 1, 1);
+    }
+    return canvas;
+  }
+
+  function previewFor(item, compact) {
+    if (item.type === 'sprite') {
+      if (!item.thumb) return null;
+      var img = document.createElement('img');
+      img.className = compact ? 'work-thumb' : 'work-preview-img';
+      img.src = item.thumb;
+      img.alt = item.name || 'Pixel art';
+      return img;
+    }
+    if (item.type === 'palette') return swatches((item.payload && item.payload.cols) || [], compact);
+    if (item.type === 'story') {
+      var text = storyExcerpt(item.payload, compact ? 90 : 600);
+      if (!text) return null;
+      var p = document.createElement('p');
+      p.className = 'work-excerpt';
+      p.textContent = text;
+      return p;
+    }
+    if (item.type === 'level') return renderLevelPreview(item.payload, compact ? 150 : 320);
+    if (item.type === 'gdd') {
+      var g = document.createElement('p');
+      g.className = 'work-excerpt';
+      g.textContent = describe(item);
+      return g;
+    }
+    return null;
+  }
+
+  function openWork(item) {
+    var modal = el('workModal');
+    var body = el('workModalBody');
+    if (!modal || !body) return;
+    body.textContent = '';
+    if (el('workModalTitle')) el('workModalTitle').textContent = item.name || 'Your work';
+    var preview = previewFor(item, false);
+    if (preview) body.appendChild(preview);
+    var detail = document.createElement('p');
+    detail.className = 'work-excerpt';
+    detail.textContent = describe(item);
+    body.appendChild(detail);
+    var link = document.createElement('a');
+    link.className = 'work-open-link';
+    link.href = item.toolUrl || '/me.html';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Open in ' + (item.tool || 'the tool') + ' →';
+    body.appendChild(link);
+    var hint = document.createElement('p');
+    hint.className = 'work-excerpt muted';
+    hint.textContent = 'This copy stays in this browser. Use Download all my work to keep it.';
+    body.appendChild(hint);
+    modal.hidden = false;
+  }
+
+  function closeWork() {
+    var modal = el('workModal');
+    if (modal) modal.hidden = true;
+  }
+
   function renderArcade() {
     var grid = el('arcadeGrid');
     if (!grid) return;
@@ -239,38 +486,97 @@
       var empty = document.createElement('p');
       empty.className = 'muted';
       empty.style.gridColumn = '1/-1';
-      empty.innerHTML = 'No creations yet. Make a sprite in <a href="/tools/pixel-studio.html">Pixel Studio</a>, or add a project file from <a href="/tools/arcade-game-maker.html">Arcade Game Maker</a>.';
+      empty.innerHTML = 'Nothing saved yet. Make a sprite in <a href="/tools/pixel-studio.html">Pixel Studio</a>, a palette in <a href="/tools/colour-palette.html">Colour Palette</a>, or a story in <a href="/tools/story-editor.html">Story Editor</a>.';
       grid.appendChild(empty);
       return;
     }
     list.forEach(function (item) {
       var card = document.createElement('div');
       card.className = 'arcade-card';
+      card.setAttribute('data-work-type', item.type);
+      var preview = previewFor(item, true);
+      if (preview) card.appendChild(preview);
       var title = document.createElement('strong');
-      title.textContent = item.name || (item.type === 'sprite' ? 'My sprite' : 'My game');
+      title.textContent = item.name || 'My creation';
       var when = document.createElement('small');
-      when.textContent = (item.type === 'sprite' ? 'Sprite' : 'Game project') + (item.added ? ' - ' + fmtDate(item.added) : '');
+      when.textContent = labelFor(item) + (item.added ? ' - ' + item.added : '');
       var actions = document.createElement('div');
       actions.className = 'arcade-actions';
-      var play = document.createElement('button');
-      play.type = 'button';
-      play.className = 'tab keep-primary';
-      play.textContent = item.type === 'sprite' ? 'Play animation' : 'Play in Game Maker';
-      play.addEventListener('click', function () { playItem(item); });
-      actions.appendChild(play);
-      if (!item.saved) {
-        var remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'tab';
-        remove.textContent = 'Remove';
-        remove.addEventListener('click', function () { removeGame(item.id); });
-        actions.appendChild(remove);
+      var primary = document.createElement('button');
+      primary.type = 'button';
+      primary.className = 'tab keep-primary';
+      if (item.type === 'sprite') {
+        primary.textContent = 'Play animation';
+        primary.addEventListener('click', function () { playItem(item); });
+      } else if (item.type === 'game') {
+        primary.textContent = 'Play in Game Maker';
+        primary.addEventListener('click', function () { playItem(item); });
+      } else {
+        primary.textContent = 'Open';
+        primary.addEventListener('click', function () { openWork(item); });
       }
+      actions.appendChild(primary);
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'tab';
+      remove.textContent = 'Remove';
+      remove.addEventListener('click', function () { removeItem(item); });
+      actions.appendChild(remove);
       card.appendChild(title);
       card.appendChild(when);
       card.appendChild(actions);
       grid.appendChild(card);
     });
+  }
+
+  function removeItem(item) {
+    var msg = el('arcadeMsg');
+    if (item.source === 'keepsake') {
+      var keep = readJSON(PIXEL_KEEP_KEY, []);
+      if (Array.isArray(keep)) writeJSON(PIXEL_KEEP_KEY, keep.filter(function (k) { return String(k.id) !== String(item.ref); }));
+    } else if (item.source === 'palettes') {
+      var pals = readJSON(PALETTE_KEY, []);
+      if (Array.isArray(pals)) { pals.splice(item.ref, 1); writeJSON(PALETTE_KEY, pals); }
+    } else if (item.source === 'story-slots') {
+      var slots = readJSON(STORY_SLOTS_KEY, []);
+      if (Array.isArray(slots)) { slots[item.ref] = null; writeJSON(STORY_SLOTS_KEY, slots); }
+    } else if (item.source === 'level') {
+      try { localStorage.removeItem(LEVEL_KEY); } catch (e) {}
+    } else if (item.source === 'gdd') {
+      try { localStorage.removeItem(GDD_KEY); } catch (e) {}
+    } else if (item.source === 'arcade') {
+      removeGame(item.id);
+      return;
+    }
+    renderArcade();
+    if (msg) msg.textContent = 'Removed "' + (item.name || 'creation') + '".';
+  }
+
+  function buildArchive() {
+    var keys = {};
+    CREATION_KEYS.forEach(function (k) {
+      try { var v = localStorage.getItem(k); if (v != null) keys[k] = v; } catch (e) {}
+    });
+    return { format: 'jvds-backpack', v: 1, savedAt: new Date().toISOString(), count: Object.keys(keys).length, keys: keys, source: 'jvds-my-work' };
+  }
+
+  function exportAll() {
+    var msg = el('arcadeMsg');
+    var pack = buildArchive();
+    if (!pack.count) {
+      if (msg) msg.textContent = 'Nothing to download yet. Save something first.';
+      return false;
+    }
+    var blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'my-jvds-work-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    if (msg) msg.textContent = 'Downloaded ' + pack.count + ' saved ' + (pack.count === 1 ? 'creation' : 'creations') + '. Keep the file safe.';
+    return true;
   }
 
   function addProject(file) {
@@ -406,12 +712,20 @@
       var node = el(id);
       if (node) node.addEventListener('input', saveNotes);
     });
+    var exportBtn = el('workExport');
+    if (exportBtn) exportBtn.addEventListener('click', exportAll);
     var modal = el('arcadeModal');
     if (modal) {
       modal.addEventListener('click', function (e) { if (e.target === modal) window.closeArcade(); });
     }
+    var workModal = el('workModal');
+    if (workModal) {
+      workModal.addEventListener('click', function (e) { if (e.target === workModal) closeWork(); });
+    }
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && modal && !modal.hidden) window.closeArcade();
+      if (e.key !== 'Escape') return;
+      if (workModal && !workModal.hidden) closeWork();
+      else if (modal && !modal.hidden) window.closeArcade();
     });
     if (location.hash === '#keep' || location.hash === '#myArcade') {
       activateKeep();
@@ -419,6 +733,16 @@
       if (section && section.scrollIntoView) setTimeout(function () { section.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
     }
   }
+
+  window.closeWork = closeWork;
+  window.MyWork = {
+    items: allItems,
+    open: openWork,
+    close: closeWork,
+    remove: removeItem,
+    buildArchive: buildArchive,
+    exportAll: exportAll
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

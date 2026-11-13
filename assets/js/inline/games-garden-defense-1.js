@@ -64,8 +64,8 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
       selected, spawnQ, betweenTimer, lastT, stats, achUnlocked, pickerEls={},
       floats, deaths, streak, lastKillT, speedMult=1, hoverCell=null, victoryShown, waveGoals,
       upgradeOpen, upgradeChoices, upgrades;
-  // #8 endless, #9 stars, #10 seed, #12 daily, #19 undo, #20 auto-collect, #5 drought, #22 keyboard cursor
-  let endless=false, endlessWave=0, starRating=0, gameSeed=0, dailyMode=false;
+  // #9 stars, #10 seed, #12 daily, #19 undo, #20 auto-collect, #5 drought, #22 keyboard cursor
+  let starRating=0, gameSeed=0, dailyMode=false;
   let lastPlaced=null, undoTimer=0;
   let autoCollect=localStorage.getItem('gd_autoCollect')==='true';
   let droughtActive=false, droughtTimer=0;
@@ -90,7 +90,7 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     stats={killed:0,placed:0,bestBoom:0,sunCollected:0,bestStreak:0,waveStartGuards:5,waveStartSun:150,dmgDealt:0};
     waveGoals={guard:false,economy:false,streak:false};
     achUnlocked=[]; streak=0; lastKillT=-99; hoverCell=null;
-    endless=false; endlessWave=0; starRating=0;
+    starRating=0;
     lastPlaced=null; undoTimer=0;
     droughtActive=false; droughtTimer=0;
     kbCursor={col:2,row:2,active:false};
@@ -158,14 +158,13 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
   function startWave(){
     waveIdx++;
     if(stats){stats.waveStartGuards=guards.filter(Boolean).length;stats.waveStartSun=sun;}
-    if(!endless && waveIdx>5){ showVictoryChoice(); return; }
+    if(waveIdx>5){ win(); return; }
     spawnQ=buildWave(waveIdx);
     window.__gdWaveClock=0;
     if(waveIdx===1 && tutorialOverlay) showTutorial();
     if(waveIdx===1) flashHint('First wave: plant Sunflower early, then add a Sprout in the busiest lane.');
     if(waveGoals) waveGoals.guard=guards.filter(Boolean).length>=stats.waveStartGuards;
     if(waveIdx===5) banner('Wave 5 - Boss! 🕷️');
-    else if(waveIdx>5) banner('Endless Wave '+waveIdx);
     else banner('Wave '+waveIdx);
     beep('wave');
     if(waveIdx>1){ sun+=40; }
@@ -174,30 +173,8 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     else droughtActive=false;
     // #25 wave escalation sound
     if(waveIdx>=4 && soundOn) audio.playCombo(Math.min(waveIdx-2,5));
-    if(waveIdx>=15 && !achUnlocked.includes('gd_wave15')){achUnlocked.push('gd_wave15');gs.unlockAchievement('gd_wave15');}
     updateHUD(); refreshWaveIntel();
   }
-  // #8 endless mode: after wave 5 victory, offer continue or finish
-  function showVictoryChoice(){
-    if(victoryShown) return;
-    victoryShown=true; paused=true;
-    const el=document.getElementById('upgradeScreen');
-    const gridEl=document.getElementById('upgradeGrid');
-    document.querySelector('#upgradeScreen h2').textContent='Garden Saved!';
-    document.querySelector('#upgradeScreen .big').textContent='🏆';
-    document.querySelector('#upgradeScreen p').textContent='You held all five waves! Continue into Endless mode for more challenge and higher scores, or finish now.';
-    gridEl.innerHTML='';
-    const endBtn=document.createElement('button');endBtn.type='button';endBtn.className='upgrade-choice';
-    endBtn.innerHTML='<span class="upgrade-icon">🏆</span><strong>Finish</strong><span>Save your score and claim victory.</span>';
-    endBtn.onclick=()=>{document.querySelector('#upgradeScreen h2').textContent='Choose a garden upgrade';document.querySelector('#upgradeScreen .big').textContent='🌿';el.classList.add('hidden');paused=false;lastT=performance.now();win();};
-    const goBtn=document.createElement('button');goBtn.type='button';goBtn.className='upgrade-choice';
-    goBtn.innerHTML='<span class="upgrade-icon">🌀</span><strong>Endless Mode</strong><span>Waves keep coming. How long can you hold?</span>';
-    goBtn.onclick=()=>{document.querySelector('#upgradeScreen h2').textContent='Choose a garden upgrade';document.querySelector('#upgradeScreen .big').textContent='🌿';el.classList.add('hidden');endless=true;paused=false;lastT=performance.now();betweenTimer=3;flashHint('Endless mode! Waves will never stop.');};
-    gridEl.appendChild(goBtn); gridEl.appendChild(endBtn);
-    el.classList.remove('hidden');
-    beep('level');
-  }
-
   // ---- picker ----
   let cooldowns={};
   function buildPicker(){
@@ -1079,7 +1056,7 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     } else starRating=0;
 
     // update unlock state
-    const reachedWave=endless?waveIdx:won?5:Math.min(waveIdx,5);
+    const reachedWave=won?5:Math.min(waveIdx,5);
     if(reachedWave>unlockState.maxWave){unlockState.maxWave=reachedWave;saveUnlocks(unlockState);}
     if(won){unlockState.wins++;saveUnlocks(unlockState);}
 
@@ -1087,7 +1064,6 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     if(won && !achUnlocked.includes('gd_victory')){achUnlocked.push('gd_victory');gs.unlockAchievement('gd_victory');}
     if(won && guards.every(Boolean) && !achUnlocked.includes('gd_flawless')){achUnlocked.push('gd_flawless');gs.unlockAchievement('gd_flawless');}
     if(waveIdx>=5 && !achUnlocked.includes('gd_wave5')){achUnlocked.push('gd_wave5');gs.unlockAchievement('gd_wave5');}
-    if(endless && waveIdx>=10 && !achUnlocked.includes('gd_endless10')){achUnlocked.push('gd_endless10');gs.unlockAchievement('gd_endless10');}
     try{ gs.recordGamePlay(Date.now()); gs.saveState(); }catch(e){}
     const newBest = score>best.score;
     if(score>best.score||reachedWave>best.wave){
@@ -1097,10 +1073,10 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
 
     document.getElementById('endEmoji').textContent = won?'🏆':'🐛';
     const starStr=starRating>0?(' '+'⭐'.repeat(starRating)):'';
-    const endTitleTxt = won?(endless?'Endless Run Over!':'Garden Saved!'+starStr):'Garden Overrun!';
+    const endTitleTxt = won?('Garden Saved!'+starStr):'Garden Overrun!';
     document.getElementById('endTitle').textContent = endTitleTxt;
     document.getElementById('endMsg').textContent = won
-      ? (endless?`You survived ${waveIdx} waves in Endless mode!${newBest?' New best! 🎉':''}`:`You held all five waves with ${guards.filter(Boolean).length} guard(s) to spare.${starRating===3?' Perfect run!':''} The garden is safe!${newBest?' New best score! 🎉':''}`)
+      ? `You held all five waves with ${guards.filter(Boolean).length} guard(s) to spare.${starRating===3?' Perfect run!':''} The garden is safe!${newBest?' New best score! 🎉':''}`
       : `The pests broke through on wave ${Math.min(waveIdx,99)}. Replant and try again!${newBest?' New best score! 🎉':''}`;
     gdAnnounce(endTitleTxt+', final score '+score+'.');
     const challengeBonus=(waveGoals&&waveGoals.guard?150:0)+(waveGoals&&waveGoals.economy?150:0)+(waveGoals&&waveGoals.streak?200:0);
@@ -1156,8 +1132,8 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
 
   // ---- #18 wave preview popup ----
   function showWavePreview(){
-    const next=endless?waveIdx+1:Math.min(waveIdx+1,5);
-    if(next>5&&!endless) return;
+    const next=Math.min(waveIdx+1,5);
+    if(next<1||next>5) return;
     const preview=buildWave(next);
     const counts={};
     preview.forEach(e=>{const n=PESTS[e.type]?.ic||e.type;counts[n]=(counts[n]||0)+1;});
