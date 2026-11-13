@@ -463,12 +463,13 @@ function drawScene(){
   const pal=cfg().pal;
   const skyG=ctx.createLinearGradient(0,0,0,WATER_TOP+40);skyG.addColorStop(0,pal.sky0);skyG.addColorStop(1,pal.sky1);
   ctx.fillStyle=skyG;ctx.fillRect(0,0,W,WATER_TOP+40);
-  if(cfg().dec==='morning'){ctx.save();ctx.globalAlpha=0.7;ctx.fillStyle='#fef08a';ctx.beginPath();ctx.arc(720,80,42,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.25;ctx.beginPath();ctx.arc(720,80,62,0,Math.PI*2);ctx.fill();ctx.restore();}
-  if(cfg().dec==='golden'){ctx.save();ctx.globalAlpha=0.6;ctx.fillStyle='#f97316';ctx.beginPath();ctx.arc(760,90,52,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.2;ctx.beginPath();ctx.arc(760,90,78,0,Math.PI*2);ctx.fill();ctx.restore();}
+  if(cfg().dec==='morning'){ctx.save();const sg=ctx.createRadialGradient(720,80,0,720,80,96);sg.addColorStop(0,'rgba(255,245,100,1)');sg.addColorStop(0.38,'rgba(255,220,50,0.65)');sg.addColorStop(1,'rgba(255,210,0,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(720,80,96,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.88;ctx.fillStyle='#fef08a';ctx.beginPath();ctx.arc(720,80,38,0,Math.PI*2);ctx.fill();ctx.restore();}
+  if(cfg().dec==='golden'){ctx.save();const sg=ctx.createRadialGradient(760,90,0,760,90,110);sg.addColorStop(0,'rgba(249,115,22,1)');sg.addColorStop(0.4,'rgba(234,88,12,0.55)');sg.addColorStop(1,'rgba(234,88,12,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(760,90,110,0,Math.PI*2);ctx.fill();ctx.globalAlpha=0.85;ctx.fillStyle='#f97316';ctx.beginPath();ctx.arc(760,90,46,0,Math.PI*2);ctx.fill();ctx.restore();}
   if(cfg().dec==='morning'||cfg().dec==='lily')drawClouds();
   drawTrees(pal.trees);
   const waterG=ctx.createLinearGradient(0,WATER_TOP,0,DOCK_TOP);waterG.addColorStop(0,pal.water0);waterG.addColorStop(1,pal.water1);
   ctx.fillStyle=waterG;ctx.fillRect(0,WATER_TOP-10,W,DOCK_TOP-WATER_TOP+20);
+  ctx.save();const sheenG=ctx.createLinearGradient(0,WATER_TOP-4,0,WATER_TOP+52);sheenG.addColorStop(0,'rgba(255,255,255,0.22)');sheenG.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=sheenG;ctx.fillRect(0,WATER_TOP-4,W,56);ctx.restore();
   ctx.save();ctx.globalAlpha=0.28;const hazeG=ctx.createLinearGradient(0,WATER_TOP-20,0,WATER_TOP+70);hazeG.addColorStop(0,pal.haze);hazeG.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=hazeG;ctx.fillRect(0,WATER_TOP-20,W,90);ctx.restore();
   drawRipples(pal);
   if(cfg().dec==='lily')drawLilyPads();
@@ -480,21 +481,28 @@ function drawScene(){
 }
 
 function drawClouds(){
-  const clouds=[{x:120,y:60,w:140,h:45},{x:380,y:40,w:110,h:38},{x:600,y:75,w:90,h:32}];
+  const t=performance.now()/1000;
+  const clouds=[{x:120,y:60,w:140,h:45,spd:3.5},{x:380,y:40,w:110,h:38,spd:5},{x:600,y:75,w:90,h:32,spd:2.8}];
   ctx.save();ctx.fillStyle='rgba(255,255,255,0.72)';
-  for(const c of clouds){ctx.beginPath();ctx.ellipse(c.x,c.y,c.w/2,c.h/2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(c.x+c.w*0.22,c.y-c.h*0.2,c.w*0.35,c.h*0.6,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(c.x-c.w*0.2,c.y-c.h*0.1,c.w*0.3,c.h*0.5,0,0,Math.PI*2);ctx.fill();}
+  for(const c of clouds){const cx=((c.x+t*c.spd)%(W+200))-100;ctx.beginPath();ctx.ellipse(cx,c.y,c.w/2,c.h/2,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(cx+c.w*0.22,c.y-c.h*0.2,c.w*0.35,c.h*0.6,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(cx-c.w*0.2,c.y-c.h*0.1,c.w*0.3,c.h*0.5,0,0,Math.PI*2);ctx.fill();}
   ctx.restore();
 }
 
 function drawTrees(col){
   ctx.save();
+  // Back row - distant, smaller, lighter
+  for(let i=0;i<30;i++){const x=i*32+10+Math.sin(i*2.1)*7,h=32+Math.abs(Math.sin(i*1.3))*26;ctx.fillStyle=col;ctx.globalAlpha=0.28+Math.sin(i*1.9)*0.07;ctx.beginPath();ctx.moveTo(x,WATER_TOP-2);ctx.lineTo(x+15,WATER_TOP-h*0.5);ctx.lineTo(x+3,WATER_TOP-h);ctx.lineTo(x-10,WATER_TOP-h*0.5);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+3,WATER_TOP-h*1.28);ctx.lineTo(x+10,WATER_TOP-h*0.65);ctx.lineTo(x-7,WATER_TOP-h*0.65);ctx.closePath();ctx.fill();}
+  // Front row
   for(let i=0;i<22;i++){const x=i*43+5+Math.sin(i*1.7)*8,h=55+Math.abs(Math.sin(i*0.9))*45;ctx.fillStyle=col;ctx.globalAlpha=0.65+Math.sin(i*1.3)*0.15;ctx.beginPath();ctx.moveTo(x,WATER_TOP-2);ctx.lineTo(x+22,WATER_TOP-h*0.5);ctx.lineTo(x+5,WATER_TOP-h);ctx.lineTo(x-12,WATER_TOP-h*0.5);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(x+5,WATER_TOP-h*1.3);ctx.lineTo(x+16,WATER_TOP-h*0.65);ctx.lineTo(x-8,WATER_TOP-h*0.65);ctx.closePath();ctx.fill();}
   ctx.restore();
 }
 
 function drawRipples(pal){
-  const t=performance.now()/1000;ctx.save();ctx.strokeStyle='rgba(255,255,255,0.11)';ctx.lineWidth=1.5;
-  for(let i=0;i<9;i++){const y=WATER_TOP+25+i*68,spd=18+(i%3)*8,ph=i*0.6;ctx.beginPath();ctx.moveTo(0,y);for(let x=0;x<=W;x+=14)ctx.lineTo(x,y+Math.sin(x*0.035+t*spd+ph)*3.5);ctx.stroke();}ctx.restore();
+  const t=performance.now()/1000;ctx.save();ctx.lineWidth=1.5;
+  for(let i=0;i<9;i++){const y=WATER_TOP+25+i*68,spd=18+(i%3)*8,ph=i*0.6,a=0.13+Math.sin(t*0.7+i*0.5)*0.05+(i<3?0.12:0);ctx.strokeStyle=`rgba(255,255,255,${a})`;ctx.beginPath();ctx.moveTo(0,y);for(let x=0;x<=W;x+=14)ctx.lineTo(x,y+Math.sin(x*0.035+t*spd+ph)*5);ctx.stroke();}
+  // Surface sparkles
+  for(let i=0;i<20;i++){const sx=45+i*47+Math.sin(i*2.3+t*0.35)*28,sy=WATER_TOP+10+Math.sin(i*1.7+t*0.55)*9,sp=Math.sin(t*2.8+i*1.1)*0.5+0.5;if(sp>0.6){ctx.globalAlpha=sp*0.6;ctx.fillStyle='rgba(255,255,255,0.9)';ctx.beginPath();ctx.arc(sx,sy,1.4+sp,0,Math.PI*2);ctx.fill();}}
+  ctx.restore();
 }
 
 function drawHotspots(pal){
@@ -528,6 +536,7 @@ function drawGoldenShimmer(){
 
 function drawDock(){
   ctx.fillStyle='#78350f';ctx.fillRect(0,DOCK_TOP,W,H-DOCK_TOP);
+  for(let i=0;i<13;i++){ctx.fillStyle=i%2===0?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.05)';ctx.fillRect(i*75,DOCK_TOP,74,H-DOCK_TOP);}
   ctx.strokeStyle='#92400e';ctx.lineWidth=2.5;for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(0,DOCK_TOP+i*17);ctx.lineTo(W,DOCK_TOP+i*17);ctx.stroke();}
   ctx.strokeStyle='#451a03';ctx.lineWidth=1.5;for(let i=0;i<13;i++){ctx.beginPath();ctx.moveTo(i*75,DOCK_TOP);ctx.lineTo(i*75,H);ctx.stroke();}
   ctx.save();const sh=ctx.createLinearGradient(0,DOCK_TOP-18,0,DOCK_TOP+8);sh.addColorStop(0,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,0,0,0.35)');ctx.fillStyle=sh;ctx.fillRect(0,DOCK_TOP-18,W,26);ctx.restore();
