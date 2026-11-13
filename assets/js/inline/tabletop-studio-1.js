@@ -226,10 +226,10 @@
     }, 30);
   }
 
-  function toast(message) {
+  function toast(message, type) {
     if (!toastEl) return;
     toastEl.textContent = message;
-    toastEl.classList.add('is-on');
+    toastEl.className = 'tt-toast is-on' + (type ? ' tt-toast--' + type : '');
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(function () {
       toastEl.classList.remove('is-on');
@@ -1229,6 +1229,8 @@
     if (!savedEl) return;
     savedEl.textContent = text;
     savedEl.classList.toggle('is-dirty', !!isDirty);
+    var saveBtn = byId('ttSave');
+    if (saveBtn) saveBtn.classList.toggle('is-dirty', !!isDirty);
   }
 
   function newBoardId() {
@@ -1330,7 +1332,7 @@
       window.clearTimeout(autosaveTimer);
       updateSaveState(quiet ? 'Autosaved' : 'Saved just now', false);
       if (!quiet) {
-        toast('Saved to this browser.');
+        toast('Saved to this browser.', 'save');
         announce('Board saved to this browser.');
         if (window.ToolAnalytics) {
           try { ToolAnalytics.event('board_saved', 'manual'); } catch (err) { /* analytics is optional */ }
@@ -1338,7 +1340,7 @@
       }
       return true;
     } catch (err) {
-      toast('Could not save. Browser storage may be full.');
+      toast('Could not save. Browser storage may be full.', 'error');
       return false;
     }
   }
@@ -1872,12 +1874,18 @@
     rollOverlay = layer;
 
     return {
-      settle: function () {
+      settle: function (total) {
         window.clearInterval(tick);
         dice.forEach(function (d, i) {
           d.spin(false);
           d.set(results[i]);
         });
+        if (total !== undefined) {
+          var slam = document.createElement('div');
+          slam.className = 'tt-roll-slam';
+          slam.textContent = String(total);
+          layer.appendChild(slam);
+        }
       },
       remove: function () {
         window.clearInterval(tick);
@@ -1932,8 +1940,8 @@
       }
 
       if (overlay) {
-        overlay.settle();
-        window.setTimeout(overlay.remove, 120);
+        overlay.settle(results.reduce(function (a, b) { return a + b; }, 0));
+        window.setTimeout(overlay.remove, 300);
       }
 
       playSound('roll');
@@ -2013,8 +2021,12 @@
     deselect();
     updateStatus();
     scheduleDraw();
+    stage.classList.add('tt-mode-flash', S.mode === 'play' ? 'tt-mode-flash--play' : 'tt-mode-flash--build');
+    window.setTimeout(function () {
+      stage.classList.remove('tt-mode-flash', 'tt-mode-flash--play', 'tt-mode-flash--build');
+    }, 350);
     if (S.mode === 'play') {
-      toast('Play mode. Drag pieces anywhere.');
+      toast('Play mode. Drag pieces anywhere.', 'save');
       announce('Play mode. Drag pieces anywhere. Tap a card to flip it.');
     } else {
       announce('Build mode. Paint tiles and snap pieces to the grid.');
@@ -2022,18 +2034,23 @@
   }
 
   function updateStatus() {
+    var terrainName = S.terrain === 'erase' ? 'Eraser' : (TERRAIN[S.terrain] ? TERRAIN[S.terrain].name : 'Paint');
     if (S.mode === 'play') {
-      statusEl.textContent = 'Drag pieces. Tap a card to flip it.';
+      statusEl.textContent = 'Play mode · drag pieces freely';
       barHint.textContent = 'Pieces move freely in Play mode.';
       byId('ttTerrainHelp').textContent = 'Play mode is on. Switch to Build to paint.';
-    } else {
-      statusEl.textContent = 'Paint a tile, then add a piece.';
+    } else if (S.tool === 'fill') {
+      statusEl.textContent = 'Fill · ' + terrainName + ' selected';
       barHint.textContent = 'Drag a piece onto the board.';
-      byId('ttTerrainHelp').textContent = S.tool === 'fill'
-        ? 'Fill is on. Tap a tile to flood it.'
-        : S.tool === 'pick'
-          ? 'Pick is on. Click a tile to sample its terrain.'
-          : 'Pick a colour, then paint the board.';
+      byId('ttTerrainHelp').textContent = 'Fill is on. Tap a tile to flood it with ' + terrainName + '.';
+    } else if (S.tool === 'pick') {
+      statusEl.textContent = 'Pick: click a tile to sample it';
+      barHint.textContent = 'Drag a piece onto the board.';
+      byId('ttTerrainHelp').textContent = 'Pick is on. Click a tile to sample its terrain.';
+    } else {
+      statusEl.textContent = 'Brush · ' + terrainName + ' selected';
+      barHint.textContent = 'Drag a piece onto the board.';
+      byId('ttTerrainHelp').textContent = 'Pick a colour, then paint the board.';
     }
   }
 
@@ -2453,7 +2470,8 @@
   function buildTerrainPalette() {
     var host = byId('ttTerrain');
     var frag = document.createDocumentFragment();
-    Object.keys(TERRAIN).forEach(function (key) {
+    var terrainKeys = Object.keys(TERRAIN);
+    terrainKeys.forEach(function (key, idx) {
       var t = TERRAIN[key];
       var b = document.createElement('button');
       b.type = 'button';
@@ -2461,7 +2479,8 @@
       b.dataset.terrain = key;
       b.style.setProperty('--sw', t.color);
       b.setAttribute('aria-pressed', key === S.terrain ? 'true' : 'false');
-      b.setAttribute('aria-label', t.name);
+      b.setAttribute('aria-label', t.name + (idx < 9 ? ' (key ' + (idx + 1) + ')' : ''));
+      if (idx < 9) b.dataset.hotkey = String(idx + 1);
       b.innerHTML = '<span class="tt-swatch-chip" aria-hidden="true"><span class="tt-swatch-icon">' + t.icon + '</span></span><span class="tt-swatch-name">' + t.name + '</span>';
       frag.appendChild(b);
     });
@@ -2588,7 +2607,15 @@
   function updatePlayAids() {
     if (roundOut) roundOut.textContent = String(S.round || 1);
     if (turnOut) turnOut.textContent = String(S.turn || 1);
-    if (turnChip) turnChip.textContent = 'Round ' + (S.round || 1) + ' · Turn ' + (S.turn || 1);
+    if (turnChip) {
+      var activeName = '';
+      if (Array.isArray(S.players)) {
+        var activeTurn = (S.turn || 1) - 1;
+        var ap = S.players[activeTurn % S.players.length];
+        if (ap && ap.name && ap.name.trim()) activeName = ' - ' + ap.name.trim();
+      }
+      turnChip.textContent = 'Round ' + (S.round || 1) + ' · Turn ' + (S.turn || 1) + activeName;
+    }
     if (rulesInput && document.activeElement !== rulesInput) rulesInput.value = S.rules || '';
     renderPlayers();
   }
@@ -3492,9 +3519,15 @@
       closeHelp(false);
       if (emptyEl.hidden) {
         if (S.mode === 'build') {
-          try { cv.focus({ preventScroll: true }); } catch (err) { cv.focus(); }
+          var firstSwatch = document.querySelector('.tt-swatch');
+          if (firstSwatch) {
+            firstSwatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            firstSwatch.focus({ preventScroll: true });
+          } else {
+            try { cv.focus({ preventScroll: true }); } catch (err) { cv.focus(); }
+          }
         }
-        toast('Pick a colour and paint.');
+        toast('Pick a colour and paint.', 'save');
         announce('Pick a terrain colour and paint the board.');
       } else {
         toast('Pick a starter board.');
@@ -3797,6 +3830,39 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Section open/close memory                                          */
+  /* ------------------------------------------------------------------ */
+
+  var SEC_KEY = 'jvds-tabletop-sections-v1';
+
+  function saveSectionStates() {
+    try {
+      var state = {};
+      document.querySelectorAll('.tt-sec').forEach(function (el) {
+        if (el.id) state[el.id] = el.open;
+      });
+      localStorage.setItem(SEC_KEY, JSON.stringify(state));
+    } catch (err) {}
+  }
+
+  function restoreSectionStates() {
+    try {
+      var raw = localStorage.getItem(SEC_KEY);
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      document.querySelectorAll('.tt-sec').forEach(function (el) {
+        if (el.id && state.hasOwnProperty(el.id)) el.open = !!state[el.id];
+      });
+    } catch (err) {}
+  }
+
+  function wireSectionMemory() {
+    document.querySelectorAll('.tt-sec').forEach(function (el) {
+      el.addEventListener('toggle', saveSectionStates);
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Boot                                                                */
   /* ------------------------------------------------------------------ */
 
@@ -3816,6 +3882,8 @@
     buildPieces();
     buildDiceTypes();
     wireEvents();
+    wireSectionMemory();
+    restoreSectionStates();
     applyZoom(1);
 
     if (loaded && S.bg) setBgImage(S.bg);

@@ -73,6 +73,10 @@ function wait(ms) {
       localStorage.removeItem('jvds-tabletop-v1');
       localStorage.removeItem('jvds-tabletop-v2');
       localStorage.setItem('jvds-cookie-consent', 'declined');
+      var settings = {};
+      try { settings = JSON.parse(localStorage.getItem('jvds_studio_settings') || '{}') || {}; } catch (err) {}
+      settings.seenWalkthrough = true;
+      localStorage.setItem('jvds_studio_settings', JSON.stringify(settings));
     } catch (err) {}
   });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -358,7 +362,7 @@ function wait(ms) {
   await wait(200);
   const overlayUp = await page.evaluate(() => !!document.querySelector('.tt-roll-overlay'));
   check('dice roll animates across the screen', overlayUp);
-  await wait(1200);
+  await wait(1600);
   const overlayGone = await page.evaluate(() => !document.querySelector('.tt-roll-overlay'));
   check('roll animation clears itself', overlayGone);
   const rolled = await page.evaluate(() => document.getElementById('ttDiceResult').textContent);
