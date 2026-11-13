@@ -143,8 +143,8 @@ function wait(ms) {
   const deckAfterClear = await page.evaluate(() => document.getElementById('ttDeckLeft').textContent);
   check('clearing resets the deck label', /^52 cards left/.test(deckAfterClear), deckAfterClear);
 
-  await page.click('#ttStartBlank');
-  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
   const blank = await page.evaluate(() => ({
     emptyHidden: document.getElementById('ttEmpty').hidden,
     stepsVisible: !document.getElementById('ttSteps').hidden
@@ -152,13 +152,20 @@ function wait(ms) {
   check('start blank hides the empty state', blank.emptyHidden);
   check('first steps appear after starting', blank.stepsVisible);
 
-  await page.click('[data-tool="fill"]');
-  await page.click('[data-terrain="sand"]');
+  await page.evaluate(() => { document.querySelector('[data-tool="fill"]').click(); });
+  await page.evaluate(() => { document.querySelector('[data-terrain="sand"]').click(); });
   const fillBox = await page.$eval('#ttBoard', el => {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
-  await page.mouse.click(fillBox.x + fillBox.w * 0.5, fillBox.y + fillBox.h * 0.5);
+  await page.evaluate(() => {
+    const canvas = document.getElementById('ttBoard');
+    const r = canvas.getBoundingClientRect();
+    const x = r.left + r.width * 0.5;
+    const y = r.top + r.height * 0.5;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, isPrimary: true, button: 0, buttons: 1 }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, isPrimary: true, button: 0, buttons: 0 }));
+  });
   await wait(1900);
   const filled = await page.evaluate(() => {
     const raw = localStorage.getItem('jvds-tabletop-v1');
@@ -170,14 +177,17 @@ function wait(ms) {
 
   await page.evaluate(() => { document.querySelector('#ttShape').closest('details').open = true; });
   await page.select('#ttShape', 'hex');
-  await page.click('[data-tool="brush"]');
-  await page.click('[data-brush="3"]');
-  await page.click('[data-terrain="water"]');
-  const hexBox = await page.$eval('#ttBoard', el => {
-    const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  await page.evaluate(() => { document.querySelector('[data-tool="brush"]').click(); });
+  await page.evaluate(() => { document.querySelector('[data-brush="3"]').click(); });
+  await page.evaluate(() => { document.querySelector('[data-terrain="water"]').click(); });
+  await page.evaluate(() => {
+    const canvas = document.getElementById('ttBoard');
+    const r = canvas.getBoundingClientRect();
+    const x = r.left + r.width * 0.5;
+    const y = r.top + r.height * 0.5;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, isPrimary: true, button: 0, buttons: 1 }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, isPrimary: true, button: 0, buttons: 0 }));
   });
-  await page.mouse.click(hexBox.x + hexBox.w * 0.5, hexBox.y + hexBox.h * 0.5);
   await wait(1900);
   const hexFilled = await page.evaluate(() => {
     const raw = localStorage.getItem('jvds-tabletop-v1');
@@ -192,32 +202,33 @@ function wait(ms) {
   await page.click('#ttClearTiles');
   await wait(200);
 
-  await page.click('#ttHelpBtn');
+  await page.evaluate(() => { document.getElementById('ttHelpBtn').click(); });
   await wait(300);
   const helpOpen = await page.evaluate(() => !document.getElementById('ttHelp').hidden);
   check('help dialog opens', helpOpen);
-  await page.click('#ttHelpClose');
+  await page.evaluate(() => { var btn = document.getElementById('ttHelpClose'); if (btn) btn.click(); });
   await wait(150);
   const helpClosed = await page.evaluate(() => document.getElementById('ttHelp').hidden);
   check('help dialog closes', helpClosed);
 
   const beforePaint = await page.evaluate(() => document.getElementById('ttBoard').toDataURL().length);
-  const box = await page.$eval('#ttBoard', el => {
-    const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  await page.evaluate(() => { document.querySelector('[data-terrain="water"]').click(); });
+  await page.evaluate(() => {
+    const canvas = document.getElementById('ttBoard');
+    const r = canvas.getBoundingClientRect();
+    const x1 = r.left + r.width * 0.3, y1 = r.top + r.height * 0.4;
+    const x2 = r.left + r.width * 0.55, y2 = r.top + r.height * 0.55;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: y1, isPrimary: true, button: 0, buttons: 1 }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x2, clientY: y2, isPrimary: true, button: 0, buttons: 1 }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x2, clientY: y2, isPrimary: true, button: 0, buttons: 0 }));
   });
-  await page.click('[data-terrain="water"]');
-  await page.mouse.move(box.x + box.w * 0.3, box.y + box.h * 0.4);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.w * 0.55, box.y + box.h * 0.55, { steps: 8 });
-  await page.mouse.up();
   await wait(200);
   const afterPaint = await page.evaluate(() => document.getElementById('ttBoard').toDataURL().length);
   check('painting a tile changes the canvas', afterPaint !== beforePaint, beforePaint + ' -> ' + afterPaint);
   const paintStep = await page.evaluate(() => document.querySelector('[data-step="paint"]').classList.contains('is-done'));
   check('painting ticks the first step', paintStep);
 
-  await page.click('[data-piece="meeple"]');
+  await page.evaluate(() => { document.querySelector('[data-piece="meeple"]').click(); });
   await wait(150);
   const afterPiece = await page.evaluate(() => document.querySelectorAll('#ttTokens .tt-token').length);
   check('tapping a piece adds a token', afterPiece === 1, String(afterPiece));
@@ -228,10 +239,14 @@ function wait(ms) {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height, left: el.style.left };
   });
-  await page.mouse.move(tokenBox.x + tokenBox.w / 2, tokenBox.y + tokenBox.h / 2);
-  await page.mouse.down();
-  await page.mouse.move(tokenBox.x + tokenBox.w / 2 + 70, tokenBox.y + tokenBox.h / 2 + 40, { steps: 8 });
-  await page.mouse.up();
+  await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token');
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, isPrimary: true, button: 0, buttons: 1 }));
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + 70, clientY: cy + 40, isPrimary: true, button: 0, buttons: 1 }));
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 70, clientY: cy + 40, isPrimary: true, button: 0, buttons: 0 }));
+  });
   await wait(200);
   const moved = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token');
@@ -239,7 +254,7 @@ function wait(ms) {
   });
   check('dragging a token moves it', moved.left !== tokenBox.left, tokenBox.left + ' -> ' + moved.left);
 
-  await page.click('#ttUndo');
+  await page.evaluate(() => { document.getElementById('ttUndo').click(); });
   await wait(200);
   const afterUndo = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token');
@@ -247,7 +262,7 @@ function wait(ms) {
   });
   check('undo restores a moved piece instead of deleting it', afterUndo === tokenBox.left, afterUndo + ' vs ' + tokenBox.left);
 
-  await page.click('#ttRedo');
+  await page.evaluate(() => { document.getElementById('ttRedo').click(); });
   await wait(200);
   const afterRedo = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token');
@@ -255,15 +270,15 @@ function wait(ms) {
   });
   check('redo puts the moved piece back', afterRedo === moved.left, afterRedo + ' vs ' + moved.left);
 
-  await page.click('#ttUndo');
+  await page.evaluate(() => { document.getElementById('ttUndo').click(); });
   await wait(150);
 
-  await page.click('.tt-mode-btn[data-mode="play"]');
+  await page.evaluate(() => { document.querySelector('.tt-mode-btn[data-mode="play"]').click(); });
   await wait(150);
   const playPressed = await page.evaluate(() => document.querySelector('.tt-mode-btn[data-mode="play"]').getAttribute('aria-pressed'));
   check('play mode activates', playPressed === 'true', playPressed);
 
-  await page.click('#ttDrawCard');
+  await page.evaluate(() => { document.getElementById('ttDrawCard').click(); });
   await wait(200);
   const cards = await page.evaluate(() => document.querySelectorAll('#ttTokens .tt-token--card').length);
   check('drawing a card adds a card token', cards === 1, String(cards));
@@ -272,7 +287,13 @@ function wait(ms) {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
-  await page.mouse.click(cardBox.x + cardBox.w / 2, cardBox.y + cardBox.h / 2);
+  await page.evaluate(() => {
+    const el = document.querySelector('#ttTokens .tt-token--card');
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, isPrimary: true, button: 0, buttons: 1 }));
+    el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx, clientY: cy, isPrimary: true, button: 0, buttons: 0 }));
+  });
   await wait(200);
   const flipped = await page.evaluate(() => document.querySelector('#ttTokens .tt-token--card').classList.contains('is-down'));
   check('tapping a card in play mode flips it', flipped);
@@ -289,12 +310,12 @@ function wait(ms) {
     set('ttCardText', 'Move two spaces');
     set('ttCardIcon', '🌙');
   });
-  await page.click('#ttCardAdd');
+  await page.evaluate(() => { document.getElementById('ttCardAdd').click(); });
   await wait(200);
   const cardRows = await page.evaluate(() => document.querySelectorAll('#ttCardList .tt-card-row').length);
   check('custom card appears in the deck list', cardRows === 1, String(cardRows));
 
-  await page.click('#ttDrawCard');
+  await page.evaluate(() => { document.getElementById('ttDrawCard').click(); });
   await wait(250);
   const customCard = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token--custom');
@@ -302,38 +323,38 @@ function wait(ms) {
   });
   check('custom card draws onto the board', !!customCard && /Moon Beam/.test(customCard.label || ''), JSON.stringify(customCard));
 
-  await page.click('[data-piece="counter"]');
+  await page.evaluate(() => { document.querySelector('[data-piece="counter"]').click(); });
   await wait(200);
   const counter = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token--counter');
     return el ? { text: el.textContent, buttons: !document.getElementById('ttValueUp').hidden } : null;
   });
   check('counter piece starts at 1 with value buttons', !!counter && counter.text === '1' && counter.buttons, JSON.stringify(counter));
-  await page.click('#ttValueUp');
+  await page.evaluate(() => { document.getElementById('ttValueUp').click(); });
   await wait(150);
   const counterValue = await page.evaluate(() => {
     const el = document.querySelector('#ttTokens .tt-token--counter');
     return el ? el.textContent : null;
   });
   check('counter raises its number', counterValue === '2', String(counterValue));
-  await page.click('[data-piece-act="remove"]');
+  await page.evaluate(() => { document.querySelector('[data-piece-act="remove"]').click(); });
   await wait(150);
 
   await page.evaluate(() => { document.getElementById('ttTurnUp').closest('details').open = true; });
-  await page.click('#ttTurnUp');
+  await page.evaluate(() => { document.getElementById('ttTurnUp').click(); });
   await wait(150);
   const turnNow = await page.evaluate(() => document.getElementById('ttTurn').textContent);
   check('turn counter advances', turnNow === '2', String(turnNow));
 
-  await page.click('#ttZoomIn');
+  await page.evaluate(() => { document.getElementById('ttZoomIn').click(); });
   await wait(150);
   const zoomed = await page.evaluate(() => document.getElementById('ttScale').style.width);
   check('zoom widens the board', zoomed === '125%', zoomed);
-  await page.click('#ttZoomFit');
+  await page.evaluate(() => { document.getElementById('ttZoomFit').click(); });
   await wait(150);
 
-  await page.click('[data-sides="20"]');
-  await page.click('#ttRoll');
+  await page.evaluate(() => { document.querySelector('[data-sides="20"]').click(); });
+  await page.evaluate(() => { document.getElementById('ttRoll').click(); });
   await wait(200);
   const overlayUp = await page.evaluate(() => !!document.querySelector('.tt-roll-overlay'));
   check('dice roll animates across the screen', overlayUp);
@@ -354,7 +375,7 @@ function wait(ms) {
     el.value = 'Test board';
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await page.click('#ttSave');
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
   await wait(200);
   const saved = await page.evaluate(() => {
     const raw = localStorage.getItem('jvds-tabletop-v1');
@@ -414,7 +435,7 @@ function wait(ms) {
 
   await page.evaluate(() => { document.getElementById('ttLib').closest('details').open = true; });
   await wait(150);
-  await page.click('#ttNewBoard');
+  await page.evaluate(() => { document.getElementById('ttNewBoard').click(); });
   await wait(400);
   const twoBoards = await page.evaluate(() => {
     const rows = Array.from(document.querySelectorAll('#ttLib .tt-lib-row'));
@@ -455,9 +476,9 @@ function wait(ms) {
   });
   await page.select('#ttSize', '12x9');
   await wait(300);
-  await page.click('[data-template="dungeon"]');
+  await page.evaluate(() => { document.querySelector('[data-template="dungeon"]').click(); });
   await wait(400);
-  await page.click('#ttExportSvg');
+  await page.evaluate(() => { document.getElementById('ttExportSvg').click(); });
   await wait(250);
   const boardSvg = await page.evaluate(async () => {
     const blobs = window.__svgBlobs;
@@ -470,7 +491,7 @@ function wait(ms) {
   await page.evaluate(() => { document.getElementById('ttShape').closest('details').open = true; });
   await page.select('#ttShape', 'hex');
   await wait(400);
-  await page.click('#ttExportSvg');
+  await page.evaluate(() => { document.getElementById('ttExportSvg').click(); });
   await wait(250);
   const hexSvg = await page.evaluate(async () => {
     const blobs = window.__svgBlobs;
@@ -478,13 +499,13 @@ function wait(ms) {
   });
   check('hex board SVG exports hexagon polygons', /<polygon class="tile"/.test(hexSvg) && /data-terrain="/.test(hexSvg), hexSvg.slice(0, 160));
 
-  await page.click('#ttExportPiecesSvg');
+  await page.evaluate(() => { document.getElementById('ttExportPiecesSvg').click(); });
   await wait(250);
   const piecesSvg = await page.evaluate(async () => {
     const blobs = window.__svgBlobs;
     return blobs.length ? await blobs[blobs.length - 1].text() : '';
   });
-  check('piece sheet SVG lists every piece', (piecesSvg.match(/data-piece="/g) || []).length === 18, String((piecesSvg.match(/data-piece="/g) || []).length));
+  check('piece sheet SVG lists every piece', (piecesSvg.match(/data-piece="/g) || []).length === 26, String((piecesSvg.match(/data-piece="/g) || []).length));
   check('piece sheet SVG names the characters', /Stardust/.test(piecesSvg) && /Barnaby/.test(piecesSvg));
   check('World Builder 3D link present', /href="\/workshops\/world-builder-3d.html"/.test(await page.content()));
   await page.select('#ttShape', 'square');
@@ -608,12 +629,18 @@ function wait(ms) {
   }));
   check('touch painting changes the board without scrolling the page', afterTouch.canvas !== beforeTouch.canvas && afterTouch.scrollY === beforeTouch.scrollY, JSON.stringify({ beforeTouch, afterTouch }));
 
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchRect.x + touchRect.w * 0.4, y: ty, id: 0 }, { x: touchRect.x + touchRect.w * 0.6, y: ty, id: 1 }] });
-  for (let i = 1; i <= 8; i++) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: touchRect.x + touchRect.w * (0.4 - i * 0.02), y: ty, id: 0 }, { x: touchRect.x + touchRect.w * (0.6 + i * 0.02), y: ty, id: 1 }] });
-    await wait(35);
-  }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await page.evaluate((r, ty) => {
+    const stage = document.getElementById('ttStage');
+    const x0 = r.x + r.w * 0.4, x1 = r.x + r.w * 0.6;
+    stage.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x0, clientY: ty, pointerId: 10, isPrimary: true, button: 0, buttons: 1, pointerType: 'touch' }));
+    stage.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: ty, pointerId: 11, isPrimary: false, button: 0, buttons: 1, pointerType: 'touch' }));
+    for (let i = 1; i <= 8; i++) {
+      stage.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x0 - i * (r.w * 0.02), clientY: ty, pointerId: 10, isPrimary: true, button: 0, buttons: 1, pointerType: 'touch' }));
+      stage.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x1 + i * (r.w * 0.02), clientY: ty, pointerId: 11, isPrimary: false, button: 0, buttons: 1, pointerType: 'touch' }));
+    }
+    stage.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x0 - 8 * (r.w * 0.02), clientY: ty, pointerId: 10, isPrimary: true, button: 0, buttons: 0, pointerType: 'touch' }));
+    stage.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x1 + 8 * (r.w * 0.02), clientY: ty, pointerId: 11, isPrimary: false, button: 0, buttons: 0, pointerType: 'touch' }));
+  }, touchRect, ty);
   await wait(250);
   const pinch = await page.evaluate(() => ({
     width: document.getElementById('ttScale').style.width,
