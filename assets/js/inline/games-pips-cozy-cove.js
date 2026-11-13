@@ -13,10 +13,18 @@ const FISH=[
 ];
 const LEGENDARY={name:'Dragon Koi',emoji:'🐲',pts:2000,wait:[0.8,1.8],reel:30,esc:0.6,drain:4.8,col:'#c084fc',shadowR:52,legendary:true};
 const SIZE_TABLE={small:{pts:0.6,reel:0.7,label:'Small'},normal:{pts:1,reel:1,label:''},trophy:{pts:2,reel:1.4,label:'Trophy'}};
+
+/* rod tiers - #7 rod upgrades */
+const RODS=[
+  {name:'Willow Rod',emoji:'🎣',castMult:1,reelMult:1,rareMult:1,reqCatches:0,desc:'Your trusty starter rod'},
+  {name:'Carbon Rod',emoji:'🏆',castMult:1.2,reelMult:1.15,rareMult:1.1,reqCatches:10,desc:'Longer casts, faster reel'},
+  {name:'Master Rod',emoji:'⚜️',castMult:1.4,reelMult:1.3,rareMult:1.25,reqCatches:25,desc:'Cast further, reel steadier'},
+];
+
 const BAITS=[
-  {name:'Worm',emoji:'🪱',desc:'Attracts all fish',waitMult:1,bias:0},
-  {name:'Lure',emoji:'🎣',desc:'Bigger fish, longer wait',waitMult:1.3,bias:1},
-  {name:'Bread',emoji:'🍞',desc:'Fast bites, common fish',waitMult:0.65,bias:-1},
+  {name:'Worm',emoji:'🪱',desc:'Attracts all fish',waitMult:1,bias:0,maxUses:4},
+  {name:'Lure',emoji:'🎣',desc:'Bigger fish, longer wait',waitMult:1.3,bias:1,maxUses:3},
+  {name:'Bread',emoji:'🍞',desc:'Fast bites, common fish',waitMult:0.65,bias:-1,maxUses:5},
 ];
 const LEVELS=[
   {name:'Morning Cove',target:3,fishPool:[0,0,0,1],
@@ -40,6 +48,9 @@ const TIPS=[
   {t:'Trophy Fish',d:'Long casts with the Lure bait can hook a trophy-size fish worth double points!'},
   {t:'Combo Bonus',d:'Catch fish back-to-back within 20 seconds to build a chain bonus.'},
   {t:'Dragon Koi',d:'Cast into a glowing hotspot for a chance to hook the legendary Dragon Koi!'},
+  {t:'Rod Upgrades',d:'Catch 10 fish total to unlock the Carbon Rod - longer casts, faster reeling!'},
+  {t:'Streak Bonus',d:'Catch 5 in a row without losing a fish to earn a free bait refill!'},
+  {t:'Photo Mode',d:'Tap the camera button to save a screenshot of your best catch!'},
 ];
 let tipIdx=0;
 
@@ -47,7 +58,6 @@ let tipIdx=0;
 function getDailyChallenge(){
   const d=new Date(),key=d.toDateString();
   const seed=d.getDate()+d.getMonth()*31;
-  const fishNames=['Minnow','Perch','Bass','Golden Carp','Dragon Koi'];
   const types=['catch_fish','catch_trophy','catch_legendary','catch_combo','chain_catch'];
   const type=types[seed%types.length];
   if(type==='catch_fish'){const f=FISH[seed%4];return{key,type,target:f.name,label:'Catch 3 '+f.emoji+' '+f.name,goal:3,prog:'fishCount'};}
@@ -55,6 +65,15 @@ function getDailyChallenge(){
   if(type==='catch_legendary'){return{key,label:'Hook the Dragon Koi',goal:1,type:'legendary',prog:'legendaryCount'};}
   if(type==='catch_combo'){return{key,label:'Reach a x3 combo',goal:3,type:'combo',prog:'maxCombo'};}
   return{key,label:'Chain 3 catches in a row',goal:3,type:'chain',prog:'chainCount'};
+}
+
+/* ---- seasonal fish - #8 ---- */
+function getSeasonalFish(){
+  const mo=new Date().getMonth();
+  if(mo===11||mo===0||mo===1)return{name:'Frost Trout',emoji:'🐟',pts:180,wait:[2,4.5],reel:13,esc:1.2,drain:2,col:'#bfdbfe',shadowR:22,seasonal:true};
+  if(mo>=2&&mo<=4)return{name:'Blossom Dace',emoji:'🌸',pts:160,wait:[1.8,4],reel:12,esc:1.3,drain:1.6,col:'#fbcfe8',shadowR:18,seasonal:true};
+  if(mo>=5&&mo<=7)return{name:'Summer Roach',emoji:'🌊',pts:140,wait:[1.5,3.5],reel:10,esc:1.1,drain:1.4,col:'#6ee7b7',shadowR:16,seasonal:true};
+  return{name:'Autumn Chub',emoji:'🍂',pts:170,wait:[2,4],reel:14,esc:1.0,drain:1.9,col:'#fcd34d',shadowR:20,seasonal:true};
 }
 
 /* ---- state ---- */
@@ -73,11 +92,23 @@ let revealData=null,revealT=0;
 let reelSwipeStart=null;
 let screenFlash={alpha:0,col:'#fff'};
 let chainTimer=0,chainCount=0;
-let legendaryEvent=null; // {x,y,timer,pulse}
+let legendaryEvent=null;
 let dailyChallenge=null,dailyProg={fishCount:{},trophyCount:0,legendaryCount:0,maxCombo:0,chainCount:0};
 let dailyDone=false;
 
-function loadSv(){try{return Object.assign({best:0,bestLevel:0,stars:{},total:0,log:[],bestiary:{},daily:{}},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{return{best:0,bestLevel:0,stars:{},total:0,log:[],bestiary:{},daily:{}}}}
+/* new state for improvements */
+let rodLevel=0;                  /* #7 rod tier */
+let baitUses=[4,3,5];            /* #12 bait durability */
+let catchStreak=0;               /* #10 streak bonus */
+let luckyCharm=false;            /* #14 lucky charm */
+let photoMode=false;             /* #25 photo mode */
+let jumpReveal=null;             /* #19 catch jump animation */
+let catchJumpT=0;
+let nibBobs=0,nibBobTarget=0;    /* #4 multi-bob anticipation */
+let ambientNode=null;            /* #21 ambient audio */
+let tensionBeepT=0;              /* #23 tension sound */
+
+function loadSv(){try{return Object.assign({best:0,bestLevel:0,stars:{},total:0,log:[],bestiary:{},daily:{},bests:{},rodLevel:0,charm:false,dailyBoard:[]},JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{return{best:0,bestLevel:0,stars:{},total:0,log:[],bestiary:{},daily:{},bests:{},rodLevel:0,charm:false,dailyBoard:[]};}}
 function storeSv(){try{localStorage.setItem(KEY,JSON.stringify(sv))}catch{}}
 
 function rollWeather(){
@@ -86,23 +117,57 @@ function rollWeather(){
   weatherPtx=[];
 }
 
+/* #17 time-of-day: returns 0-1 based on real clock hour */
+function getTimeOfDay(){
+  const h=new Date().getHours()+(new Date().getMinutes()/60);
+  if(h<6)return 0;   // night
+  if(h<9)return(h-6)/3*0.25;    // dawn
+  if(h<17)return 0.25+(h-9)/8*0.5; // day
+  if(h<20)return 0.75+(h-17)/3*0.2; // dusk
+  return 0.95+(h-20)/4*0.05;    // evening
+}
+
+/* #20 seasonal: returns decor type based on month */
+function getSeason(){
+  const m=new Date().getMonth();
+  if(m===11||m===0||m===1)return'winter';
+  if(m>=2&&m<=4)return'spring';
+  if(m>=5&&m<=7)return'summer';
+  return'autumn';
+}
+
 function startLevel(i){
   lv=Math.max(0,Math.min(i,LEVELS.length-1));
-  score=0;caught=0;combo=0;chainTimer=0;chainCount=0;
+  score=0;caught=0;combo=0;chainTimer=0;chainCount=0;catchStreak=0;
   st='idle';drag=null;bob.show=false;bob.dip=0;cur=null;particles=[];bubbles=[];bgJumps=[];floatTexts=[];
-  casting=false;charging=false;chargeT=0;legendaryEvent=null;screenFlash.alpha=0;
+  casting=false;charging=false;chargeT=0;legendaryEvent=null;screenFlash.alpha=0;jumpReveal=null;
   playing=true;
   rollWeather();
   dailyChallenge=getDailyChallenge();
   const savedDaily=sv.daily||{};
   dailyDone=savedDaily[dailyChallenge.key]===true;
+  rodLevel=sv.rodLevel||0;
+  luckyCharm=sv.charm||false;
+  baitUses=BAITS.map(b=>b.maxUses);
   setStatus('Flick upward from the bottom to cast your line! 🎣');
   hideModal();updateUI();
-  rotateTip();buildBaitUI();
+  rotateTip();buildBaitUI();buildPhotoBtn();
+  startAmbient();
 }
 
 function cfg(){return LEVELS[lv];}
 function rotateTip(){tipIdx=(tipIdx+1)%TIPS.length;const tp=TIPS[tipIdx];document.getElementById('tipTitle').textContent=tp.t;document.getElementById('tipDetail').textContent=tp.d;}
+
+/* #12 bait durability - consume on cast */
+function consumeBait(){
+  baitUses[bait]=Math.max(0,baitUses[bait]-1);
+  if(baitUses[bait]===0){
+    spawnFloatText(BAITS[bait].name+' used up!',W/2,WATER_TOP+80,'#f59e0b');
+    // auto-switch to a bait with uses left
+    for(let i=0;i<BAITS.length;i++){if(baitUses[i]>0){bait=i;break;}}
+  }
+  buildBaitUI();
+}
 
 function buildBaitUI(){
   let el=document.getElementById('baitBar');
@@ -115,16 +180,39 @@ function buildBaitUI(){
   }
   el.innerHTML='';
   BAITS.forEach((b,i)=>{
+    const uses=baitUses[i];
     const btn=document.createElement('button');
     btn.className='ghost';
-    btn.style.cssText='flex:1;padding:7px 2px;font-size:11px;margin-top:0;border-radius:11px;'+(i===bait?'background:#14b8a6;color:#fff;border-color:#14b8a6':'');
-    btn.textContent=b.emoji+' '+b.name;
-    btn.title=b.desc;
+    const sel=i===bait;
+    btn.style.cssText='flex:1;padding:7px 2px;font-size:11px;margin-top:0;border-radius:11px;position:relative;'+(sel?'background:#14b8a6;color:#fff;border-color:#14b8a6':'')+(uses===0?'opacity:0.4;':'');
+    btn.innerHTML=b.emoji+' '+b.name+'<span style="display:block;font-size:9px;opacity:0.7">'+('|'.repeat(uses))+'</span>';
+    btn.title=b.desc+' ('+uses+' uses left)';
+    btn.disabled=uses===0;
     btn.onclick=()=>{if(st==='idle'){bait=i;buildBaitUI();}};
     el.appendChild(btn);
   });
+  buildRodUI();
   buildDailyUI();
   buildLogUI();
+  buildLeaderboardUI();
+}
+
+/* #7 rod upgrade UI */
+function buildRodUI(){
+  let el=document.getElementById('rodCard');
+  if(!el){
+    el=document.createElement('div');
+    el.id='rodCard';
+    el.className='cove-last';
+    el.style='margin-top:10px;border-left:3px solid #92400e;';
+    const bar=document.getElementById('baitBar');
+    if(bar)bar.after(el);
+  }
+  const rod=RODS[rodLevel];
+  const next=RODS[rodLevel+1];
+  const total=sv.total||0;
+  el.innerHTML=`<p>Rod</p><div style="font-weight:700;font-size:13px">${rod.emoji} ${rod.name}</div><div style="font-size:11px;color:#94a3b8;margin:2px 0">${rod.desc}</div>`+(next?`<div style="font-size:11px;color:#f59e0b;margin-top:3px">Next: ${next.name} at ${next.reqCatches} catches (${total}/${next.reqCatches})</div>`:`<div style="font-size:11px;color:#22c55e;margin-top:3px">Max rod equipped!</div>`);
+  if(luckyCharm){el.innerHTML+=`<div style="font-size:11px;color:#c084fc;margin-top:4px">🍀 Lucky Charm active (+15% rare fish)</div>`;}
 }
 
 function buildDailyUI(){
@@ -134,14 +222,15 @@ function buildDailyUI(){
     el.id='dailyCard';
     el.className='cove-last';
     el.style='margin-top:10px;border-left:3px solid #f59e0b;';
-    const bar=document.getElementById('baitBar');
-    if(bar)bar.after(el);
+    const rod=document.getElementById('rodCard');
+    if(rod)rod.after(el);
   }
   if(!dailyChallenge){el.innerHTML='';return;}
   const done=dailyDone;
   el.innerHTML=`<p>Daily Challenge${done?' <span style="color:#22c55e">Done!</span>':''}</p><div style="font-size:13px;font-weight:700;margin:4px 0">${dailyChallenge.label}</div>${done?'<div style="color:#22c55e;font-size:12px">+500 bonus pts earned!</div>':'<div style="color:#94a3b8;font-size:11px">Complete for +500 bonus pts</div>'}`;
 }
 
+/* #9 personal best per species in bestiary */
 function buildLogUI(){
   let el=document.getElementById('catchLogCard');
   if(!el){
@@ -153,9 +242,56 @@ function buildLogUI(){
     if(daily)daily.after(el);
   }
   const bestiary=sv.bestiary||{};
-  const allFish=[...FISH,LEGENDARY];
-  const rows=allFish.map(f=>{const c=bestiary[f.name]||0;return`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;border-bottom:.5px solid rgba(0,0,0,.08);opacity:${c>0?1:0.35}"><span>${f.emoji} ${f.name}</span><b style="color:${f.legendary?'#c084fc':'#0d9488'}">${c>0?c:'?'}</b></div>`;}).join('');
+  const bests=sv.bests||{};
+  const allFish=[...FISH,LEGENDARY,getSeasonalFish()];
+  const rows=allFish.map(f=>{
+    const c=bestiary[f.name]||0;
+    const pb=bests[f.name]?` <span style="color:#fbbf24;font-size:10px">PB:${bests[f.name]}</span>`:'';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:2px 0;border-bottom:.5px solid rgba(0,0,0,.08);opacity:${c>0?1:0.35}"><span>${f.emoji} ${f.name}${f.seasonal?'<span style="color:#f59e0b;font-size:9px"> seasonal</span>':''}</span><span style="display:flex;align-items:center;gap:4px"><b style="color:${f.legendary?'#c084fc':f.seasonal?'#f59e0b':'#0d9488'}">${c>0?c:'?'}</b>${pb}</span></div>`;
+  }).join('');
   el.innerHTML='<p>Bestiary</p>'+rows;
+}
+
+/* #24 daily leaderboard */
+function buildLeaderboardUI(){
+  let el=document.getElementById('leaderCard');
+  if(!el){
+    el=document.createElement('div');
+    el.id='leaderCard';
+    el.className='cove-last';
+    el.style='margin-top:10px;';
+    const log=document.getElementById('catchLogCard');
+    if(log)log.after(el);
+  }
+  const board=sv.dailyBoard||[];
+  const today=new Date().toDateString();
+  const todayScores=board.filter(e=>e.date===today).sort((a,b)=>b.score-a.score).slice(0,5);
+  if(!todayScores.length){el.innerHTML='<p>Today\'s Best</p><div style="font-size:11px;color:#94a3b8">No scores yet today</div>';return;}
+  const rows=todayScores.map((e,i)=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>${['🥇','🥈','🥉','4.','5.'][i]} ${e.level}</span><b style="color:#fbbf24">${e.score}</b></div>`).join('');
+  el.innerHTML='<p>Today\'s Best</p>'+rows;
+}
+
+/* #25 photo mode button */
+function buildPhotoBtn(){
+  if(document.getElementById('photoBtn'))return;
+  const btn=document.createElement('button');
+  btn.id='photoBtn';
+  btn.className='ghost';
+  btn.style.cssText='margin-top:8px;width:100%;font-size:13px;';
+  btn.textContent='📷 Save Photo';
+  btn.onclick=savePhoto;
+  const wrap=document.querySelector('.stage-wrap');
+  if(wrap)wrap.appendChild(btn);
+}
+
+function savePhoto(){
+  try{
+    const link=document.createElement('a');
+    link.download='pips-cozy-cove-'+Date.now()+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    spawnFloatText('Photo saved!',W/2,WATER_TOP+60,'#22c55e');
+  }catch(e){spawnFloatText('Photo failed',W/2,WATER_TOP+60,'#ef4444');}
 }
 
 function toCanvas(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
@@ -207,8 +343,9 @@ let lastShakeMs=0;
 
 function doCast(dx,dy){
   if(st!=='idle')return;
+  const rod=RODS[rodLevel];
   const flickPow=Math.min(1,Math.hypot(dx,dy)/340),chargePow=Math.min(1,chargeT/1.4);
-  const power=Math.min(1,flickPow*0.65+chargePow*0.45);chargeT=0;
+  const power=Math.min(1,(flickPow*0.65+chargePow*0.45)*rod.castMult);chargeT=0;
   const side=Math.max(-1,Math.min(1,dx/270));
   const depth=Math.max(0.08,Math.min(0.9,0.15+power*0.8));
   const landX=Math.max(90,Math.min(810,450+side*300));
@@ -217,9 +354,9 @@ function doCast(dx,dy){
   fly={t:0,dur:0.65+power*0.3,x0:490,y0:750,x1:landX,y1:landY};
   bob.x=landX;bob.y=landY;bob.show=false;bob.dip=0;
   casting=true;castT=0;st='flying';
-  // legendary event: 10% chance near hotspot
   if(near&&Math.random()<0.10&&!legendaryEvent){legendaryEvent={x:landX,y:landY,timer:12,pulse:0,triggered:false};}
   if(near)setStatus(legendaryEvent?'The water glows... something stirs!':'Great cast! Near a fish spot');
+  consumeBait();
   try{audioFx&&audioFx.playPop();}catch{}
 }
 
@@ -235,7 +372,8 @@ function handleReel(){
     const interval=now-(cur.lastTapMs||now);cur.lastTapMs=now;
     if(interval<190)cur.tension=Math.min(1,(cur.tension||0)+0.2);
     if(cur.tension>=1){snapLine();return;}
-    cur.reelProg=(cur.reelProg||0)+1;
+    const rod=RODS[rodLevel];
+    cur.reelProg=(cur.reelProg||0)+rod.reelMult;
     try{audioFx&&audioFx.playPop();}catch{}
     updateUI();
     if(cur.reelProg>=cur.fish.reel*cur.sizeM.reel)fishCaught();
@@ -243,7 +381,7 @@ function handleReel(){
 }
 
 function snapLine(){
-  lossStreak++;combo=0;chainTimer=0;
+  lossStreak++;combo=0;chainTimer=0;catchStreak=0;
   spawnSplash(bob.x,bob.y+bob.dip,'escape','');
   spawnFloatText('SNAP!',bob.x,bob.y-60,'#ef4444');
   setStatus('The line snapped! Reel slower...');
@@ -255,8 +393,7 @@ function snapLine(){
 
 function fishCaught(){
   st='catchReveal';revealT=0;
-  caught++;combo++;lossStreak=0;
-  // chain bonus
+  caught++;combo++;lossStreak=0;catchStreak++;
   const hasChain=chainTimer>0;
   if(hasChain)chainCount++;
   chainTimer=20;
@@ -266,21 +403,66 @@ function fishCaught(){
   score+=pts;
   sv.total=(sv.total||0)+1;
   sv.bestiary=sv.bestiary||{};sv.bestiary[cur.fish.name]=(sv.bestiary[cur.fish.name]||0)+1;
+
+  /* #9 personal best per species */
+  sv.bests=sv.bests||{};
+  if(!sv.bests[cur.fish.name]||pts>sv.bests[cur.fish.name]){sv.bests[cur.fish.name]=pts;}
+
   const entry={name:cur.fish.name,emoji:cur.fish.emoji,size:cur.sizeM.label,pts,legendary:cur.fish.legendary};
   catchLog.unshift(entry);catchLog=catchLog.slice(0,8);sv.log=catchLog;
   revealData={fish:cur.fish,sizeM:cur.sizeM,pts,mult,chainMult,hasChain,x:bob.x,y:bob.y+bob.dip};
   document.getElementById('lastFish').textContent=cur.fish.emoji+' '+cur.fish.name+(cur.sizeM.label?' ('+cur.sizeM.label+')':'');
   document.getElementById('lastPts').textContent=pts+' pts'+(mult>1?' (x'+mult+')':'');
-  // screen flash
+
   if(cur.fish.legendary){screenFlash={alpha:1,col:'#c084fc'};}
   else if(cur.sizeM===SIZE_TABLE.trophy){screenFlash={alpha:0.7,col:'#fbbf24'};}
-  // daily progress
+
+  /* #19 catch jump animation */
+  jumpReveal={x:bob.x,y:bob.y+bob.dip,fish:cur.fish,t:0};catchJumpT=0;
+
   if(dailyChallenge&&!dailyDone){trackDaily(cur.fish,cur.sizeM,combo,hasChain);}
   legendaryEvent=null;
+  checkRodUpgrade();     /* #7 */
+  checkStreakBonus();    /* #10 */
+  checkLuckyCharm();     /* #14 */
   rotateTip();
-  try{audioFx&&audioFx.playLevelUp();}catch{}
+  playCatchSound(cur.fish); /* #22 */
   updateUI();
   spawnSplash(bob.x,bob.y+bob.dip,'caught',cur.fish.emoji);
+}
+
+/* #7 rod upgrade check */
+function checkRodUpgrade(){
+  const total=sv.total||0;
+  const nextRod=RODS[rodLevel+1];
+  if(nextRod&&total>=nextRod.reqCatches){
+    rodLevel++;sv.rodLevel=rodLevel;
+    storeSv();
+    spawnFloatText('ROD UPGRADE! '+RODS[rodLevel].name,W/2,WATER_TOP+100,'#92400e');
+    buildRodUI();
+  }
+}
+
+/* #10 streak bonus */
+function checkStreakBonus(){
+  if(catchStreak>0&&catchStreak%5===0){
+    // refill lowest bait
+    let lowestIdx=0;
+    for(let i=1;i<BAITS.length;i++){if(baitUses[i]<baitUses[lowestIdx])lowestIdx=i;}
+    baitUses[lowestIdx]=BAITS[lowestIdx].maxUses;
+    spawnFloatText('STREAK x'+catchStreak+'! Bait refilled!',W/2,WATER_TOP+140,'#22c55e');
+    buildBaitUI();
+  }
+}
+
+/* #14 lucky charm - unlocked at 20 total catches */
+function checkLuckyCharm(){
+  if(!luckyCharm&&(sv.total||0)>=20){
+    luckyCharm=true;sv.charm=true;
+    storeSv();
+    spawnFloatText('Lucky Charm found! +15% rare fish',W/2,WATER_TOP+120,'#c084fc');
+    buildRodUI();
+  }
 }
 
 function trackDaily(fish,sizeM,combo,hasChain){
@@ -304,7 +486,7 @@ function completeDailyChallenge(){
 
 function fishEscaped(){
   if(st!=='bite'&&st!=='reeling')return;
-  lossStreak++;combo=0;chainTimer=0;
+  lossStreak++;combo=0;chainTimer=0;catchStreak=0;
   spawnSplash(bob.x,bob.y,'escape','');
   spawnFloatText(lossStreak>=3?'SO CLOSE...':'Got away!',bob.x,bob.y-50,'#94a3b8');
   setStatus(lossStreak>=3?'Three in a row... something big is coming!':'The fish got away! Try again');
@@ -315,7 +497,7 @@ function fishEscaped(){
 }
 
 function resetCast(){
-  st='idle';bob.show=false;bob.dip=0;cur=null;drag=null;casting=false;charging=false;chargeT=0;reelSwipeStart=null;
+  st='idle';bob.show=false;bob.dip=0;cur=null;drag=null;casting=false;charging=false;chargeT=0;reelSwipeStart=null;jumpReveal=null;
   document.getElementById('reelWrap').style.display='none';
   buildLogUI();
   setStatus(lossStreak>=3?'Something legendary is out there... cast now!':'Flick upward to cast again!');
@@ -329,12 +511,10 @@ function step(dt){
   if(chainTimer>0)chainTimer=Math.max(0,chainTimer-dt);
   screenFlash.alpha=Math.max(0,screenFlash.alpha-dt*2.5);
 
-  // weather particles
   if(weather==='rain'||weather==='storm'){const rate=weather==='storm'?5:2;for(let i=0;i<rate;i++)weatherPtx.push({x:Math.random()*W,y:-8,vy:weather==='storm'?16:11,vx:(Math.random()-0.5)*1.5,life:1});}
   weatherPtx.forEach(p=>{p.x+=p.vx;p.y+=p.vy*dt*55;p.life-=dt*1.4;});
   weatherPtx=weatherPtx.filter(p=>p.life>0&&p.y<DOCK_TOP);
 
-  // bubbles
   if(bob.show&&Math.random()<0.06){
     const bx=bob.x+(Math.random()-0.5)*60,by=bob.y+(Math.random()-0.5)*20;
     bubbles.push({x:bx,y:by,r:1.5+Math.random()*3,vy:-(15+Math.random()*25),life:1});
@@ -342,7 +522,6 @@ function step(dt){
   bubbles.forEach(b=>{b.y+=b.vy*dt;b.x+=(Math.random()-0.5)*0.8;b.life-=dt*0.8;});
   bubbles=bubbles.filter(b=>b.life>0&&b.y>WATER_TOP);
 
-  // background fish jumping
   if(playing&&Math.random()<dt*0.015&&bgJumps.length<2){
     const jx=100+Math.random()*(W-200),jy=WATER_TOP+(Math.random()*0.3)*(DOCK_TOP-WATER_TOP);
     bgJumps.push({x:jx,y:jy,t:0,fish:FISH[Math.floor(Math.random()*3)]});
@@ -350,15 +529,16 @@ function step(dt){
   bgJumps.forEach(j=>j.t+=dt);
   bgJumps=bgJumps.filter(j=>j.t<1.4);
 
-  // legendary event pulse
   if(legendaryEvent){
     legendaryEvent.timer-=dt;legendaryEvent.pulse+=dt*4;
     if(legendaryEvent.timer<=0){legendaryEvent=null;}
   }
 
-  // float texts
   floatTexts.forEach(ft=>{ft.y-=dt*85;ft.life-=dt*0.9;});
   floatTexts=floatTexts.filter(ft=>ft.life>0);
+
+  /* #19 jump reveal animation */
+  if(jumpReveal){catchJumpT+=dt;jumpReveal.t=catchJumpT;}
 
   if(st==='flying'){
     fly.t+=dt;
@@ -368,7 +548,6 @@ function step(dt){
       spawnWaterRings(bob.x,bob.y);
       setStatus('Waiting for a bite...');
       const near=cfg().hotspots.find(h=>Math.hypot(bob.x-h.x,bob.y-h.y)<h.r);
-      // pick fish
       let f,sizeKey,sizeM;
       if(legendaryEvent&&!legendaryEvent.triggered&&Math.hypot(bob.x-legendaryEvent.x,bob.y-legendaryEvent.y)<80){
         legendaryEvent.triggered=true;f=LEGENDARY;sizeKey='normal';sizeM=SIZE_TABLE.normal;
@@ -378,13 +557,21 @@ function step(dt){
         if(near)pool=[...pool,...pool.slice(-2)];
         if(bait===1)pool=pool.map(x=>Math.min(x+1,FISH.length-1));
         if(bait===2)pool=pool.map(x=>Math.max(0,x-1));
+        /* #8 seasonal fish: 10% chance to swap lowest fish for seasonal */
+        const rod=RODS[rodLevel];
+        /* #14 lucky charm boosts rare index */
+        if(luckyCharm&&Math.random()<0.15)pool=pool.map(x=>Math.min(x+1,FISH.length-1));
         let fi=lossStreak>=3?Math.max(...cfg().fishPool):pool[Math.floor(Math.random()*pool.length)];
-        f=FISH[fi];
+        /* 10% seasonal fish chance */
+        if(Math.random()<0.10){f=getSeasonalFish();}
+        else{f=FISH[fi];}
         const sr=Math.random();
         sizeKey=sr<0.2?'small':sr>0.85?'trophy':'normal';
         sizeM=SIZE_TABLE[sizeKey];
       }
       const wt=(f.wait[0]+Math.random()*(f.wait[1]-f.wait[0]))*BAITS[bait].waitMult*(weather==='rain'?0.75:weather==='storm'?0.55:1)*(near?0.65:1);
+      /* #4 multi-bob: 2-3 bobs before reel triggers */
+      nibBobs=0;nibBobTarget=2+Math.floor(Math.random()*2);
       cur={fish:f,waitLeft:wt,nibLeft:0,reelProg:0,escTimer:null,direction:null,dirTimer:0,tension:0,lastTapMs:0,size:sizeKey,sizeM,shadowDist:260,shadowAngle:Math.random()*Math.PI*2};
     }
   }
@@ -394,14 +581,24 @@ function step(dt){
     cur.shadowDist=Math.max(0,cur.shadowDist-dt*48);
     cur.shadowAngle+=dt*(0.6+cur.fish.shadowR*0.012);
     if(cur.waitLeft<=0.6&&cur.waitLeft>0&&cur.shadowDist<60){setStatus('Get ready...');}
-    if(cur.waitLeft<=0){st='nibble';cur.nibLeft=0.5+Math.random()*0.6;setStatus('Something is nibbling...');}
+    if(cur.waitLeft<=0){st='nibble';cur.nibLeft=0.4+Math.random()*0.4;setStatus('Something is nibbling...');}
   }
 
   if(st==='nibble'&&cur){
     cur.nibLeft-=dt;
+    /* #4 multi-bob: each bob cycle adds a count */
     bob.dip=Math.abs(Math.sin(performance.now()/110))*14;
+    const bobPhase=Math.floor(performance.now()/320)%2;
+    if(bobPhase===0&&cur._lastBobPhase===1){nibBobs++;cur._lastBobPhase=0;}
+    else if(bobPhase===1){cur._lastBobPhase=1;}
     if(cur.nibLeft<=0.25&&cur.nibLeft>0){setStatus('INCOMING - GET READY!');}
     if(cur.nibLeft<=0){
+      if(nibBobs<nibBobTarget){
+        // extra bob - reset nibble timer
+        cur.nibLeft=0.3+Math.random()*0.3;
+        setStatus('Almost... get ready!');
+        return;
+      }
       st='bite';setStatus('BITE! Tap to reel in!');bob.dip=22;
       try{audioFx&&audioFx.playPop();}catch{}
       const escMs=(cur.fish.esc*1000+400)*(weather==='storm'?0.6:weather==='rain'?0.8:1);
@@ -415,18 +612,82 @@ function step(dt){
     cur.tension=Math.max(0,(cur.tension||0)-dt*0.35);
     cur.dirTimer-=dt;
     if(cur.dirTimer<=0){cur.direction=Math.random()<0.5?'left':'right';cur.dirTimer=1.0+Math.random()*1.6;}
+    /* #23 tension sound */
+    if(cur.tension>0.75){tensionBeepT+=dt;if(tensionBeepT>0.3){playTensionBeep();tensionBeepT=0;}}
+    else{tensionBeepT=0;}
   }
 
   if(st==='catchReveal'){
     revealT+=dt;
     if(revealT>2.6){
       st='done';
+      /* #24 record score to leaderboard */
+      saveDailyScore();
       if(caught>=cfg().target)setTimeout(levelComplete,300);
       else setTimeout(resetCast,300);
     }
   }
 
   for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=0.09;p.life-=dt*(p.dec||0.7);}
+}
+
+/* #24 save to daily board */
+function saveDailyScore(){
+  const board=sv.dailyBoard||[];
+  board.push({date:new Date().toDateString(),score,level:cfg().name,time:Date.now()});
+  // keep last 50
+  board.sort((a,b)=>b.score-a.score);
+  sv.dailyBoard=board.slice(0,50);
+  storeSv();
+}
+
+/* #22 fish-specific catch sound */
+function playCatchSound(fish){
+  try{
+    if(!audioFx)return;
+    if(fish.legendary){audioFx.playLevelUp();audioFx.playLevelUp();}
+    else if(fish.pts>=600){audioFx.playLevelUp();}
+    else if(fish.pts>=250){audioFx.playLevelUp();}
+    else{audioFx.playPop();audioFx.playPop();}
+  }catch{}
+}
+
+/* #23 tension beep using Web Audio API */
+function playTensionBeep(){
+  try{
+    const ctx2=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx2.createOscillator();const g=ctx2.createGain();
+    osc.connect(g);g.connect(ctx2.destination);
+    osc.frequency.value=880;g.gain.value=0.08;
+    osc.start();osc.stop(ctx2.currentTime+0.06);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx2.currentTime+0.06);
+  }catch{}
+}
+
+/* #21 ambient soundscape - gentle procedural tones */
+function startAmbient(){
+  stopAmbient();
+  try{
+    const actx=new(window.AudioContext||window.webkitAudioContext)();
+    function chirp(){
+      if(!playing)return;
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.connect(g);g.connect(actx.destination);
+      o.frequency.value=800+Math.random()*400;
+      o.type='sine';
+      g.gain.value=0;
+      const start=actx.currentTime;
+      g.gain.linearRampToValueAtTime(0.03,start+0.05);
+      g.gain.linearRampToValueAtTime(0,start+0.3);
+      o.start(start);o.stop(start+0.35);
+      setTimeout(chirp,2000+Math.random()*4000);
+    }
+    setTimeout(chirp,1500);
+    ambientNode=actx;
+  }catch{}
+}
+function stopAmbient(){
+  try{if(ambientNode){ambientNode.close();ambientNode=null;}}catch{}
 }
 
 /* ---- drawing ---- */
@@ -451,12 +712,52 @@ function draw(){
   if(drag&&(st==='idle'||charging))drawAimArc();
   if(legendaryEvent&&!legendaryEvent.triggered)drawLegendaryEvent();
   if(st==='bite'||st==='reeling')drawReelPhase();
+  /* #19 jump reveal */
+  if(jumpReveal&&jumpReveal.t<0.55)drawJumpReveal();
   if(st==='catchReveal'&&revealData)drawCatchReveal();
   drawChainTimer();
   drawFloatTexts();
   drawParticles();
   if(screenFlash.alpha>0)drawScreenFlash();
   ctx.restore();
+}
+
+/* #17 time-of-day sky tint */
+function drawTimeOfDayTint(){
+  const tod=getTimeOfDay();
+  let tintCol=null,tintAlpha=0;
+  if(tod<0.1){tintCol='#0f172a';tintAlpha=0.35;}        // night
+  else if(tod<0.25){tintCol='#f97316';tintAlpha=(0.25-tod)/0.15*0.18;} // dawn
+  else if(tod>0.9){tintCol='#312e81';tintAlpha=(tod-0.9)/0.1*0.25;}    // evening
+  else if(tod>0.75){tintCol='#f97316';tintAlpha=(tod-0.75)/0.15*0.12;} // dusk
+  if(tintCol&&tintAlpha>0.01){
+    ctx.save();ctx.globalAlpha=tintAlpha;ctx.fillStyle=tintCol;ctx.fillRect(0,0,W,H);ctx.restore();
+  }
+}
+
+/* #20 seasonal dock decoration */
+function drawSeasonalDecor(){
+  const season=getSeason();
+  const t=performance.now()/1000;
+  if(season==='winter'){
+    // snowflakes on dock
+    ctx.save();ctx.fillStyle='rgba(255,255,255,0.7)';
+    for(let i=0;i<18;i++){const sx=(i*57+Math.sin(i*1.9+t*0.08)*18)%W,sy=DOCK_TOP+5+Math.sin(i*2.3)*12;ctx.globalAlpha=0.4+Math.sin(i+t*0.2)*0.3;ctx.beginPath();ctx.arc(sx,sy,2+Math.sin(i)*1,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+  }else if(season==='autumn'){
+    // falling leaves
+    ctx.save();
+    const leaves=['🍂','🍁'];
+    for(let i=0;i<6;i++){const lx=(i*155+t*18*(0.5+i*0.1))%W,ly=WATER_TOP-80+(Math.sin(t*0.4+i)*40),la=0.4+Math.sin(i+t*0.5)*0.3;
+      ctx.globalAlpha=la;ctx.font='14px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(leaves[i%2],lx,ly);}
+    ctx.restore();
+  }else if(season==='spring'){
+    // petals
+    ctx.save();
+    for(let i=0;i<8;i++){const px=(i*120+t*22*(0.4+i*0.08))%W,py=WATER_TOP-60+(Math.sin(t*0.5+i*1.3)*30);
+      ctx.globalAlpha=0.35+Math.sin(i+t*0.4)*0.2;ctx.font='12px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('🌸',px,py);}
+    ctx.restore();
+  }
 }
 
 function drawScene(){
@@ -477,6 +778,8 @@ function drawScene(){
   else if(cfg().dec==='golden')drawGoldenShimmer();
   drawHotspots(pal);
   drawDock();
+  drawSeasonalDecor();  /* #20 */
+  drawTimeOfDayTint();  /* #17 */
   if(weather==='storm'){ctx.save();ctx.globalAlpha=0.12;ctx.fillStyle='#312e81';ctx.fillRect(0,0,W,H);ctx.restore();}
 }
 
@@ -500,7 +803,6 @@ function drawTrees(col){
 function drawRipples(pal){
   const t=performance.now()/1000;ctx.save();ctx.lineWidth=1.5;
   for(let i=0;i<9;i++){const y=WATER_TOP+25+i*68,spd=18+(i%3)*8,ph=i*0.6,a=0.13+Math.sin(t*0.7+i*0.5)*0.05+(i<3?0.12:0);ctx.strokeStyle=`rgba(255,255,255,${a})`;ctx.beginPath();ctx.moveTo(0,y);for(let x=0;x<=W;x+=14)ctx.lineTo(x,y+Math.sin(x*0.035+t*spd+ph)*5);ctx.stroke();}
-  // Surface sparkles
   for(let i=0;i<20;i++){const sx=45+i*47+Math.sin(i*2.3+t*0.35)*28,sy=WATER_TOP+10+Math.sin(i*1.7+t*0.55)*9,sp=Math.sin(t*2.8+i*1.1)*0.5+0.5;if(sp>0.6){ctx.globalAlpha=sp*0.6;ctx.fillStyle='rgba(255,255,255,0.9)';ctx.beginPath();ctx.arc(sx,sy,1.4+sp,0,Math.PI*2);ctx.fill();}}
   ctx.restore();
 }
@@ -551,7 +853,6 @@ function drawWeather(){
 function drawBgJumps(){
   for(const j of bgJumps){
     if(j.t>1.2)continue;
-    const q=j.t/0.6,eq=q<0.5?2*q*q:(1-Math.pow(-2*q+2,2)/2);
     const jy=j.y-Math.sin(Math.min(1,j.t/0.8)*Math.PI)*70;
     const alpha=j.t<0.6?1:1-(j.t-0.6)/0.6;
     ctx.save();ctx.globalAlpha=alpha*0.5;ctx.font='24px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(j.fish.emoji,j.x,jy);
@@ -611,6 +912,22 @@ function drawChainTimer(){
   ctx.restore();
 }
 
+/* #19 fish jump-out celebration before reveal card */
+function drawJumpReveal(){
+  if(!jumpReveal)return;
+  const q=Math.min(1,jumpReveal.t/0.5);
+  const jy=jumpReveal.y-Math.sin(q*Math.PI)*180;
+  const jx=jumpReveal.x+(W/2-jumpReveal.x)*q*0.3;
+  ctx.save();
+  ctx.globalAlpha=Math.sin(q*Math.PI)*0.95;
+  ctx.font=Math.round(40+q*20)+'px system-ui,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(jumpReveal.fish.emoji,jx,jy);
+  // splash rings at origin
+  if(q<0.3){const rr=q/0.3;ctx.globalAlpha=(1-rr)*0.5;ctx.strokeStyle='#93c5fd';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(jumpReveal.x,jumpReveal.y,rr*60,rr*20,0,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+}
+
 function rodTip(){
   if(casting){const q=Math.min(1,castT/0.5),whip=Math.sin(q*Math.PI);return{x:488+whip*55,y:748-whip*140};}
   if(st==='reeling'&&cur){const tension=Math.max(0,1-(cur.reelProg||0)/(cur.fish.reel*cur.sizeM.reel));return{x:488-tension*30,y:748+tension*88};}
@@ -628,6 +945,8 @@ function drawRod(){
     const g=ctx.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,'#92400e');g.addColorStop(1,'#c8a97e');
     ctx.strokeStyle=g;ctx.lineWidth=s.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
   }
+  /* #7 pro rod glow */
+  if(rodLevel>=2){ctx.save();ctx.globalAlpha=0.25;ctx.strokeStyle='#c084fc';ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.restore();}
   if(charging&&chargeT>0.3){const p=Math.min(1,chargeT/1.4);ctx.save();ctx.globalAlpha=p*0.5;ctx.strokeStyle='#38bdf8';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.restore();}
   ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2.5;for(let i=0;i<4;i++){const q=0.3+i*0.17,rx=base.x+(tip.x-base.x)*q,ry=base.y+(tip.y-base.y)*q,rr=5-i;ctx.beginPath();ctx.arc(rx,ry,rr,0,Math.PI*2);ctx.stroke();}
   ctx.fillStyle='#1c0a00';ctx.beginPath();ctx.roundRect(base.x-14,base.y-32,28,72,8);ctx.fill();
@@ -686,8 +1005,9 @@ function drawBobberAt(x,y,dip,inWater){
 function drawAimArc(){
   if(!drag)return;
   const dx=drag.cx-drag.sx,dy=drag.sy-drag.cy;if(dy<30)return;
+  const rod=RODS[rodLevel];
   const flickPow=Math.min(1,Math.hypot(dx,dy)/340),chargePow=Math.min(1,chargeT/1.4);
-  const power=Math.min(1,flickPow*0.65+chargePow*0.45);
+  const power=Math.min(1,(flickPow*0.65+chargePow*0.45)*rod.castMult);
   const side=Math.max(-1,Math.min(1,dx/270));
   const depth=Math.max(0.08,Math.min(0.9,0.15+power*0.8));
   const lx=Math.max(90,Math.min(810,450+side*300)),ly=WATER_TOP+30+(1-depth)*(DOCK_TOP-WATER_TOP-110);
@@ -698,7 +1018,8 @@ function drawAimArc(){
   ctx.stroke();ctx.setLineDash([]);
   ctx.globalAlpha=0.5+power*0.35;ctx.strokeStyle='#38bdf8';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(lx,ly,28+power*14,11+power*5,0,0,Math.PI*2);ctx.stroke();
   ctx.globalAlpha=0.15+power*0.1;ctx.fillStyle='#38bdf8';ctx.beginPath();ctx.ellipse(lx,ly,28+power*14,11+power*5,0,0,Math.PI*2);ctx.fill();
-  const label=(charging&&chargeT>0.2?'! ':'')+(Math.round(power*100))+'%';
+  const rawPow=flickPow*0.65+chargePow*0.45;
+  const label=(charging&&chargeT>0.2?'! ':'')+(Math.round(rawPow*100))+'%'+(rodLevel>0?' '+RODS[rodLevel].emoji:'');
   ctx.globalAlpha=0.95;ctx.fillStyle=charging&&chargePow>0.5?'#38bdf8':'#fff';ctx.font='bold 20px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(label,lx,ly-20);
   ctx.restore();
 }
@@ -726,7 +1047,6 @@ function drawReelPhase(){
   ctx.save();ctx.font=(cur.fish.legendary?42:34)+'px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(cur.fish.emoji,fishFaceX,by+bh/2+12+fishBob);
   if(cur.fish.legendary){ctx.globalAlpha=0.4+Math.sin(t*4)*0.3;ctx.strokeStyle='#c084fc';ctx.lineWidth=3;ctx.beginPath();ctx.arc(fishFaceX,by+bh/2+fishBob,24,0,Math.PI*2);ctx.stroke();}
   ctx.restore();
-  // tension bar
   const tbx=bx+40,tbw=bw-80,tbh=10,tby=by-26;
   ctx.save();ctx.globalAlpha=0.7;ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.roundRect(tbx,tby,tbw,tbh,5);ctx.fill();
   const tCol=tension>0.75?'#ef4444':tension>0.45?'#f59e0b':'#22c55e';
@@ -734,15 +1054,12 @@ function drawReelPhase(){
   if(tension>0.8){const snap=0.6+Math.sin(t*18)*0.4;ctx.globalAlpha=snap*0.8;ctx.font='bold 14px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#ef4444';ctx.fillText('EASE UP!',bx+bw/2,tby-6);}
   else{ctx.globalAlpha=0.5;ctx.font='11px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText('LINE TENSION',bx+bw/2,tby-5);}
   ctx.restore();
-  // direction arrow
   if(st==='reeling'&&cur.direction){
     const ap=0.75+Math.sin(t*8)*0.25;ctx.save();ctx.globalAlpha=ap;ctx.fillStyle='#fbbf24';ctx.font='bold 52px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(cur.direction==='left'?'<--':'-->',W/2,by+bh+70);ctx.font='bold 16px system-ui,sans-serif';ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillText('SWIPE '+cur.direction.toUpperCase(),W/2,by+bh+92);ctx.restore();
   }
-  // tap label
   const lbl=st==='bite'?'TAP!':'REEL!';
   const lblFlash=0.78+Math.sin(t*(st==='bite'?10:5))*0.22;
   ctx.save();ctx.globalAlpha=lblFlash;ctx.fillStyle=cur.fish.legendary?'#c084fc':st==='bite'?'#fbbf24':'#ffffff';ctx.font='bold 44px system-ui,sans-serif';ctx.textAlign='center';ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=8;ctx.fillText(lbl,W/2,by-50);ctx.restore();
-  // fish label
   const sizeLbl=cur.sizeM.label?' · '+cur.sizeM.label:'';
   ctx.save();ctx.globalAlpha=0.65;ctx.fillStyle=cur.fish.legendary?'#e9d5ff':'#e2e8f0';ctx.font='bold 18px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(cur.fish.emoji+' '+cur.fish.name+sizeLbl,W/2,by+bh+22);ctx.restore();
   if(prog<0.3&&bob.show){const danger=0.5+Math.sin(t*12)*0.4;ctx.save();ctx.globalAlpha=danger*0.7;ctx.strokeStyle='#ef4444';ctx.lineWidth=4;ctx.beginPath();ctx.arc(bob.x,bob.y+bob.dip,32,0,Math.PI*2);ctx.stroke();ctx.restore();}
@@ -762,7 +1079,7 @@ function drawCatchReveal(){
     ctx.restore();return;
   }
   const cardQ=Math.min(1,(t-0.55)/0.4);
-  const cardW=460,cardH=isLegendary?310:270;
+  const cardW=460,cardH=isLegendary?330:290;
   const cx=W2-cardW/2,cy=H2-cardH/2-20;
   ctx.save();ctx.globalAlpha=cardQ;
   const cardG=ctx.createLinearGradient(cx,cy,cx+cardW,cy+cardH);
@@ -775,10 +1092,16 @@ function drawCatchReveal(){
   ctx.fillStyle=isLegendary?'#e9d5ff':'#ffffff';ctx.font='bold 26px system-ui,sans-serif';ctx.fillText(revealData.fish.name,W2,cy+130);
   if(revealData.sizeM.label){ctx.fillStyle='#fbbf24';ctx.font='bold 18px system-ui,sans-serif';ctx.fillText(revealData.sizeM.label,W2,cy+156);}
   if(isLegendary){ctx.fillStyle='#c084fc';ctx.font='bold 15px system-ui,sans-serif';ctx.fillText('LEGENDARY CATCH',W2,cy+180);}
+  /* #9 personal best indicator */
+  const pb=sv.bests&&sv.bests[revealData.fish.name];
+  const isPB=pb&&revealData.pts>=pb;
+  if(isPB){ctx.fillStyle='#fbbf24';ctx.font='bold 13px system-ui,sans-serif';ctx.fillText('NEW PERSONAL BEST!',W2,cy+(isLegendary?200:188));}
   let ptsLine='+'+revealData.pts+' pts';
   if(revealData.mult>1)ptsLine='x'+revealData.mult+' COMBO  '+ptsLine;
   if(revealData.hasChain)ptsLine='CHAIN!  '+ptsLine;
-  ctx.fillStyle=isLegendary?'#c084fc':'#4ade80';ctx.font='bold 22px system-ui,sans-serif';ctx.fillText(ptsLine,W2,cy+(isLegendary?210:200));
+  ctx.fillStyle=isLegendary?'#c084fc':'#4ade80';ctx.font='bold 22px system-ui,sans-serif';ctx.fillText(ptsLine,W2,cy+(isLegendary?225:215));
+  /* streak display */
+  if(catchStreak>=3){ctx.fillStyle='#22c55e';ctx.font='bold 14px system-ui,sans-serif';ctx.fillText('STREAK x'+catchStreak+(catchStreak%5===0?' - BAIT BONUS!':''),W2,cy+(isLegendary?250:238));}
   ctx.globalAlpha=cardQ*0.08;ctx.strokeStyle='#fff';ctx.lineWidth=1;for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(cx,cy+i*46);ctx.lineTo(cx+cardW,cy+i*46);ctx.stroke();}
   ctx.restore();
 }
@@ -850,6 +1173,7 @@ function updateUI(){
 
 function levelComplete(){
   playing=false;
+  stopAmbient();
   sv.best=Math.max(sv.best,score);
   sv.bestLevel=Math.max(sv.bestLevel||0,Math.min(lv+1,LEVELS.length-1));
   const stars=caught>=cfg().target?3:caught>=Math.ceil(cfg().target*0.65)?2:1;
@@ -857,7 +1181,7 @@ function levelComplete(){
   storeSv();gameSystem.saveState();
   gameSystem.unlockAchievement('firstCatch');
   if(sv.total>=10)gameSystem.unlockAchievement('anglerPro');
-  showModal('🎣','Spot Complete!','You caught '+caught+' fish at '+cfg().name+'!',[['Score',score],['Fish',caught],['Stars','*'.repeat(stars)]],lv===LEVELS.length-1?'Play Again':'Next Spot',()=>{startLevel(lv===LEVELS.length-1?lv:lv+1);});
+  showModal('🎣','Spot Complete!','You caught '+caught+' fish at '+cfg().name+'!',[['Score',score],['Fish',caught],['Stars','*'.repeat(stars)],['Rod',RODS[rodLevel].name]],lv===LEVELS.length-1?'Play Again':'Next Spot',()=>{startLevel(lv===LEVELS.length-1?lv:lv+1);});
 }
 
 function showModal(e,t,txt,stats,btn,act){
@@ -876,13 +1200,13 @@ function frame(t){
 }
 
 document.getElementById('helpBtn').onclick=()=>showModal('🎣','How to Fish',
-  'Flick up from the bottom to cast. Hold for a power charge. When the bobber dips - TAP to reel in. Watch the tension bar above the reel bar: reel too fast and the line snaps. Swipe left or right to follow the fish direction. Catch within 20 seconds of your last catch for a CHAIN bonus!',
-  [['Hotspot','Faster bites, rarer fish'],['Dragon Koi','1-in-10 legendary event'],['Chain','Catch within 20s for 1.5x pts']],
+  'Flick up from the bottom to cast. Hold for a power charge. When the bobber dips - TAP to reel in. Watch the tension bar above the reel bar: reel too fast and the line snaps. Swipe left or right to follow the fish direction. Catch within 20 seconds of your last catch for a CHAIN bonus! Catch 5 in a row for a bait refill streak bonus.',
+  [['Hotspot','Faster bites, rarer fish'],['Dragon Koi','1-in-10 legendary event'],['Chain','Catch within 20s for 1.5x pts'],['Streak x5','Free bait refill!'],['Rod Upgrade','10 catches = Carbon Rod']],
   playing?'Resume':'Start Fishing',()=>hideModal());
 document.getElementById('restartBtn').onclick=()=>startLevel(lv);
 resize();
 sv=loadSv();catchLog=sv.log||[];
 showModal('🎣',"Pip's Cozy Cove",
   'Cast into the cove and reel in a catch! Flick up to cast, hold for more power. Tap fast when the bobber dips - but watch the tension!',
-  [['Spots',LEVELS.length],['Best',sv.best],['Caught',(sv.total||0)+' total']],'Start Fishing',()=>startLevel(sv.bestLevel||0));
+  [['Spots',LEVELS.length],['Best',sv.best],['Caught',(sv.total||0)+' total'],['Rod',RODS[sv.rodLevel||0].name]],'Start Fishing',()=>startLevel(sv.bestLevel||0));
 requestAnimationFrame(frame);
