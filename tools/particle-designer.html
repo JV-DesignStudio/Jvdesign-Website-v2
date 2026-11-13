@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-/hevFkHF70Si9tywWpxqOr3eHmBSrNWrA45SSw8UmCI=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-hl6/7ChCUhUdPDoYg918hzYhgr9irVJt58U2Ig12+xk=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -78,6 +78,40 @@
 </script>
 <link rel="stylesheet" href="/assets/css/immersive-tool.css">
 <link rel="stylesheet" href="/assets/css/studio-shell.css?v=1">
+<style>
+/* Dev mode: numeric inputs alongside sliders */
+.dev-num{display:none;width:62px;padding:2px 5px;font-size:.68rem;font-family:inherit;background:rgba(245,158,11,.08);color:var(--text,#f0ead6);border:1px solid rgba(245,158,11,.5);border-radius:4px;margin-left:6px;-moz-appearance:textfield;}
+.dev-num::-webkit-outer-spin-button,.dev-num::-webkit-inner-spin-button{-webkit-appearance:none;}
+.dev-mode .dev-num{display:inline-block;}
+#btnDevMode.on{background:rgba(245,158,11,.18);color:#f59e0b;border-color:#f59e0b;}
+/* Dev mode: show raw param key next to label */
+.dev-key{display:none;font-size:.58rem;font-family:'JetBrains Mono',monospace;color:rgba(245,158,11,.65);margin-left:5px;vertical-align:middle;}
+.dev-mode .dev-key{display:inline;}
+/* Keyframe tables */
+.kf-details{margin-top:6px;}
+.kf-summary{font-size:.7rem;color:rgba(255,255,255,.45);cursor:pointer;list-style:none;padding:4px 2px;user-select:none;}
+.kf-summary::-webkit-details-marker{display:none;}
+.kf-summary::before{content:'▶ ';}
+details[open] .kf-summary::before{content:'▼ ';}
+.kf-badge{display:inline-block;font-size:.6rem;padding:1px 5px;background:rgba(245,158,11,.18);color:#f59e0b;border-radius:9px;margin-left:4px;}
+.kf-table{padding:6px 0;}
+.kf-row{display:flex;align-items:center;gap:5px;margin-bottom:4px;}
+.kf-row-head{display:flex;gap:5px;margin-bottom:3px;font-size:.6rem;color:rgba(255,255,255,.35);padding:0 2px;}
+.kf-row-head span{flex:1;min-width:0;}
+.kf-row-head span:last-child{flex:0 0 22px;}
+.kf-t,.kf-v{flex:1;min-width:0;padding:3px 5px;font-size:.68rem;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.05);color:var(--text,#f0ead6);border:1px solid rgba(255,255,255,.12);border-radius:4px;-moz-appearance:textfield;}
+.kf-t::-webkit-outer-spin-button,.kf-v::-webkit-outer-spin-button,.kf-t::-webkit-inner-spin-button,.kf-v::-webkit-inner-spin-button{-webkit-appearance:none;}
+.kf-t:disabled{opacity:.4;}
+.kf-del{flex:0 0 20px;padding:0 4px;background:rgba(220,80,80,.15);color:rgba(220,120,120,.8);border:1px solid rgba(220,80,80,.2);border-radius:4px;font-size:.8rem;cursor:pointer;line-height:1.6;}
+.kf-del:disabled{opacity:.25;cursor:default;}
+.kf-add-row{margin-top:6px;}
+.kf-empty{font-size:.68rem;color:rgba(255,255,255,.3);padding:4px 2px;}
+/* Export preview modal */
+#exportModal .modal-box{max-width:660px;display:flex;flex-direction:column;max-height:90vh;overflow:hidden;}
+.exp-preview-pre{flex:1;overflow:auto;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.6;white-space:pre;color:#d4d4d8;margin:10px 0;min-height:120px;max-height:55vh;}
+.exp-preview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;flex-shrink:0;}
+.exp-preview-note{font-size:.65rem;color:rgba(255,255,255,.4);margin:0;line-height:1.5;}
+</style>
 </head>
 <body>
 <!-- BUILD:nav-tools -->
@@ -137,12 +171,14 @@
   <button class="hdr-icon" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button>
   <button class="hdr-icon" id="btnRedo" title="Redo (Ctrl+Shift+Z)">Redo</button>
   <button class="hdr-icon" id="btnHelp" title="Keyboard shortcuts (?)">Help</button>
+  <button class="hdr-icon" id="btnDevMode" title="Developer mode: type exact values, see raw param names" style="margin-left:auto;font-size:.6rem;letter-spacing:.04em;border:1px solid rgba(245,158,11,.3);padding:3px 8px;">DEV</button>
 </div>
 
 <div id="app">
   <div id="preview-wrap">
     <canvas id="canvas"></canvas>
     <div class="fps-badge" id="fpsBadge">60 fps</div>
+    <div class="fps-badge" id="countBadge" style="top:28px;font-size:.6rem;">0 ptcl</div>
     <div class="rec-badge" id="recDot" style="display:none;"><span class="rec-dot"></span><span id="recTime">0.0s</span></div>
     <div class="emitter-hint">Click anywhere to move emitter · B to burst</div>
   </div>
@@ -254,6 +290,10 @@
         </div>
         <canvas class="curve-cv" id="cvSize"></canvas>
         <p class="hint">Multiplies the startâ†’end size. Drag points · click empty space to add · drag off or double-click to remove.</p>
+        <details class="kf-details" id="kfSizeDetails">
+          <summary class="kf-summary">Keyframes <span class="kf-badge" id="kfSizeCount"></span></summary>
+          <div class="kf-table" id="kfSizeTable"></div>
+        </details>
       </div>
       <div class="curve-card">
         <div class="curve-head">
@@ -265,6 +305,10 @@
         </div>
         <canvas class="curve-cv" id="cvAlpha"></canvas>
         <p class="hint">Multiplies the start→end alpha fade.</p>
+        <details class="kf-details" id="kfAlphaDetails">
+          <summary class="kf-summary">Keyframes <span class="kf-badge" id="kfAlphaCount"></span></summary>
+          <div class="kf-table" id="kfAlphaTable"></div>
+        </details>
       </div>
       <div class="curve-card">
         <div class="curve-head">
@@ -635,7 +679,7 @@ function loop(ts){
 
   frameCount++;
   fpsTime+=dt;
-  if(fpsTime>=.5){fps=Math.round(frameCount/fpsTime);frameCount=0;fpsTime=0;id('fpsBadge').textContent=fps+' fps';}
+  if(fpsTime>=.5){fps=Math.round(frameCount/fpsTime);frameCount=0;fpsTime=0;id('fpsBadge').textContent=fps+' fps';id('countBadge').textContent=particles.length+' ptcl';}
 
   if(tintDirty)bakeTints();
 
@@ -1224,7 +1268,7 @@ function sbTab(t){
     id('tab-'+x).style.display=x===t?'block':'none';
     document.querySelector(`.sb-tab[data-tab="${x}"]`).classList.toggle('on',x===t);
   });
-  if(t==='curves')redrawCurves();
+  if(t==='curves'){redrawCurves();rebuildAllKfTables();}
   if(t==='saves')renderSaves();
 }
 document.querySelectorAll('.sb-tab').forEach(tab=>{
@@ -1703,30 +1747,64 @@ function phaserConfig(){
 }
 
 id('btnGodot').onclick=()=>{
-  download(godotTres(),'godot_particles_material.tres','text/plain');
-  setTimeout(()=>download(godotTscn(),'godot_particles_scene.tscn','text/plain'),350);
-  toast('Godot .tres + .tscn downloaded - keep both files together');
+  showExportPreview(
+    'Godot 4 - ParticlesMaterial (.tres)',
+    godotTres(),
+    'godot_particles_material.tres',
+    'text/plain',
+    'Godot 4: downloads two files - .tres + .tscn. Keep both in the same folder and reference them from your scene.',
+    ()=>{download(godotTres(),'godot_particles_material.tres','text/plain');setTimeout(()=>download(godotTscn(),'godot_particles_scene.tscn','text/plain'),350);toast('Godot .tres + .tscn downloaded');}
+  );
 };
 id('btnUnity').onclick=()=>{
-  download(unityCS(),'JvdsParticleImporter.cs','text/plain');
-  toast('Unity importer downloaded - place inside Assets/Editor');
+  showExportPreview(
+    'Unity - Editor Importer Script (.cs)',
+    unityCS(),
+    'JvdsParticleImporter.cs',
+    'text/plain',
+    'Drop into Assets/Editor, then use Tools › JVDesign Studio › Import Particle Effect.',
+    ()=>{download(unityCS(),'JvdsParticleImporter.cs','text/plain');toast('Unity importer downloaded');}
+  );
 };
 id('btnRaw').onclick=()=>{
-  downloadJSON({cfg:P},'particle_config.json');
-  toast('Raw JSON downloaded');
+  showExportPreview(
+    'Raw JSON - particle_config.json',
+    JSON.stringify({cfg:P},null,2),
+    'particle_config.json',
+    'application/json',
+    'Engine-neutral save format. Drag back into the Saves tab to reload.',
+    ()=>{downloadJSON({cfg:P},'particle_config.json');toast('Raw JSON downloaded');}
+  );
 };
 id('btnGodot3').onclick=()=>{
-  download(godot3Tres(),'godot3_particles_material.tres','text/plain');
-  setTimeout(()=>download(godot3Tscn(),'godot3_particles_scene.tscn','text/plain'),350);
-  toast('Godot 3 .tres + .tscn downloaded - keep both files together');
+  showExportPreview(
+    'Godot 3 - ParticleMaterial (.tres)',
+    godot3Tres(),
+    'godot3_particles_material.tres',
+    'text/plain',
+    'Godot 3: downloads two files - .tres + .tscn. Keep both together beside your scene.',
+    ()=>{download(godot3Tres(),'godot3_particles_material.tres','text/plain');setTimeout(()=>download(godot3Tscn(),'godot3_particles_scene.tscn','text/plain'),350);toast('Godot 3 .tres + .tscn downloaded');}
+  );
 };
 id('btnGeneric').onclick=()=>{
-  downloadJSON(genericEffect(),'particle_effect.json');
-  toast('Generic effect JSON downloaded');
+  showExportPreview(
+    'Generic Effect JSON',
+    JSON.stringify(genericEffect(),null,2),
+    'particle_effect.json',
+    'application/json',
+    'Engine-neutral structured format with separate emission, velocity, size and curve blocks.',
+    ()=>{downloadJSON(genericEffect(),'particle_effect.json');toast('Generic effect JSON downloaded');}
+  );
 };
 id('btnPhaser').onclick=()=>{
-  downloadJSON(phaserConfig(),'particle_effect_phaser.json');
-  toast('Phaser 3 emitter config downloaded');
+  showExportPreview(
+    'Phaser 3 - Emitter Config',
+    JSON.stringify(phaserConfig(),null,2),
+    'particle_effect_phaser.json',
+    'application/json',
+    'Pass the config object to this.add.particles(x, y, "texture-key", config).',
+    ()=>{downloadJSON(phaserConfig(),'particle_effect_phaser.json');toast('Phaser 3 emitter config downloaded');}
+  );
 };
 id('btnShare').onclick=()=>{
   const payload=Object.assign(deep(P),{texCustom:''});
@@ -1826,6 +1904,184 @@ try{
 
 requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
 
+// -- Dev Mode --
+let devMode=false;
+const DEV_KEYS={
+  pRate:'rate',pBurst:'burst',pMax:'maxParticles',
+  pLife:'lifetime',pLifeVar:'lifetimeVar',pSpeed:'speed',pSpeedVar:'speedVar',
+  pAngle:'angle',pSpread:'spread',pGX:'gravX',pGY:'gravY',
+  pDrag:'drag',pTurb:'turbulence',
+  pSzS:'sizeStart',pSzE:'sizeEnd',pSzVar:'sizeVar',
+  pAlphaS:'alphaStart',pAlphaE:'alphaEnd',
+  pSpin:'spin',pEmitR:'emitterRadius'
+};
+function injectDevInputs(){
+  SLIDERS.forEach(([sid,key,vid,dec])=>{
+    const el=id(sid);
+    if(!el)return;
+    // key badge on label
+    const lbl=el.closest('.ctrl-row')&&el.closest('.ctrl-row').querySelector('label');
+    if(lbl&&!lbl.querySelector('.dev-key')){
+      const badge=document.createElement('span');
+      badge.className='dev-key';
+      badge.textContent=key;
+      lbl.appendChild(badge);
+    }
+    // number input
+    if(!el.parentNode.querySelector('.dev-num[data-dev-sid="'+sid+'"]')){
+      const inp=document.createElement('input');
+      inp.type='number';
+      inp.className='dev-num';
+      inp.dataset.devSid=sid;
+      inp.value=P[key];
+      inp.step=dec===0?1:dec===1?.1:dec===2?.01:.001;
+      inp.addEventListener('input',()=>{
+        const v=parseFloat(inp.value);
+        if(isNaN(v))return;
+        arm();
+        P[key]=v;
+        el.value=v;
+        id(vid).textContent=fmtV(v,dec);
+        scheduleSessionSave();
+      });
+      inp.addEventListener('change',commitArm);
+      el.parentNode.appendChild(inp);
+      // keep in sync when slider moves
+      el.addEventListener('input',()=>{inp.value=el.value;});
+    }
+  });
+}
+function toggleDevMode(){
+  devMode=!devMode;
+  document.body.classList.toggle('dev-mode',devMode);
+  id('btnDevMode').classList.toggle('on',devMode);
+  if(devMode)injectDevInputs();
+  toast(devMode?'Dev mode on - type exact values':'Dev mode off');
+}
+id('btnDevMode').onclick=toggleDevMode;
+
+// -- Export preview modal --
+let _expDownloadFn=null;
+function showExportPreview(title,content,filename,type,note,downloadFn){
+  id('exportModalTitle').textContent=title;
+  id('exportModalCode').textContent=content;
+  id('exportModalNote').textContent=note||'';
+  _expDownloadFn=downloadFn||null;
+  id('exportModal').classList.add('open');
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  id('exportModalCopy').onclick=()=>{
+    const text=id('exportModalCode').textContent;
+    navigator.clipboard.writeText(text)
+      .then(()=>toast('Copied to clipboard'))
+      .catch(()=>toast('Copy failed - select text manually'));
+  };
+  id('exportModalDownload').onclick=()=>{if(_expDownloadFn)_expDownloadFn();};
+  id('exportModalClose').onclick=()=>id('exportModal').classList.remove('open');
+  id('exportModal').addEventListener('click',e=>{if(e.target===id('exportModal'))id('exportModal').classList.remove('open');});
+});
+
+// -- Keyframe tables --
+function buildKfTable(key,maxV){
+  const tableEl=id('kf'+key.charAt(0).toUpperCase()+key.slice(1)+'Table');
+  const countEl=id('kf'+key.charAt(0).toUpperCase()+key.slice(1)+'Count');
+  if(!tableEl)return;
+  tableEl.innerHTML='';
+  const pts=P.curves[key];
+  if(!pts){
+    tableEl.innerHTML='<div class="kf-empty">Curve is off - click the canvas above to enable it.</div>';
+    if(countEl)countEl.textContent='off';
+    return;
+  }
+  if(countEl)countEl.textContent=pts.length;
+  // header
+  const hdr=document.createElement('div');
+  hdr.className='kf-row-head';
+  hdr.innerHTML='<span>time (0-1)</span><span>value (0-'+maxV+')</span><span></span>';
+  tableEl.appendChild(hdr);
+  // rows
+  pts.forEach((pt,i)=>{
+    const row=document.createElement('div');
+    row.className='kf-row';
+    const tIn=document.createElement('input');
+    tIn.type='number';tIn.className='kf-t';
+    tIn.min=0;tIn.max=1;tIn.step=.001;
+    tIn.value=pt.t.toFixed(3);
+    tIn.disabled=i===0||i===pts.length-1;
+    tIn.addEventListener('change',()=>{
+      const v=clamp(parseFloat(tIn.value)||0,i>0?pts[i-1].t+.01:0,i<pts.length-1?pts[i+1].t-.01:1);
+      arm();pt.t=v;
+      P.curves[key].sort((a,b)=>a.t-b.t);
+      buildKfTable(key,maxV);
+      redrawCurves();scheduleSessionSave();commitArm();
+    });
+    const vIn=document.createElement('input');
+    vIn.type='number';vIn.className='kf-v';
+    vIn.min=0;vIn.max=maxV;vIn.step=.01;
+    vIn.value=pt.v.toFixed(3);
+    vIn.addEventListener('change',()=>{
+      arm();
+      pt.v=clamp(parseFloat(vIn.value)||0,0,maxV);
+      vIn.value=pt.v.toFixed(3);
+      redrawCurves();scheduleSessionSave();commitArm();
+    });
+    const del=document.createElement('button');
+    del.textContent='×';del.className='kf-del';
+    del.disabled=pts.length<=2||i===0||i===pts.length-1;
+    del.onclick=()=>{
+      arm();
+      P.curves[key].splice(i,1);
+      buildKfTable(key,maxV);redrawCurves();scheduleSessionSave();commitArm();
+    };
+    row.append(tIn,vIn,del);
+    tableEl.appendChild(row);
+  });
+  // add row button
+  const addRow=document.createElement('div');
+  addRow.className='kf-add-row';
+  const addBtn=document.createElement('button');
+  addBtn.className='mini-btn';addBtn.textContent='+ Add keyframe';
+  addBtn.onclick=()=>{
+    arm();
+    if(!P.curves[key])P.curves[key]=[{t:0,v:1},{t:1,v:1}];
+    // insert at midpoint of longest gap
+    const p=P.curves[key];let best=0,bestGap=0;
+    for(let j=0;j<p.length-1;j++){const g=p[j+1].t-p[j].t;if(g>bestGap){bestGap=g;best=j;}}
+    const mid=(p[best].t+p[best+1].t)/2;
+    const val=(p[best].v+p[best+1].v)/2;
+    p.splice(best+1,0,{t:mid,v:val});
+    buildKfTable(key,maxV);redrawCurves();scheduleSessionSave();commitArm();
+  };
+  addRow.appendChild(addBtn);
+  tableEl.appendChild(addRow);
+}
+
+function rebuildAllKfTables(){
+  buildKfTable('size',2);
+  buildKfTable('alpha',1);
+}
+
+// Rebuild kf tables whenever curves tab is opened or curves change
+const _origRedrawCurves=redrawCurves;
+// wrap redrawCurves to also refresh kf tables
+(function(){
+  const orig=window.redrawCurves||redrawCurves;
+  window._kfRedraw=function(){orig&&orig();rebuildAllKfTables();};
+})();
+
+// Hook into the tab switch to build tables on first open
+const _origSbTab=sbTab;
+// patch: rebuild when curves tab is selected
+document.querySelectorAll('.sb-tab').forEach(tab=>{
+  if(tab.dataset.tab==='curves'){
+    tab.addEventListener('click',()=>setTimeout(rebuildAllKfTables,30));
+  }
+});
+// Also rebuild when curve reset/clear buttons fire (they already call redrawCurves)
+document.querySelectorAll('[data-curve-reset],[data-curve-clear]').forEach(b=>{
+  b.addEventListener('click',()=>setTimeout(rebuildAllKfTables,30));
+});
+
 function toast(msg){
   const el=id('toast');
   el.textContent=msg;el.style.opacity=1;
@@ -1833,6 +2089,20 @@ function toast(msg){
   toastT=setTimeout(()=>el.style.opacity=0,2600);
 }
 </script>
+
+<!-- Export preview modal -->
+<div class="modal-ov" id="exportModal">
+  <div class="modal-box" style="max-width:660px;display:flex;flex-direction:column;max-height:90vh;">
+    <h2 id="exportModalTitle" style="margin:0 0 4px;">Export</h2>
+    <p class="exp-preview-note" id="exportModalNote"></p>
+    <pre class="exp-preview-pre" id="exportModalCode"></pre>
+    <div class="exp-preview-actions">
+      <button class="btn-accent" id="exportModalCopy">Copy to clipboard</button>
+      <button class="btn-accent" id="exportModalDownload">Download</button>
+      <button class="hdr-icon" id="exportModalClose" style="margin-left:auto;">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- BUILD:footer-tools -->
 <link rel="stylesheet" href="/assets/css/studio-core.css">
