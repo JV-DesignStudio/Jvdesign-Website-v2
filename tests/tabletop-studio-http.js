@@ -109,9 +109,9 @@ function wait(ms) {
   check('main target exists', initial.main);
   check('board canvas exists', initial.canvas);
   check('token layer exists', initial.tokensLayer);
-  check('terrain swatches present (9 + erase)', initial.swatches === 10, String(initial.swatches));
-  check('characters, players and props present', initial.pieces === 18, String(initial.pieces));
-  check('paint and fill tools present', initial.tools === 2, String(initial.tools));
+  check('terrain swatches present (9 + erase)', initial.swatches === 14, String(initial.swatches));
+  check('characters, players and props present', initial.pieces === 26, String(initial.pieces));
+  check('paint and fill tools present', initial.tools === 3, String(initial.tools));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
   check('four starter boards offered', initial.templates === 4, String(initial.templates));
@@ -193,7 +193,7 @@ function wait(ms) {
   await wait(200);
 
   await page.click('#ttHelpBtn');
-  await wait(200);
+  await wait(300);
   const helpOpen = await page.evaluate(() => !document.getElementById('ttHelp').hidden);
   check('help dialog opens', helpOpen);
   await page.click('#ttHelpClose');
