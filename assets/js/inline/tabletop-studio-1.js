@@ -74,7 +74,7 @@
   var MIN_ROWS = 2;
   var MAX_ROWS = 30;
   var PLAYER_COLORS = ['#BC4749', '#3f6e71', '#c98a2e', '#7a5aa8'];
-  var EFFECT_TYPES = { forward: 1, back: 1, goTo: 1, skip: 1, again: 1, card: 1, money: 1 };
+  var EFFECT_TYPES = { forward: 1, back: 1, goTo: 1, skip: 1, again: 1, card: 1, money: 1, swap: 1, toStart: 1, collect: 1, nearest: 1 };
   var TEACH = {
     snakes: {
       steps: { paint: 'Number the track', piece: 'Add snakes and ladders', roll: 'Roll and climb' },
@@ -188,9 +188,11 @@
   var ruleCaptureInput = document.getElementById('ttRuleCapture');
   var ruleStackInput = document.getElementById('ttRuleStack');
   var ruleRentInput = document.getElementById('ttRuleRent');
+  var ruleAllPawnsInput = document.getElementById('ttRuleAllPawns');
   var buyTileBtn = document.getElementById('ttBuyTile');
   var tileOwnerInput = document.getElementById('ttTileOwner');
   var startingMoneyInput = document.getElementById('ttStartingMoney');
+  var pawnCountInput = document.getElementById('ttPawnCount');
   var tilePanel = document.getElementById('ttTilePanel');
   var tileBackdrop = document.getElementById('ttTileBackdrop');
   var tileCloseBtn = document.getElementById('ttTileClose');
@@ -203,6 +205,7 @@
   var tileEffectInput = document.getElementById('ttTileEffect');
   var tileEffectLabel = document.getElementById('ttTileEffectLabel');
   var tileEffectValueInput = document.getElementById('ttTileEffectValue');
+  var tileDeckInput = document.getElementById('ttTileDeck');
   var tileNoteInput = document.getElementById('ttTileNote');
   var tileRemoveBtn = document.getElementById('ttTileRemove');
   var tileSaveBtn = document.getElementById('ttTileSave');
@@ -230,6 +233,14 @@
   var selectHint = document.getElementById('ttSelectHint');
   var rulesGenerateBtn = document.getElementById('ttRulesGenerate');
   var rulesSummaryEl = document.getElementById('ttRulesSummary');
+  var playtestBtn = document.getElementById('ttPlaytest');
+  var playtestLogEl = document.getElementById('ttPlaytestLog');
+  var playtestPrintBtn = document.getElementById('ttPlaytestPrint');
+  var playtestClearBtn = document.getElementById('ttPlaytestClear');
+  var backupExportBtn = document.getElementById('ttBackupExport');
+  var backupRestoreBtn = document.getElementById('ttBackupRestore');
+  var backupFileInput = document.getElementById('ttBackupFile');
+  var endTurnBtn = document.getElementById('ttEndTurn');
   var branchLabelInput = document.getElementById('ttBranchLabel');
   var branchToolBtn = document.getElementById('ttBranchTool');
   var branchClearBtn = document.getElementById('ttBranchClear');
@@ -238,6 +249,7 @@
   var choiceCloseBtn = document.getElementById('ttChoiceClose');
   var choiceOptions = document.getElementById('ttChoiceOptions');
   var choiceText = document.getElementById('ttChoiceText');
+  var choiceTitle = document.getElementById('ttChoiceTitle');
   var diceNormalBtn = document.getElementById('ttDiceNormal');
   var diceActionBtn = document.getElementById('ttDiceAction');
   var actionFacesInput = document.getElementById('ttActionFaces');
@@ -295,6 +307,7 @@
   var pendingBranch = null;
   var choiceCallback = null;
   var choiceTrigger = null;
+  var renamingBoardId = '';
 
   /* ------------------------------------------------------------------ */
   /* Small helpers                                                       */
@@ -360,6 +373,7 @@
         type: effect.type,
         value: clamp(Math.round(Number(effect.value) || 0), -999, 999)
       };
+      if (typeof effect.deck === 'string' && effect.deck.trim()) out.effect.deck = effect.deck.trim().slice(0, 24);
     }
     return Object.keys(out).length ? out : null;
   }
@@ -373,7 +387,10 @@
     if (meta.group) copy.group = meta.group;
     if (meta.note) copy.note = meta.note;
     if (meta.owner) copy.owner = meta.owner;
-    if (meta.effect) copy.effect = { type: meta.effect.type, value: meta.effect.value };
+    if (meta.effect) {
+      copy.effect = { type: meta.effect.type, value: meta.effect.value };
+      if (meta.effect.deck) copy.effect.deck = meta.effect.deck;
+    }
     return copy;
   }
 
@@ -431,6 +448,15 @@
     }).slice(0, 24);
   }
 
+  function validHomeCells(raw, cols, rows) {
+    if (!Array.isArray(raw)) return [];
+    return raw.slice(0, 4).map(function (cell) {
+      if (!cell || !Number.isInteger(cell.c) || !Number.isInteger(cell.r)) return null;
+      if (cell.c < 0 || cell.r < 0 || cell.c >= cols || cell.r >= rows) return null;
+      return { c: cell.c, r: cell.r };
+    });
+  }
+
   function normaliseSettings(raw) {
     var out = defaultSettings();
     if (!raw || typeof raw !== 'object') return out;
@@ -442,6 +468,8 @@
     out.rent = !!raw.rent;
     out.startingMoney = clamp(Math.round(Number(raw.startingMoney) || 0), 0, 100000);
     out.snapPath = !!raw.snapPath;
+    out.pawnsPerPlayer = clamp(Math.round(Number(raw.pawnsPerPlayer) || 1), 1, 4);
+    out.allPawnsWin = !!raw.allPawnsWin;
     return out;
   }
 
@@ -468,8 +496,104 @@
       stacking: false,
       rent: false,
       startingMoney: 0,
-      snapPath: false
+      snapPath: false,
+      pawnsPerPlayer: 1,
+      allPawnsWin: false
     };
+  }
+
+  function normalisePlaytest(raw) {
+    var out = { on: false, log: [] };
+    if (!raw || typeof raw !== 'object') return out;
+    out.on = !!raw.on;
+    if (Array.isArray(raw.log)) {
+      out.log = raw.log.filter(function (line) { return typeof line === 'string'; })
+        .map(function (line) { return line.slice(0, 160); }).slice(-200);
+    }
+    return out;
+  }
+
+  function playtestLog(text) {
+    if (!S.playtest || !S.playtest.on) return;
+    var line = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '  ' + text;
+    S.playtest.log.push(line);
+    if (S.playtest.log.length > 200) S.playtest.log.shift();
+    renderPlaytest();
+  }
+
+  function renderPlaytest() {
+    if (!S.playtest) S.playtest = normalisePlaytest(null);
+    if (playtestBtn) {
+      playtestBtn.textContent = '🔍 Playtest: ' + (S.playtest.on ? 'on' : 'off');
+      playtestBtn.setAttribute('aria-pressed', S.playtest.on ? 'true' : 'false');
+    }
+    if (!playtestLogEl) return;
+    playtestLogEl.textContent = '';
+    S.playtest.log.slice(-40).forEach(function (line) {
+      var li = document.createElement('li');
+      li.textContent = line;
+      playtestLogEl.appendChild(li);
+    });
+  }
+
+  function togglePlaytest() {
+    S.playtest = normalisePlaytest(S.playtest);
+    S.playtest.on = !S.playtest.on;
+    renderPlaytest();
+    markDirty();
+    toast(S.playtest.on ? 'Playtest on. Rolls, moves and choices are logged.' : 'Playtest off.');
+    announce(S.playtest.on ? 'Playtest started.' : 'Playtest stopped.');
+  }
+
+  function clearPlaytest() {
+    S.playtest = normalisePlaytest(S.playtest);
+    S.playtest.log = [];
+    renderPlaytest();
+    markDirty();
+    toast('Playtest log cleared.');
+  }
+
+  function printPlaytest() {
+    var title = S.name || 'My tabletop game';
+    var log = (S.playtest && S.playtest.log) || [];
+    var rows = log.length
+      ? log.map(function (line) { return '<li>' + escapeHtml(line) + '</li>'; }).join('')
+      : '<li>No playtest log yet. Turn Playtest on, then play a few turns.</li>';
+    var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+      '<title>' + escapeHtml(title) + ' - feedback</title>' +
+      '<style>@page { size: A4 portrait; margin: 12mm; }' +
+      'body { font-family: Inter, system-ui, sans-serif; color: #1a1208; margin: 0; }' +
+      'h1 { font-size: 20pt; margin: 0 0 3mm; } h2 { font-size: 13pt; margin: 6mm 0 2mm; }' +
+      '.meta { font-size: 9pt; color: #555; } ol { font-size: 10pt; line-height: 1.45; padding-left: 5mm; }' +
+      '.q { border: 1px solid #999; border-radius: 3mm; padding: 4mm; margin: 3mm 0; min-height: 22mm; }' +
+      '.q strong { display: block; margin-bottom: 2mm; }' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml(title) + ' - playtest feedback</h1>' +
+      '<p class="meta">Echo says: a good playtest tells you what to change next. Date: ' + escapeHtml(new Date().toLocaleDateString()) + '</p>' +
+      '<h2>What happened</h2><ol>' + rows + '</ol>' +
+      '<h2>Your turn to think</h2>' +
+      '<div class="q"><strong>What was the most fun moment?</strong></div>' +
+      '<div class="q"><strong>What was confusing or frustrating?</strong></div>' +
+      '<div class="q"><strong>What one rule would you change next time?</strong></div>' +
+      '<p class="meta">Draw or write on the boxes. Keep this sheet with the board.</p>' +
+      '<p class="meta no-print">If the print dialog did not open, press Ctrl and P.</p>' +
+      '</body></html>';
+    var win = window.open('', '_blank');
+    if (!win) {
+      toast('Allow pop-ups to open the feedback sheet.');
+      return;
+    }
+    try {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      window.setTimeout(function () {
+        try { win.print(); } catch (err) { /* print button is not required */ }
+      }, 500);
+      toast('Feedback sheet ready in a new tab.');
+    } catch (err) {
+      toast('Could not open the feedback sheet.');
+    }
   }
 
   function defaultActionFaces() {
@@ -532,6 +656,7 @@
       path: [],
       links: [],
       branches: [],
+      homeCells: [],
       settings: defaultSettings(),
       bg: null,
       bgColor: null,
@@ -544,6 +669,7 @@
       spinner: defaultSpinner(),
       actionFaces: defaultActionFaces(),
       dieMode: 'numbers',
+      playtest: { on: false, log: [] },
       rollMode: 'dice',
       players: defaultPlayers(),
       rules: '',
@@ -979,7 +1105,7 @@
     var row;
     var c;
     var meta;
-    var effectGlyph = { forward: '↑', back: '↓', goTo: '→', skip: '⏸', again: '↻', card: '🃏', money: '💰' };
+    var effectGlyph = { forward: '↑', back: '↓', goTo: '→', skip: '⏸', again: '↻', card: '🃏', money: '💰', swap: '⇄', toStart: '⌂', collect: '🧾', nearest: '🎯' };
 
     for (row = 0; row < S.rows; row++) {
       for (col = 0; col < S.cols; col++) {
@@ -1126,6 +1252,7 @@
     renderDecks();
     renderSpinner();
     renderActionDie();
+    renderPlaytest();
     renderLibrary();
   }
 
@@ -1871,6 +1998,8 @@
     });
     if (effects) parts.push(effects + ' tiles have a landing rule.');
     if (owners) parts.push(owners + ' tiles have an owner.');
+    if (S.settings.pawnsPerPlayer > 1) parts.push('Each player has ' + S.settings.pawnsPerPlayer + ' pawns.');
+    if (S.settings.allPawnsWin) parts.push('Bring every pawn home to win.');
     if (S.settings.startingMoney) parts.push('Every player starts with £' + S.settings.startingMoney + '.');
     if (S.settings.sixToStart) parts.push('Roll a 6 to start.');
     if (S.settings.exactFinish && S.path.length) parts.push('Land on the last tile exactly.');
@@ -1880,6 +2009,9 @@
     if (S.settings.rent) parts.push('Landing on an owned tile pays £25 rent.');
     var custom = Array.isArray(S.customCards) ? S.customCards.length : 0;
     if (custom) parts.push('The deck has ' + custom + ' cards of your own.');
+    if (S.decks && S.decks.length > 1) {
+      parts.push('Decks: ' + S.decks.map(function (d) { return d.name; }).join(', ') + '.');
+    }
     if (S.path.length) parts.push('First to the finish wins.');
     if (!parts.length) parts.push('Paint a board, add pieces and roll the dice.');
     return parts.join(' ');
@@ -2004,6 +2136,7 @@
     S.path = [];
     S.links = [];
     S.branches = [];
+    S.homeCells = [];
     pendingLink = null;
     pendingBranch = null;
     scheduleDraw();
@@ -2273,6 +2406,7 @@
     S.branches = S.branches.map(function (b) {
       return { from: { c: S.cols - 1 - b.from.c, r: b.from.r }, to: { c: S.cols - 1 - b.to.c, r: b.to.r }, label: b.label };
     });
+    S.homeCells = S.homeCells.map(function (h) { return h ? { c: S.cols - 1 - h.c, r: h.r } : null; });
     selection = null;
     updateSelectHint();
     scheduleDraw();
@@ -2301,6 +2435,7 @@
     S.branches = S.branches.map(function (b) {
       return { from: { c: b.from.c, r: S.rows - 1 - b.from.r }, to: { c: b.to.c, r: S.rows - 1 - b.to.r }, label: b.label };
     });
+    S.homeCells = S.homeCells.map(function (h) { return h ? { c: h.c, r: S.rows - 1 - h.r } : null; });
     selection = null;
     updateSelectHint();
     scheduleDraw();
@@ -2381,24 +2516,35 @@
     return null;
   }
 
-  function playerToken(player) {
-    for (var i = 0; i < S.tokens.length; i++) {
-      if (S.tokens[i].pawn && S.tokens[i].player === player) return S.tokens[i];
-    }
-    return null;
+  function playerTokens(player) {
+    return S.tokens.filter(function (t) { return t.pawn && t.player === player; });
   }
 
-  function pawnOffset(player) {
-    var dx = player === 2 || player === 4 ? 9 : -9;
-    var dy = player === 3 || player === 4 ? 9 : -9;
-    return { x: dx, y: dy };
+  function playerToken(player) {
+    var list = playerTokens(player);
+    for (var i = 0; i < list.length; i++) {
+      if (!list[i].finished) return list[i];
+    }
+    return list[0] || null;
+  }
+
+  function pawnOffset(player, pawnIndex) {
+    var count = clamp(Number(S.settings && S.settings.pawnsPerPlayer) || 1, 1, 4);
+    if (count <= 1) {
+      var dx = player === 2 || player === 4 ? 9 : -9;
+      var dy = player === 3 || player === 4 ? 9 : -9;
+      return { x: dx, y: dy };
+    }
+    var slots = [[-12, -12], [12, -12], [-12, 12], [12, 12]];
+    var slot = slots[(clamp(pawnIndex || 1, 1, 4) - 1) % 4];
+    return { x: slot[0], y: slot[1] };
   }
 
   function setPawnPosition(token, pathIndex, instant) {
     var pathCell = pathCellAt(pathIndex);
     if (!pathCell) return;
     var centre = centerOf(pathCell.c, pathCell.r);
-    var off = pawnOffset(token.player || 1);
+    var off = pawnOffset(token.player || 1, token.pawnIndex || 1);
     token.pathIndex = pathIndex;
     token.x = centre.x + off.x;
     token.y = centre.y + off.y;
@@ -2412,6 +2558,22 @@
     }
   }
 
+  function homeCellFor(player) {
+    return (S.homeCells && S.homeCells[player - 1]) || null;
+  }
+
+  function placePawnHome(token) {
+    var cell = homeCellFor(token.player);
+    if (!cell) return;
+    var centre = centerOf(cell.c, cell.r);
+    var off = pawnOffset(token.player, token.pawnIndex);
+    token.finished = true;
+    token.x = centre.x + off.x * 0.6;
+    token.y = centre.y + off.y * 0.6;
+    var el = tokensLayer.querySelector('.tt-token[data-id="' + token.id + '"]');
+    if (el) updateTokenElement(token);
+  }
+
   function setupPawns(resetToStart) {
     if (!S.path.length) {
       var fallback = firstBoardCell();
@@ -2423,21 +2585,21 @@
     }
     pushUndo();
     clearMoveTimers();
-    var start = S.path[0];
+    var perPlayer = clamp(Number(S.settings.pawnsPerPlayer) || 1, 1, 4);
+    S.tokens = S.tokens.filter(function (t) { return !t.pawn; });
     S.players.forEach(function (player, idx) {
-      var number = idx + 1;
-      var token = playerToken(number);
-      if (!token) {
-        token = addPiece('meeple', 0, 0);
+      for (var p = 1; p <= perPlayer; p++) {
+        var token = addPiece('meeple', 0, 0);
         token.pawn = true;
-        token.player = number;
-        token.scale = 0.92;
+        token.player = idx + 1;
+        token.pawnIndex = p;
+        token.finished = false;
+        token.started = false;
+        token.scale = perPlayer > 1 ? 0.72 : 0.92;
+        token.color = player.color || PLAYER_COLORS[idx];
+        token.pathIndex = 0;
+        setPawnPosition(token, 0, true);
       }
-      token.pawn = true;
-      token.player = number;
-      token.color = player.color || PLAYER_COLORS[idx];
-      token.pathIndex = 0;
-      setPawnPosition(token, 0, true);
     });
     S.turn = clamp(S.turn || 1, 1, 4);
     S.winner = 0;
@@ -2497,8 +2659,7 @@
     return null;
   }
 
-  function movePlayerBy(player, steps, done) {
-    var token = playerToken(player);
+  function movePlayerBy(token, steps, done) {
     if (!token) {
       if (done) done();
       return;
@@ -2539,13 +2700,13 @@
     step();
   }
 
-  function captureRivals(player) {
+  function captureRivals(player, token) {
     if (!S.settings.capture) return 0;
-    var token = playerToken(player);
+    token = token || playerToken(player);
     if (!token) return 0;
     var caught = 0;
     S.tokens.forEach(function (t) {
-      if (!t.pawn || t.player === player) return;
+      if (!t.pawn || t.finished || t.player === player) return;
       if (t.pathIndex !== token.pathIndex) return;
       t.pathIndex = 0;
       t.started = false;
@@ -2555,12 +2716,13 @@
     if (caught) {
       toast('Captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
       announce('Captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
+      if (playtestLog) playtestLog(activePlayerName() + ' captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
     }
     return caught;
   }
 
-  function resolveLanding(player, depth, againFlag, done) {
-    var token = playerToken(player);
+  function resolveLanding(player, token, depth, againFlag, done) {
+    token = token || playerToken(player);
     if (!token) {
       if (done) done({ again: againFlag });
       return;
@@ -2576,6 +2738,7 @@
       S.players[player - 1].money -= rent;
       S.players[meta.owner - 1].money += rent;
       toast('Pay £' + rent + ' rent to ' + (S.players[meta.owner - 1].name || 'Player ' + meta.owner) + '.');
+      playtestLog(activePlayerName() + ' paid £' + rent + ' rent.');
       renderPlayers();
     }
     if (!meta || !meta.effect || depth >= 3) {
@@ -2586,12 +2749,12 @@
     var value = effect.value || 0;
     if (effect.type === 'forward' && value) {
       toast('Move forward ' + Math.abs(value) + '.');
-      movePlayerBy(player, Math.abs(value), function () { resolveLanding(player, depth + 1, againFlag, done); });
+      movePlayerBy(token, Math.abs(value), function () { resolveLanding(player, token, depth + 1, againFlag, done); });
       return;
     }
     if (effect.type === 'back' && value) {
       toast('Move back ' + Math.abs(value) + '.');
-      movePlayerBy(player, -Math.abs(value), function () { resolveLanding(player, depth + 1, againFlag, done); });
+      movePlayerBy(token, -Math.abs(value), function () { resolveLanding(player, token, depth + 1, againFlag, done); });
       return;
     }
     if (effect.type === 'goTo' && value) {
@@ -2600,11 +2763,67 @@
       if (targetIndex >= 0) {
         toast('Go to ' + value + '.');
         var jump = targetIndex - token.pathIndex;
-        movePlayerBy(player, jump, function () { resolveLanding(player, depth + 1, againFlag, done); });
+        movePlayerBy(token, jump, function () { resolveLanding(player, token, depth + 1, againFlag, done); });
         return;
       }
     }
-    if (effect.type === 'skip') {
+    if (effect.type === 'swap') {
+      var rival = null;
+      S.tokens.forEach(function (t) {
+        if (!t.pawn || t.finished || t.player === player) return;
+        if (t.pathIndex <= token.pathIndex) return;
+        if (!rival || t.pathIndex < rival.pathIndex) rival = t;
+      });
+      if (rival) {
+        var mine = token.pathIndex;
+        var theirs = rival.pathIndex;
+        setPawnPosition(token, theirs, false);
+        setPawnPosition(rival, mine, false);
+        toast('Swapped places with Player ' + rival.player + '.');
+        announce('Swapped places with Player ' + rival.player + '.');
+        resolveLanding(player, token, depth + 1, againFlag, done);
+        return;
+      }
+      toast('No rival ahead to swap with.');
+    } else if (effect.type === 'toStart') {
+      setPawnPosition(token, 0, false);
+      toast('Back to the start.');
+      announce('Back to the start.');
+      resolveLanding(player, token, depth + 1, againFlag, done);
+      return;
+    } else if (effect.type === 'collect') {
+      var toll = value || 25;
+      var taken = 0;
+      S.players.forEach(function (p, idx) {
+        if (idx === player - 1) return;
+        p.money -= toll;
+        taken += toll;
+      });
+      S.players[player - 1].money += taken;
+      toast('Collected £' + taken + ' from the other players.');
+      announce('Collected ' + taken + ' pounds.');
+      renderPlayers();
+    } else if (effect.type === 'nearest') {
+      var bestLink = null;
+      var bestIndex = Infinity;
+      (S.links || []).forEach(function (link) {
+        var fromIndex = pathIndexOf(link.from.c, link.from.r);
+        if (fromIndex >= token.pathIndex && fromIndex < bestIndex) {
+          bestIndex = fromIndex;
+          bestLink = link;
+        }
+      });
+      if (bestLink) {
+        var jumpTo = pathIndexOf(bestLink.to.c, bestLink.to.r);
+        if (jumpTo >= 0) {
+          movePlayerBy(token, jumpTo - token.pathIndex, function () {
+            resolveLanding(player, token, depth + 1, againFlag, done);
+          });
+          return;
+        }
+      }
+      toast('No snake or ladder ahead.');
+    } else if (effect.type === 'skip') {
       S.players[player - 1].skip = true;
       toast('Miss a turn.');
       announce('Miss a turn.');
@@ -2612,6 +2831,11 @@
       againFlag = true;
       toast('Roll again.');
     } else if (effect.type === 'card') {
+      if (effect.deck) {
+        var wanted = null;
+        (S.decks || []).forEach(function (d) { if (d.name === effect.deck) wanted = d; });
+        if (wanted && wanted.id !== S.activeDeckId) loadDeck(wanted.id);
+      }
       var spot = freeSpotFrom(pathCell.c, pathCell.r, -1);
       var cardCentre = centerOf(spot.col, spot.row);
       addCard(cardCentre.x, cardCentre.y);
@@ -2652,30 +2876,43 @@
       return;
     }
     var player = S.turn || 1;
-    if (!playerToken(player)) setupPawns(false);
-    var token = playerToken(player);
-    if (!token) return;
+    if (!playerTokens(player).length) setupPawns(false);
+    var active = playerTokens(player).filter(function (t) { return !t.finished; });
+    if (!active.length) {
+      toast('All your pawns are home.');
+      advanceTurn(false);
+      return;
+    }
     var name = activePlayerName();
-    pushUndo();
 
-    if (S.settings.sixToStart && !token.started) {
-      if (total !== 6) {
-        toast(name + ' needs a 6 to start.');
-        announce(name + ' needs a 6 to start. Turn passes.');
+    function proceed(token) {
+      if (!token) {
         advanceTurn(false);
         return;
       }
-      token.started = true;
-      toast(name + ' rolled a 6 and joins the board.');
+      pushUndo();
+      if (active.length > 1) playtestLog(name + ' chose pawn ' + (token.pawnIndex || 1) + '.');
+      if (S.settings.sixToStart && !token.started) {
+        if (total !== 6) {
+          toast(name + ' needs a 6 to start.');
+          announce(name + ' needs a 6 to start. Turn passes.');
+          advanceTurn(false);
+          return;
+        }
+        token.started = true;
+        toast(name + ' rolled a 6 and joins the board.');
+      }
+      var before = token.pathIndex || 0;
+      movePlayerBy(token, total, function () {
+        if (S.settings.startBonus && before + total >= S.path.length) {
+          S.players[player - 1].money += 10;
+        }
+        afterPlayMove(player, token);
+      });
     }
 
-    var before = token.pathIndex || 0;
-    movePlayerBy(player, total, function () {
-      if (S.settings.startBonus && before + total >= S.path.length) {
-        S.players[player - 1].money += 10;
-      }
-      afterPlayMove(player);
-    });
+    if (active.length > 1) showPawnChoice(player, active, proceed);
+    else proceed(active[0]);
   }
 
   function handleActionRoll(label) {
@@ -2693,55 +2930,72 @@
     scheduleDraw();
   }
 
-  function completePlayTurn(player, again) {
-    var token = playerToken(player);
+  function completePlayTurn(player, token, again) {
     var last = S.path.length - 1;
-    if (token && token.pathIndex >= last) {
-      if (!S.settings.exactFinish || token.pathIndex === last) {
-        showWinner(player);
-        renderPlayers();
-        updatePlayAids();
+    if (token && token.pathIndex >= last && (!S.settings.exactFinish || token.pathIndex === last)) {
+      if (homeCellFor(player)) placePawnHome(token);
+      else token.finished = true;
+      renderPlayers();
+      if (S.settings.allPawnsWin) {
+        var all = playerTokens(player);
+        var allHome = all.length > 0 && all.every(function (t) { return t.finished; });
+        if (allHome) {
+          showWinner(player);
+          updatePlayAids();
+          scheduleDraw();
+          markDirty();
+          return;
+        }
+        var left = all.filter(function (t) { return !t.finished; }).length;
+        toast('Pawn home. ' + left + ' still to bring home.');
+        announce('Pawn home. ' + left + ' still to bring home.');
+        advanceTurn(false);
         scheduleDraw();
-        markDirty();
         return;
       }
+      showWinner(player);
+      updatePlayAids();
+      scheduleDraw();
+      markDirty();
+      return;
     }
     advanceTurn(!!again);
     scheduleDraw();
   }
 
-  function afterPlayMove(player) {
-    captureRivals(player);
-    var token = playerToken(player);
+  function afterPlayMove(player, token) {
+    captureRivals(player, token);
     if (!token) {
-      completePlayTurn(player, false);
+      completePlayTurn(player, null, false);
       return;
     }
     var cell = pathCellAt(token.pathIndex);
+    var landedMeta = cell ? metaAt(cell.c, cell.r) : null;
+    playtestLog(activePlayerName() + ' landed on ' + (landedMeta && landedMeta.n ? 'tile ' + landedMeta.n : 'stop ' + (token.pathIndex + 1)) + '.');
     var options = branchOptionsAt(cell);
     if (options.length) {
       showChoice(player, options, function (branch) {
         if (!branch) {
-          completePlayTurn(player, false);
+          completePlayTurn(player, token, false);
           return;
         }
+        playtestLog(activePlayerName() + ' chose ' + branch.label + '.');
         var targetIndex = pathIndexOf(branch.to.c, branch.to.r);
         if (targetIndex < 0) {
-          completePlayTurn(player, false);
+          completePlayTurn(player, token, false);
           return;
         }
-        var current = playerToken(player);
-        movePlayerBy(player, targetIndex - (current ? current.pathIndex : 0), function () {
-          captureRivals(player);
-          resolveLanding(player, 1, false, function (state) {
-            completePlayTurn(player, state && state.again);
+        movePlayerBy(token, targetIndex - token.pathIndex, function () {
+          captureRivals(player, token);
+          resolveLanding(player, token, 1, false, function (state) {
+            completePlayTurn(player, token, state && state.again);
           });
         });
       });
       return;
     }
-    resolveLanding(player, 0, false, function (state) {
-      completePlayTurn(player, state && state.again);
+    resolveLanding(player, token, 0, false, function (state) {
+      completePlayTurn(player, token, state && state.again);
     });
   }
 
@@ -2763,7 +3017,10 @@
     S.round = 1;
     S.players.forEach(function (p) { p.skip = false; });
     S.tokens.forEach(function (t) {
-      if (t.pawn) t.started = false;
+      if (t.pawn) {
+        t.started = false;
+        t.finished = false;
+      }
     });
     if (S.path.length) {
       S.tokens.forEach(function (t) {
@@ -2797,11 +3054,13 @@
       branches: (S.branches || []).map(function (b) {
         return { from: { c: b.from.c, r: b.from.r }, to: { c: b.to.c, r: b.to.r }, label: b.label || 'Choose' };
       }),
+      homeCells: (S.homeCells || []).map(function (h) { return h ? { c: h.c, r: h.r } : null; }),
       settings: normaliseSettings(S.settings),
       winner: S.winner || 0,
       spinner: normaliseSpinner(S.spinner),
       actionFaces: normaliseActionFaces(S.actionFaces),
       dieMode: S.dieMode === 'action' ? 'action' : 'numbers',
+      playtest: normalisePlaytest(S.playtest),
       rollMode: S.rollMode === 'spinner' ? 'spinner' : 'dice',
       activeDeckId: S.activeDeckId || '',
       decks: (S.decks || []).map(function (deck) {
@@ -2869,6 +3128,7 @@
     S.path = validPath(snap.path, S.cols, S.rows);
     S.links = validLinks(snap.links, S.cols, S.rows);
     S.branches = validBranches(snap.branches, S.cols, S.rows);
+    S.homeCells = validHomeCells(snap.homeCells, S.cols, S.rows);
     S.settings = normaliseSettings(snap.settings);
     S.winner = clamp(Number(snap.winner) || 0, 0, 4);
     S.bg = snap.bg;
@@ -2880,6 +3140,7 @@
     S.spinner = normaliseSpinner(snap.spinner);
     S.actionFaces = normaliseActionFaces(snap.actionFaces);
     S.dieMode = snap.dieMode === 'action' ? 'action' : 'numbers';
+    S.playtest = normalisePlaytest(snap.playtest);
     S.rollMode = snap.rollMode === 'spinner' ? 'spinner' : 'dice';
     S.decks = Array.isArray(snap.decks) ? snap.decks.slice(0, 8).map(normaliseDeck) : [];
     S.activeDeckId = typeof snap.activeDeckId === 'string' ? snap.activeDeckId : '';
@@ -3098,6 +3359,132 @@
     }
   }
 
+  function boardIndexById(id) {
+    for (var i = 0; i < library.boards.length; i++) {
+      if (library.boards[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function startBoardRename(id) {
+    renamingBoardId = id;
+    renderLibrary();
+  }
+
+  function commitBoardRename(id, value) {
+    var index = boardIndexById(id);
+    var name = String(value || '').trim().slice(0, 40);
+    if (index < 0) return;
+    if (name) {
+      library.boards[index].name = name;
+      if (library.boards[index].data) library.boards[index].data.name = name;
+      library.boards[index].updated = Date.now();
+      if (library.activeId === id) {
+        S.name = name;
+        syncControls();
+      }
+      writeLibrary();
+      markDirty();
+      toast('Board renamed to “' + name + '”.');
+    }
+    renamingBoardId = '';
+    renderLibrary();
+  }
+
+  function moveBoard(id, delta) {
+    var index = boardIndexById(id);
+    var next = index + delta;
+    if (index < 0 || next < 0 || next >= library.boards.length) return;
+    var board = library.boards.splice(index, 1)[0];
+    library.boards.splice(next, 0, board);
+    writeLibrary();
+    renderLibrary();
+    toast('Board moved ' + (delta < 0 ? 'up' : 'down') + '.');
+  }
+
+  function duplicateBoardById(id) {
+    var index = boardIndexById(id);
+    if (index < 0) return;
+    if (library.boards.length >= MAX_BOARDS) {
+      toast('You have ' + MAX_BOARDS + ' boards. Delete one before copying.');
+      return;
+    }
+    var src = library.boards[index];
+    if (!src || !src.data) {
+      toast('Open and save that board before copying it.');
+      return;
+    }
+    var copy;
+    try {
+      copy = JSON.parse(JSON.stringify(src.data));
+    } catch (err) {
+      toast('That board could not be copied.');
+      return;
+    }
+    copy.name = String(src.name || 'Board').slice(0, 33) + ' copy';
+    var board = { id: newBoardId(), name: copy.name, updated: Date.now(), data: copy };
+    library.boards.splice(index + 1, 0, board);
+    writeLibrary();
+    renderLibrary();
+    toast('Copied “' + (src.name || 'board') + '”.');
+  }
+
+  function exportBackup() {
+    var payload = { v: 2, app: 'Tabletop Studio', exportedAt: new Date().toISOString(), boards: library.boards };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, 'tabletop-backup-' + new Date().toISOString().slice(0, 10) + '.json');
+    toast('Backup file saved with ' + library.boards.length + ' boards.');
+    announce('All boards saved to a backup file.');
+  }
+
+  function onRestoreBackup(event) {
+    var file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast('That backup file is too big.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed;
+      try {
+        parsed = JSON.parse(String(reader.result));
+      } catch (err) {
+        toast('That file is not a Tabletop backup.');
+        return;
+      }
+      var boards = Array.isArray(parsed) ? parsed : parsed.boards;
+      if (!Array.isArray(boards) || !boards.length) {
+        toast('That backup has no boards in it.');
+        return;
+      }
+      boards = boards.filter(function (b) {
+        return b && typeof b.id === 'string' && b.data && Array.isArray(b.data.tiles);
+      }).slice(0, MAX_BOARDS);
+      if (!boards.length) {
+        toast('That backup has no usable boards.');
+        return;
+      }
+      if (!window.confirm('Replace your ' + library.boards.length + ' saved boards with ' + boards.length + ' from this backup?')) {
+        return;
+      }
+      library = { v: 2, activeId: boards[0].id, boards: boards };
+      writeLibrary();
+      clearHistory();
+      applyBoardData(boards[0].data);
+      emptyDismissed = true;
+      firstSteps.dismissed = true;
+      setBgImage(S.bg);
+      syncControls();
+      renderAll();
+      updateSaveState('Restored', false);
+      toast(library.boards.length + ' boards restored.');
+      announce(library.boards.length + ' boards restored from the backup.');
+    };
+    reader.readAsText(file);
+  }
+
   function renderLibrary() {
     if (!libList) return;
     libList.textContent = '';
@@ -3105,22 +3492,79 @@
       var row = document.createElement('div');
       row.className = 'tt-lib-row' + (board.id === library.activeId ? ' is-active' : '');
 
-      var open = document.createElement('button');
-      open.type = 'button';
-      open.className = 'tt-lib-open';
-      open.dataset.boardOpen = board.id;
-      open.setAttribute('aria-current', board.id === library.activeId ? 'true' : 'false');
+      var tools = document.createElement('span');
+      tools.className = 'tt-lib-tools';
+      var renameBtn = document.createElement('button');
+      renameBtn.type = 'button';
+      renameBtn.className = 'tt-lib-tool';
+      renameBtn.dataset.boardRename = board.id;
+      renameBtn.setAttribute('aria-label', 'Rename ' + (board.name || 'board'));
+      renameBtn.textContent = '✎';
+      var upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'tt-lib-tool';
+      upBtn.dataset.boardUp = board.id;
+      upBtn.setAttribute('aria-label', 'Move ' + (board.name || 'board') + ' up');
+      upBtn.textContent = '↑';
+      var downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'tt-lib-tool';
+      downBtn.dataset.boardDown = board.id;
+      downBtn.setAttribute('aria-label', 'Move ' + (board.name || 'board') + ' down');
+      downBtn.textContent = '↓';
+      var dupBtn = document.createElement('button');
+      dupBtn.type = 'button';
+      dupBtn.className = 'tt-lib-tool';
+      dupBtn.dataset.boardDup = board.id;
+      dupBtn.setAttribute('aria-label', 'Duplicate ' + (board.name || 'board'));
+      dupBtn.textContent = '⧉';
+      tools.appendChild(renameBtn);
+      tools.appendChild(upBtn);
+      tools.appendChild(downBtn);
+      tools.appendChild(dupBtn);
 
-      var name = document.createElement('span');
-      name.className = 'tt-lib-name';
-      name.textContent = board.name || 'Untitled board';
-      var meta = document.createElement('span');
-      meta.className = 'tt-lib-meta';
-      var d = board.data || {};
-      meta.textContent = (d.cols || '?') + '×' + (d.rows || '?') +
-        ' · ' + (Array.isArray(d.tokens) ? d.tokens.length : 0) + ' pieces · ' + formatWhen(board.updated);
-      open.appendChild(name);
-      open.appendChild(meta);
+      if (renamingBoardId === board.id) {
+        var renameInput = document.createElement('input');
+        renameInput.type = 'text';
+        renameInput.className = 'tt-lib-rename';
+        renameInput.maxLength = 40;
+        renameInput.value = board.name || '';
+        renameInput.setAttribute('aria-label', 'New name for ' + (board.name || 'board'));
+        renameInput.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            renameInput.blur();
+          } else if (event.key === 'Escape') {
+            renamingBoardId = '';
+            renderLibrary();
+          }
+        });
+        renameInput.addEventListener('blur', function () {
+          commitBoardRename(board.id, renameInput.value);
+        });
+        row.appendChild(renameInput);
+        window.setTimeout(function () {
+          try { renameInput.focus({ preventScroll: true }); renameInput.select(); } catch (err) { renameInput.focus(); }
+        }, 0);
+      } else {
+        var open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'tt-lib-open';
+        open.dataset.boardOpen = board.id;
+        open.setAttribute('aria-current', board.id === library.activeId ? 'true' : 'false');
+
+        var name = document.createElement('span');
+        name.className = 'tt-lib-name';
+        name.textContent = board.name || 'Untitled board';
+        var meta = document.createElement('span');
+        meta.className = 'tt-lib-meta';
+        var d = board.data || {};
+        meta.textContent = (d.cols || '?') + '×' + (d.rows || '?') +
+          ' · ' + (Array.isArray(d.tokens) ? d.tokens.length : 0) + ' pieces · ' + formatWhen(board.updated);
+        open.appendChild(name);
+        open.appendChild(meta);
+        row.appendChild(open);
+      }
 
       var del = document.createElement('button');
       del.type = 'button';
@@ -3129,7 +3573,7 @@
       del.setAttribute('aria-label', 'Delete ' + (board.name || 'board'));
       del.textContent = '✕';
 
-      row.appendChild(open);
+      row.appendChild(tools);
       row.appendChild(del);
       libList.appendChild(row);
     });
@@ -3315,6 +3759,7 @@
     S.path = validPath(data.path, cols, rows);
     S.links = validLinks(data.links, cols, rows);
     S.branches = validBranches(data.branches, cols, rows);
+    S.homeCells = validHomeCells(data.homeCells, cols, rows);
     S.settings = normaliseSettings(data.settings);
     S.winner = clamp(Number(data.winner) || 0, 0, 4);
     S.bg = typeof data.bg === 'string' ? data.bg : null;
@@ -3366,6 +3811,8 @@
           if (t.pawn) {
             token.pawn = true;
             token.player = clamp(Math.round(Number(t.player) || 1), 1, 4);
+            token.pawnIndex = clamp(Math.round(Number(t.pawnIndex) || 1), 1, 4);
+            token.finished = !!t.finished;
             if (typeof t.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(t.color)) token.color = t.color;
             if (Number.isFinite(Number(t.pathIndex))) token.pathIndex = Math.round(Number(t.pathIndex));
           }
@@ -3386,6 +3833,7 @@
     S.spinner = normaliseSpinner(data.spinner);
     S.actionFaces = normaliseActionFaces(data.actionFaces);
     S.dieMode = data.dieMode === 'action' ? 'action' : 'numbers';
+    S.playtest = normalisePlaytest(data.playtest);
     S.rollMode = data.rollMode === 'spinner' ? 'spinner' : 'dice';
     S.decks = Array.isArray(data.decks) ? data.decks.slice(0, 8).map(normaliseDeck).filter(Boolean) : [];
     S.activeDeckId = typeof data.activeDeckId === 'string' ? data.activeDeckId : '';
@@ -3496,6 +3944,7 @@
     S.path = validPath(S.path, cols, rows);
     S.links = validLinks(S.links, cols, rows);
     S.branches = validBranches(S.branches, cols, rows);
+    S.homeCells = validHomeCells(S.homeCells, cols, rows);
   }
 
   function resetGridTo(cols, rows, shape) {
@@ -3513,6 +3962,7 @@
     S.path = [];
     S.links = [];
     S.branches = [];
+    S.homeCells = [];
   }
 
   function setGrid(cols, rows, shape) {
@@ -3636,6 +4086,7 @@
       renderHistory();
       playSound('roll');
       announce('The wheel landed on ' + labels[index] + '.');
+      if (S.mode === 'play') playtestLog(activePlayerName() + ' spun ' + labels[index] + '.');
       spinnerSpinning = false;
       if (spinBtn) spinBtn.disabled = false;
       markDirty();
@@ -3884,6 +4335,9 @@
       }
       markStep('roll');
       announce(text);
+      if (S.mode === 'play') {
+        playtestLog(activePlayerName() + ' ' + (action ? 'rolled ' + faceLabel : 'rolled ' + total) + '.');
+      }
 
       var entry = action
         ? 'Action = ' + faceLabel
@@ -4087,8 +4541,11 @@
     S.tokens = [];
     S.path = [];
     S.links = [];
+    S.branches = [];
+    S.homeCells = [];
     S.settings = defaultSettings();
     S.winner = 0;
+    hideWin(false);
     S.bg = null;
     bgImg = null;
     S.selectedId = 0;
@@ -4239,15 +4696,20 @@
   }
 
   function placeTemplatePawns(count) {
+    var perPlayer = clamp(Number(S.settings.pawnsPerPlayer) || 1, 1, 4);
     for (var i = 0; i < count; i++) {
-      var t = addPiece('meeple', 0, 0);
-      t.pawn = true;
-      t.player = i + 1;
-      t.color = PLAYER_COLORS[i];
-      t.scale = 0.86;
-      t.pathIndex = 0;
-      t.started = false;
-      setPawnPosition(t, 0, true);
+      for (var p = 1; p <= perPlayer; p++) {
+        var t = addPiece('meeple', 0, 0);
+        t.pawn = true;
+        t.player = i + 1;
+        t.pawnIndex = p;
+        t.color = PLAYER_COLORS[i];
+        t.scale = perPlayer > 1 ? 0.72 : 0.86;
+        t.pathIndex = 0;
+        t.started = false;
+        t.finished = false;
+        setPawnPosition(t, 0, true);
+      }
     }
   }
 
@@ -4312,14 +4774,66 @@
       var cell = findCellByNumber(n);
       if (cell) setTemplateMeta(cell.c, cell.r, { icon: '⭐', label: 'Safe' });
     });
+    S.settings.pawnsPerPlayer = 4;
+    S.settings.allPawnsWin = true;
+    S.homeCells = homes.map(function (home) { return { c: home.c, r: home.r }; });
     placeTemplatePawns(4);
     S.name = 'Ludo Loop';
-    S.rules = 'Four players race around the loop. Roll a 6 to leave home. Land on a rival to send it back to the start. First pawn all the way round wins.';
+    S.rules = 'Four players each have four pawns. Roll a 6 to leave home and choose which pawn to move. Land on a rival to send it back to the start. Bring all four pawns home to win.';
     S.settings.sixToStart = true;
     S.settings.capture = true;
     S.settings.snapPath = true;
     S.turn = 1;
     S.round = 1;
+  }
+
+  function makeSeedCard(name, text, icon, color) {
+    return sanitiseCustomCard({
+      id: 'cc-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: name,
+      text: text,
+      icon: icon,
+      color: color
+    });
+  }
+
+  function seedPropertyDecks() {
+    var chance = [
+      makeSeedCard('Advance to GO', 'Move to tile 1.', '🚩', '#5E8C5A'),
+      makeSeedCard('Bank pays you', 'Collect £50.', '💷', '#c98a2e'),
+      makeSeedCard('Repair bill', 'Pay £25.', '🔧', '#BC4749'),
+      makeSeedCard('Go to Jail', 'Move to tile 11 and miss a turn.', '🔒', '#6B6257'),
+      makeSeedCard('Take another card', 'Draw again.', '🃏', '#3f6e71'),
+      makeSeedCard('Speeding fine', 'Pay £15.', '🚓', '#BC4749')
+    ].filter(Boolean);
+    var chest = [
+      makeSeedCard('Birthday money', 'Collect £20.', '🎁', '#c98a2e'),
+      makeSeedCard('Inheritance', 'Collect £100.', '🏦', '#3f6e71'),
+      makeSeedCard('School trip', 'Pay £30.', '🚌', '#BC4749'),
+      makeSeedCard('Prize winner', 'Collect £50.', '🏆', '#c98a2e'),
+      makeSeedCard('Hospital bill', 'Pay £40.', '🏥', '#BC4749'),
+      makeSeedCard('Get out of jail', 'Keep this card.', '🔑', '#5E8C5A')
+    ].filter(Boolean);
+    S.decks = [
+      {
+        id: 'deck-chance',
+        name: 'Chance',
+        customCards: chance,
+        deck: chance.map(function (card) { return { c: card.id }; }),
+        deckStandard: false
+      },
+      {
+        id: 'deck-community-chest',
+        name: 'Community Chest',
+        customCards: chest,
+        deck: chest.map(function (card) { return { c: card.id }; }),
+        deckStandard: false
+      }
+    ];
+    S.activeDeckId = 'deck-chance';
+    S.customCards = chance.map(cloneCustomCard);
+    S.deck = chance.map(function (card) { return { c: card.id }; });
+    S.deckStandard = false;
   }
 
   function buildPropertyTemplate() {
@@ -4355,9 +4869,15 @@
       var cell = findCellByNumber(corner[0]);
       if (cell) setTemplateMeta(cell.c, cell.r, { label: corner[1], icon: corner[2], group: '#c98a2e' });
     });
-    [6, 16, 26, 36].forEach(function (n) {
+    [6, 16, 26, 36].forEach(function (n, index) {
       var cell = findCellByNumber(n);
-      if (cell) setTemplateMeta(cell.c, cell.r, { icon: '🃏', label: 'Card', effect: { type: 'card', value: 0 } });
+      if (cell) {
+        setTemplateMeta(cell.c, cell.r, {
+          icon: '🃏',
+          label: index % 2 ? 'Community Chest' : 'Chance',
+          effect: { type: 'card', value: 0, deck: index % 2 ? 'Community Chest' : 'Chance' }
+        });
+      }
     });
     [9, 29].forEach(function (n) {
       var cell = findCellByNumber(n);
@@ -4464,6 +4984,7 @@
     pushUndo();
     resetBoardDoc();
     S.templateId = id === 'blank' ? '' : id;
+    S.name = id === 'blank' ? 'My board' : (names[id] || 'My board');
     if (id === 'meadow') buildMeadowTemplate();
     else if (id === 'dungeon') buildDungeonTemplate();
     else if (id === 'island') buildIslandTemplate();
@@ -4475,6 +4996,7 @@
     else if (id === 'draughts') buildDraughtsTemplate();
     else if (id === 'connect') buildConnectTemplate();
     S.deck = makeDeck();
+    if (id === 'property') seedPropertyDecks();
     if (/^(snakes|ludo|property|life)$/.test(id)) dieSides = 6;
     hideEmpty();
     S.selectedId = 0;
@@ -4483,6 +5005,7 @@
       firstSteps.paint = true;
       firstSteps.piece = true;
     }
+    syncControls();
     renderAll();
     markDirty();
     var label = names[id] || 'Board';
@@ -4507,6 +5030,7 @@
     S.path = [];
     S.links = [];
     S.branches = [];
+    S.homeCells = [];
     S.settings = defaultSettings();
     S.winner = 0;
     S.templateId = '';
@@ -4514,6 +5038,10 @@
     hideWin(false);
     S.bg = null;
     bgImg = null;
+    S.decks = [];
+    S.activeDeckId = '';
+    S.customCards = [];
+    S.deckStandard = true;
     S.deck = makeDeck();
     S.rules = '';
     S.turn = 1;
@@ -4537,6 +5065,7 @@
     S.path = [];
     S.links = [];
     S.branches = [];
+    S.homeCells = [];
     renderAll();
     markDirty();
     toast('Tiles cleared. Pieces are still on the board.');
@@ -5068,6 +5597,13 @@
       moneyBtns.className = 'tt-player-money-btns';
       moneyBtns.appendChild(moneyDown);
       moneyBtns.appendChild(moneyUp);
+      var playerPawns = playerTokens(idx + 1);
+      if (playerPawns.length > 1) {
+        var homeBadge = document.createElement('span');
+        homeBadge.className = 'tt-player-home';
+        homeBadge.textContent = playerPawns.filter(function (t) { return t.finished; }).length + '/' + playerPawns.length + ' home';
+        row.appendChild(homeBadge);
+      }
       if (p.skip) {
         var skipBadge = document.createElement('span');
         skipBadge.className = 'tt-player-skip';
@@ -5083,6 +5619,27 @@
       row.appendChild(upBtn);
       container.appendChild(row);
     });
+  }
+
+  function endTurn() {
+    if (S.mode !== 'play') return;
+    if (S.winner) {
+      toast('This game is finished. Play again from the win screen.');
+      return;
+    }
+    advanceTurn(false);
+    toast('Turn ended. ' + activePlayerName() + ' to play.');
+    announce('Turn ended. ' + activePlayerName() + ' to play.');
+  }
+
+  function openPlayAids() {
+    if (window.matchMedia('(max-width: 980px)').matches) openSidebar();
+    var section = byId('ttRules') ? byId('ttRules').closest('details') : null;
+    if (section) {
+      section.open = true;
+      try { section.scrollIntoView({ block: 'nearest' }); } catch (err) { /* scroll is optional */ }
+      try { byId('ttRules').focus({ preventScroll: true }); } catch (err) { byId('ttRules').focus(); }
+    }
   }
 
   function updatePlayAids() {
@@ -5103,14 +5660,19 @@
         ? '🎲 Roll for ' + activePlayerName()
         : (S.dieMode === 'action' ? '🎲 Action die' : '🎲 Roll d6');
     }
+    if (endTurnBtn) endTurnBtn.hidden = !(S.mode === 'play' && S.path.length && !S.winner);
     if (ruleExactInput) ruleExactInput.checked = !!S.settings.exactFinish;
     if (ruleSixInput) ruleSixInput.checked = !!S.settings.sixToStart;
     if (ruleStartBonusInput) ruleStartBonusInput.checked = !!S.settings.startBonus;
     if (ruleCaptureInput) ruleCaptureInput.checked = !!S.settings.capture;
     if (ruleStackInput) ruleStackInput.checked = !!S.settings.stacking;
     if (ruleRentInput) ruleRentInput.checked = !!S.settings.rent;
+    if (ruleAllPawnsInput) ruleAllPawnsInput.checked = !!S.settings.allPawnsWin;
     if (startingMoneyInput && document.activeElement !== startingMoneyInput) {
       startingMoneyInput.value = String(S.settings.startingMoney || 0);
+    }
+    if (pawnCountInput && document.activeElement !== pawnCountInput) {
+      pawnCountInput.value = String(S.settings.pawnsPerPlayer || 1);
     }
     renderPlayers();
     updateRouteState();
@@ -5560,11 +6122,16 @@
       skip: 'Turns to miss',
       again: 'No amount needed',
       card: 'No amount needed',
-      money: 'Money up or down (-100 is a cost)'
+      money: 'Money up or down (-100 is a cost)',
+      swap: 'No amount needed',
+      toStart: 'No amount needed',
+      collect: 'Money each player pays',
+      nearest: 'No amount needed'
     };
     tileEffectLabel.textContent = labels[type] || 'Amount';
-    tileEffectValueInput.disabled = type === 'again' || type === 'card' || type === 'none';
-    if (type === 'skip' && Number(tileEffectValueInput.value) < 1) tileEffectValueInput.value = '1';
+    tileEffectValueInput.disabled = type === 'again' || type === 'card' || type === 'none' ||
+      type === 'swap' || type === 'toStart' || type === 'nearest';
+    if ((type === 'skip' || type === 'collect') && Number(tileEffectValueInput.value) < 1) tileEffectValueInput.value = type === 'collect' ? '25' : '1';
   }
 
   function openTilePanel(col, row) {
@@ -5586,6 +6153,21 @@
     tileEffectValueInput.value = meta.effect ? String(meta.effect.value) : '1';
     tileNoteInput.value = meta.note || '';
     if (tileOwnerInput) tileOwnerInput.value = String(meta.owner || 0);
+    if (tileDeckInput) {
+      ensureDecks();
+      tileDeckInput.textContent = '';
+      var active = document.createElement('option');
+      active.value = '';
+      active.textContent = 'Active deck';
+      tileDeckInput.appendChild(active);
+      S.decks.forEach(function (deck) {
+        var option = document.createElement('option');
+        option.value = deck.name;
+        option.textContent = deck.name;
+        tileDeckInput.appendChild(option);
+      });
+      tileDeckInput.value = (meta.effect && meta.effect.deck) ? meta.effect.deck : '';
+    }
     updateTileEffectLabel();
     tilePanel.hidden = false;
     document.body.classList.add('tt-modal-open');
@@ -5621,6 +6203,9 @@
         type: type,
         value: clamp(Math.round(Number(tileEffectValueInput.value) || 0), -999, 999)
       };
+      if (type === 'card' && tileDeckInput && tileDeckInput.value) {
+        meta.effect.deck = tileDeckInput.value.slice(0, 24);
+      }
     }
     var clean = sanitiseMeta(meta);
     S.meta[cellIndex(tileTarget.col, tileTarget.row)] = clean;
@@ -5647,21 +6232,23 @@
     return meta && meta.n ? 'tile ' + meta.n : 'the next stop';
   }
 
-  function showChoice(player, options, callback) {
+  function openChoiceDialog(title, text, items, callback) {
     choiceCallback = callback;
     choiceTrigger = document.activeElement;
-    choiceText.textContent = activePlayerName() + ', choose where to go.';
+    if (choiceTitle) choiceTitle.textContent = title;
+    choiceText.textContent = text;
     choiceOptions.textContent = '';
-    options.forEach(function (branch) {
+    items.forEach(function (item) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'tt-btn tt-btn--primary';
-      btn.textContent = branch.label + ' → ' + targetLabelForBranch(branch);
-      btn.addEventListener('click', function () { chooseBranch(branch); });
+      btn.textContent = item.label;
+      btn.addEventListener('click', function () { chooseOption(item.value); });
       choiceOptions.appendChild(btn);
     });
     choiceEl.hidden = false;
     document.body.classList.add('tt-modal-open');
+    announce(title + '. ' + text + ' ' + items.length + ' options. Press a number to choose.');
     var first = choiceOptions.querySelector('button');
     if (first) {
       try { first.focus({ preventScroll: true }); } catch (err) { first.focus(); }
@@ -5678,11 +6265,42 @@
     choiceTrigger = null;
   }
 
-  function chooseBranch(branch) {
+  function chooseOption(value) {
     var callback = choiceCallback;
     choiceCallback = null;
     hideChoice(false);
-    if (callback) callback(branch);
+    if (callback) callback(value);
+  }
+
+  function showChoice(player, options, callback) {
+    openChoiceDialog(
+      'Choose a path',
+      activePlayerName() + ', choose where to go.',
+      options.map(function (branch) {
+        return {
+          label: branch.label + ' to ' + targetLabelForBranch(branch),
+          value: branch
+        };
+      }),
+      callback
+    );
+  }
+
+  function showPawnChoice(player, tokens, callback) {
+    openChoiceDialog(
+      'Choose a pawn',
+      activePlayerName() + ', choose which pawn to move.',
+      tokens.map(function (token) {
+        var cell = pathCellAt(token.pathIndex);
+        var meta = cell ? metaAt(cell.c, cell.r) : null;
+        var where = token.pathIndex <= 0 ? 'at the start' : (meta && meta.n ? 'on tile ' + meta.n : 'on stop ' + (token.pathIndex + 1));
+        return {
+          label: 'Pawn ' + (token.pawnIndex || 1) + ' ' + where,
+          value: token
+        };
+      }),
+      callback
+    );
   }
 
   function showWinner(playerIndex) {
@@ -5696,6 +6314,7 @@
     document.body.classList.add('tt-modal-open');
     try { winAgainBtn.focus({ preventScroll: true }); } catch (err) { winAgainBtn.focus(); }
     announce(name + ' wins the game.');
+    playtestLog(name + ' won the game.');
     playSound('win');
   }
 
@@ -5972,9 +6591,16 @@
     if (choiceEl && !choiceEl.hidden) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        chooseBranch(null);
+        chooseOption(null);
       } else if (event.key === 'Tab') {
         trapFocus(choiceEl.querySelector('.tt-modal-card'), event);
+      } else if (/^[1-9]$/.test(event.key)) {
+        var buttons = choiceOptions.querySelectorAll('button');
+        var pick = buttons[Number(event.key) - 1];
+        if (pick) {
+          event.preventDefault();
+          pick.click();
+        }
       }
       return;
     }
@@ -6020,6 +6646,24 @@
       event.preventDefault();
       redo();
       return;
+    }
+    if (!typing && String(event.key).toLowerCase() === 'p') {
+      event.preventDefault();
+      openPlayAids();
+      return;
+    }
+    if (!typing && S.mode === 'play') {
+      var playKey = String(event.key).toLowerCase();
+      if (playKey === 'r') {
+        event.preventDefault();
+        onQuickRoll();
+        return;
+      }
+      if (playKey === 'e') {
+        event.preventDefault();
+        endTurn();
+        return;
+      }
     }
     if (event.key === 'Escape') {
       deselect();
@@ -6191,10 +6835,35 @@
           openBoard(open.dataset.boardOpen);
           return;
         }
+        var rename = event.target.closest('[data-board-rename]');
+        if (rename) {
+          startBoardRename(rename.dataset.boardRename);
+          return;
+        }
+        var up = event.target.closest('[data-board-up]');
+        if (up) {
+          moveBoard(up.dataset.boardUp, -1);
+          return;
+        }
+        var down = event.target.closest('[data-board-down]');
+        if (down) {
+          moveBoard(down.dataset.boardDown, 1);
+          return;
+        }
+        var dup = event.target.closest('[data-board-dup]');
+        if (dup) {
+          duplicateBoardById(dup.dataset.boardDup);
+          return;
+        }
         var del = event.target.closest('[data-board-delete]');
         if (del) deleteBoard(del.dataset.boardDelete);
       });
     }
+    if (backupExportBtn) backupExportBtn.addEventListener('click', exportBackup);
+    if (backupRestoreBtn) backupRestoreBtn.addEventListener('click', function () {
+      if (backupFileInput) backupFileInput.click();
+    });
+    if (backupFileInput) backupFileInput.addEventListener('change', onRestoreBackup);
     byId('ttNewBoard').addEventListener('click', newBoard);
     byId('ttDupBoard').addEventListener('click', duplicateBoard);
 
@@ -6232,6 +6901,7 @@
     if (actionSaveBtn) actionSaveBtn.addEventListener('click', saveActionFaces);
     rollBtn.addEventListener('click', onQuickRoll);
     byId('ttQuickRoll').addEventListener('click', onQuickRoll);
+    if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);
     countDownBtn.addEventListener('click', function () { setCount(dieCount - 1); });
     countUpBtn.addEventListener('click', function () { setCount(dieCount + 1); });
 
@@ -6326,7 +6996,10 @@
     if (setupPawnsBtn) setupPawnsBtn.addEventListener('click', function () { setupPawns(true); });
     if (buyTileBtn) buyTileBtn.addEventListener('click', buyCurrentTile);
     if (rulesGenerateBtn) rulesGenerateBtn.addEventListener('click', writeRulesFromBoard);
-    [ruleExactInput, ruleSixInput, ruleStartBonusInput, ruleCaptureInput, ruleStackInput, ruleRentInput].forEach(function (input) {
+    if (playtestBtn) playtestBtn.addEventListener('click', togglePlaytest);
+    if (playtestPrintBtn) playtestPrintBtn.addEventListener('click', printPlaytest);
+    if (playtestClearBtn) playtestClearBtn.addEventListener('click', clearPlaytest);
+    [ruleExactInput, ruleSixInput, ruleStartBonusInput, ruleCaptureInput, ruleStackInput, ruleRentInput, ruleAllPawnsInput].forEach(function (input) {
       if (!input) return;
       input.addEventListener('change', function () {
         S.settings.exactFinish = !!(ruleExactInput && ruleExactInput.checked);
@@ -6335,9 +7008,18 @@
         S.settings.capture = !!(ruleCaptureInput && ruleCaptureInput.checked);
         S.settings.stacking = !!(ruleStackInput && ruleStackInput.checked);
         S.settings.rent = !!(ruleRentInput && ruleRentInput.checked);
+        S.settings.allPawnsWin = !!(ruleAllPawnsInput && ruleAllPawnsInput.checked);
         markDirty();
       });
     });
+    if (pawnCountInput) {
+      pawnCountInput.addEventListener('change', function () {
+        S.settings.pawnsPerPlayer = clamp(Math.round(Number(pawnCountInput.value) || 1), 1, 4);
+        if (S.path.length) setupPawns(true);
+        markDirty();
+        toast('Each player now has ' + S.settings.pawnsPerPlayer + ' pawn' + (S.settings.pawnsPerPlayer > 1 ? 's' : '') + '.');
+      });
+    }
     if (startingMoneyInput) {
       startingMoneyInput.addEventListener('change', function () {
         S.settings.startingMoney = clamp(Math.round(Number(startingMoneyInput.value) || 0), 0, 100000);
@@ -6359,8 +7041,8 @@
     if (tileBackdrop) tileBackdrop.addEventListener('click', function () { closeTilePanel(); });
     if (winCloseBtn) winCloseBtn.addEventListener('click', function () { hideWin(); });
     if (winBackdrop) winBackdrop.addEventListener('click', function () { hideWin(); });
-    if (choiceCloseBtn) choiceCloseBtn.addEventListener('click', function () { chooseBranch(null); });
-    if (choiceBackdrop) choiceBackdrop.addEventListener('click', function () { chooseBranch(null); });
+    if (choiceCloseBtn) choiceCloseBtn.addEventListener('click', function () { chooseOption(null); });
+    if (choiceBackdrop) choiceBackdrop.addEventListener('click', function () { chooseOption(null); });
     if (winAgainBtn) winAgainBtn.addEventListener('click', function () {
       hideWin(false);
       resetGame();
@@ -6825,6 +7507,8 @@
     init();
   }
 })();
+
+
 
 
 

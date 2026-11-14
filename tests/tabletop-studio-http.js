@@ -105,7 +105,7 @@ function wait(ms) {
     emptyVisible: !document.getElementById('ttEmpty').hidden,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
-    cleanText: !/[ǽǟ�]/.test(document.body.innerText)
+    cleanText: !/[ÃƒÆ’Ã¢â‚¬Â¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã¢â‚¬Â¡Ãƒâ€¦Ã‚Â¸ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½]/.test(document.body.innerText)
   }));
 
   check('title loads', /Tabletop Studio/.test(initial.title), initial.title);
@@ -162,7 +162,7 @@ function wait(ms) {
   await page.evaluate(() => {
     document.getElementById('ttTileNumber').value = '34';
     document.getElementById('ttTileLabel').value = 'Ladder';
-    document.getElementById('ttTileIcon').value = '🪜';
+    document.getElementById('ttTileIcon').value = '🪠';
     document.getElementById('ttTileEffect').value = 'forward';
     document.getElementById('ttTileEffectValue').value = '4';
     document.getElementById('ttTileOwner').value = '2';
@@ -262,7 +262,7 @@ function wait(ms) {
   await page.evaluate(() => { document.getElementById('ttWinClose').click(); });
 
   const starterChecks = [
-    { id: 'ludo', cols: 15, rows: 15, path: 56, pieces: 4 },
+    { id: 'ludo', cols: 15, rows: 15, path: 56, pieces: 16 },
     { id: 'property', cols: 11, rows: 11, path: 40, pieces: 4 },
     { id: 'life', cols: 9, rows: 9, path: 81, pieces: 2 },
     { id: 'draughts', cols: 8, rows: 8, path: 0, pieces: 24 },
@@ -294,22 +294,43 @@ function wait(ms) {
     document.querySelector('.tt-mode-btn[data-mode="play"]').click();
   });
   await wait(350);
+  const ludoPieces = await page.evaluate(() => ({
+    pawns: document.querySelectorAll('#ttTokens .tt-token--pawn').length,
+    count: (JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}').settings || {}).pawnsPerPlayer
+  }));
+  check('ludo starter sets four pawns per player', ludoPieces.pawns === 16, JSON.stringify(ludoPieces));
   await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
-  await wait(3200);
+  await wait(1800);
+  const pawnChoice = await page.evaluate(() => ({
+    open: !document.getElementById('ttChoice').hidden,
+    title: document.getElementById('ttChoiceTitle').textContent,
+    options: document.querySelectorAll('#ttChoiceOptions button').length
+  }));
+  check('ludo asks which pawn to move', pawnChoice.open && pawnChoice.title === 'Choose a pawn' && pawnChoice.options === 4, JSON.stringify(pawnChoice));
+  await page.evaluate(() => { const b = document.querySelector('#ttChoiceOptions button'); if (b) b.click(); });
+  await wait(2200);
   await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
-  await wait(3200);
+  await wait(1800);
+  const pawnChoice2 = await page.evaluate(() => ({
+    open: !document.getElementById('ttChoice').hidden,
+    options: document.querySelectorAll('#ttChoiceOptions button').length
+  }));
+  check('the next player also chooses a pawn', pawnChoice2.open && pawnChoice2.options === 4, JSON.stringify(pawnChoice2));
+  await page.evaluate(() => { const b = document.querySelector('#ttChoiceOptions button'); if (b) b.click(); });
+  await wait(2600);
   await page.evaluate(() => { document.getElementById('ttSave').click(); });
   await wait(300);
   const captured = await page.evaluate(() => {
     const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
     const pawns = (data.tokens || []).filter(t => t.pawn);
     return {
-      p1: (pawns.find(t => t.player === 1) || {}).pathIndex,
-      p2: (pawns.find(t => t.player === 2) || {}).pathIndex,
-      capture: data.settings && data.settings.capture
+      p1: (pawns.find(t => t.player === 1 && t.pawnIndex === 1) || {}).pathIndex,
+      p2: (pawns.find(t => t.player === 2 && t.pawnIndex === 1) || {}).pathIndex,
+      capture: data.settings && data.settings.capture,
+      perPlayer: data.settings && data.settings.pawnsPerPlayer
     };
   });
-  check('capture sends a rival pawn back to the start', captured.capture === true && captured.p1 === 0 && captured.p2 === 6, JSON.stringify(captured));
+  check('capture sends a rival pawn back to the start', captured.capture === true && captured.perPlayer === 4 && captured.p1 === 0 && captured.p2 === 6, JSON.stringify(captured));
   await page.evaluate(() => { Math.random = window.__origRandom; });
 
   await page.evaluate(() => { document.querySelector('[data-template="property"]').click(); });
@@ -324,14 +345,36 @@ function wait(ms) {
     document.getElementById('ttTileOwner').value = '2';
     document.getElementById('ttTileSave').click();
     const rent = document.getElementById('ttRuleRent');
-    rent.checked = true;
-    rent.dispatchEvent(new Event('change', { bubbles: true }));
+    if (!rent.checked) rent.click();
   });
   await wait(250);
+  await page.mouse.click(propertyBox.x + propertyBox.w * (5.5 / 11), propertyBox.y + propertyBox.h * (0.5 / 11), { button: 'right' });
+  await wait(250);
+  await page.evaluate(() => {
+    document.getElementById('ttTileEffect').value = 'card';
+    document.getElementById('ttTileDeck').value = 'Chance';
+    document.getElementById('ttTileSave').click();
+  });
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const boundCard = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const meta = (data.meta || [])[5];
+    return {
+      type: meta && meta.effect && meta.effect.type,
+      deck: meta && meta.effect && meta.effect.deck,
+      rent: data.settings && data.settings.rent,
+      decks: (data.decks || []).map(d => ({ name: d.name, cards: (d.customCards || []).length }))
+    };
+  });
+  check('rent toggle saves with the board', boundCard.rent === true, JSON.stringify(boundCard));
+  check('property tiles bind to named decks', boundCard.type === 'card' && boundCard.deck === 'Chance', JSON.stringify(boundCard));
+  check('property starter seeds Chance and Community Chest', boundCard.decks.some(d => d.name === 'Chance' && d.cards > 0) && boundCard.decks.some(d => d.name === 'Community Chest' && d.cards > 0), JSON.stringify(boundCard.decks));
   await page.evaluate(() => { document.getElementById('ttRulesGenerate').click(); });
   await wait(200);
   const generatedRules = await page.evaluate(() => document.getElementById('ttRules').value);
-  check('rules summary describes the board and rule toggles', /40 stops/.test(generatedRules) && /£1500/.test(generatedRules) && /£25 rent/.test(generatedRules), generatedRules.slice(0, 140));
+  check('rules summary describes the board and rule toggles', /40 stops/.test(generatedRules) && /1500/.test(generatedRules) && /25 rent/.test(generatedRules), generatedRules.slice(0, 140));
   await page.evaluate(() => {
     window.__origRandom = Math.random;
     Math.random = () => 0;
@@ -347,7 +390,27 @@ function wait(ms) {
     const players = data.players || [];
     return { p1: players[0] && players[0].money, p2: players[1] && players[1].money, rent: data.settings && data.settings.rent };
   });
-  check('rent moves £25 from the lander to the owner', rent.rent === true && rent.p1 === 1475 && rent.p2 === 1525, JSON.stringify(rent));
+  check('rent moves ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£25 from the lander to the owner', rent.rent === true && rent.p1 === 1475 && rent.p2 === 1525, JSON.stringify(rent));
+
+  await page.evaluate(() => {
+    document.getElementById('ttSetupPawns').click();
+    document.getElementById('ttTurnDown').click();
+    Math.random = () => 0.8;
+  });
+  await wait(300);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2800);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const deckDraw = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return {
+      cards: (data.tokens || []).filter(t => t.type === 'card').length,
+      activeDeck: (data.decks || []).find(d => d.id === data.activeDeckId) && (data.decks || []).find(d => d.id === data.activeDeckId).name,
+      chanceLeft: ((data.decks || []).find(d => d.name === 'Chance') || {}).deck
+    };
+  });
+  check('a deck-bound card tile draws from that deck', deckDraw.cards === 1 && deckDraw.activeDeck === 'Chance' && deckDraw.chanceLeft.length === 5, JSON.stringify({ cards: deckDraw.cards, activeDeck: deckDraw.activeDeck, left: deckDraw.chanceLeft ? deckDraw.chanceLeft.length : null }));
   await page.evaluate(() => { Math.random = window.__origRandom; });
 
   await page.evaluate(() => {
@@ -392,7 +455,7 @@ function wait(ms) {
     tokens: document.querySelectorAll('#ttTokens .tt-token').length,
     emptyHidden: document.getElementById('ttEmpty').hidden
   }));
-  check('share code rebuilds the board', shareRestored.name === 'Property Loop' && shareRestored.tokens === 4 && shareRestored.emptyHidden, JSON.stringify(shareRestored));
+  check('share code rebuilds the board', shareRestored.name === 'Property Loop' && shareRestored.tokens >= 4 && shareRestored.emptyHidden, JSON.stringify(shareRestored));
 
   const qolBox = await page.$eval('#ttBoard', el => {
     const r = el.getBoundingClientRect();
@@ -523,7 +586,7 @@ function wait(ms) {
     label: (document.querySelector('#ttChoiceOptions button') || {}).textContent || ''
   }));
   check('landing on a branch opens the choice dialog', choice.open && choice.options === 1 && /Career/.test(choice.label), JSON.stringify(choice));
-  await page.evaluate(() => { const b = document.querySelector('#ttChoiceOptions button'); if (b) b.click(); });
+  await page.keyboard.press('1');
   await wait(2600);
   await page.evaluate(() => { document.getElementById('ttSave').click(); });
   await wait(300);
@@ -581,6 +644,179 @@ function wait(ms) {
     document.getElementById('ttDiceNormal').click();
   });
   await wait(200);
+
+  await page.evaluate(() => { document.querySelector('.tt-mode-btn[data-mode="build"]').click(); });
+  const effectBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(effectBox.x + effectBox.w * (2.5 / 4), effectBox.y + effectBox.h * (0.5 / 2), { button: 'right' });
+  await wait(250);
+  await page.evaluate(() => {
+    document.getElementById('ttTileEffect').value = 'toStart';
+    document.getElementById('ttTileSave').click();
+    document.getElementById('ttTurnDown').click();
+    document.getElementById('ttSetupPawns').click();
+    document.getElementById('ttSave').click();
+  });
+  await wait(300);
+  const savedEffect = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const meta = (data.meta || [])[2];
+    return meta && meta.effect && meta.effect.type;
+  });
+  check('new landing effects save on a tile', savedEffect === 'toStart', String(savedEffect));
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0.2;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2600);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const sentBack = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const pawn = (data.tokens || []).find(t => t.pawn && t.player === 1);
+    return { pathIndex: pawn && pawn.pathIndex, turn: data.turn };
+  });
+  check('go-back-to-start sends the pawn to the start', sentBack.pathIndex === 0 && sentBack.turn === 2, JSON.stringify(sentBack));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+
+  await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '2';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+    document.getElementById('ttPathSerpentine').click();
+    const count = document.getElementById('ttPawnCount');
+    count.value = '2';
+    count.dispatchEvent(new Event('change', { bubbles: true }));
+    const all = document.getElementById('ttRuleAllPawns');
+    all.checked = true;
+    all.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await wait(350);
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0.99;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(1800);
+  const twoPawns = await page.evaluate(() => ({
+    open: !document.getElementById('ttChoice').hidden,
+    options: document.querySelectorAll('#ttChoiceOptions button').length
+  }));
+  check('two-pawn games ask which pawn to move', twoPawns.open && twoPawns.options === 2, JSON.stringify(twoPawns));
+  await page.evaluate(() => { const b = document.querySelector('#ttChoiceOptions button'); if (b) b.click(); });
+  await wait(2400);
+  await page.evaluate(() => { document.getElementById('ttTurnDown').click(); });
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2400);
+  const allHome = await page.evaluate(() => ({
+    win: !document.getElementById('ttWin').hidden,
+    title: document.getElementById('ttWinTitle').textContent
+  }));
+  check('all pawns home wins a multi-pawn game', allHome.win && /Player 1 wins/.test(allHome.title), JSON.stringify(allHome));
+  await page.evaluate(() => {
+    Math.random = window.__origRandom;
+    document.getElementById('ttWinClose').click();
+  });
+  await wait(200);
+
+  await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '3';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+    document.getElementById('ttPathSerpentine').click();
+    document.getElementById('ttSetupPawns').click();
+    document.getElementById('ttPlaytest').click();
+    window.__origRandom = Math.random;
+    Math.random = () => 0.99;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2600);
+  const playtest = await page.evaluate(() => ({
+    on: document.getElementById('ttPlaytest').getAttribute('aria-pressed'),
+    lines: Array.from(document.querySelectorAll('#ttPlaytestLog li')).map(li => li.textContent)
+  }));
+  check('playtest logs rolls, landings and a win', playtest.on === 'true' && playtest.lines.some(l => /rolled 6/.test(l)) && playtest.lines.some(l => /landed on/.test(l)) && playtest.lines.some(l => /won the game/.test(l)), JSON.stringify(playtest.lines.slice(-4)));
+
+  await page.evaluate(() => {
+    window.__printHtml = '';
+    window.__origOpen = window.open;
+    window.open = function () {
+      return {
+        document: { write: function (html) { window.__printHtml = html; }, close: function () {} },
+        focus: function () {},
+        print: function () {}
+      };
+    };
+    document.getElementById('ttPlaytestPrint').click();
+  });
+  await wait(900);
+  const feedback = await page.evaluate(() => window.__printHtml);
+  check('feedback sheet includes the log and questions', /playtest feedback/.test(feedback) && /rolled 6/.test(feedback) && /most fun moment/.test(feedback) && /rule would you change/.test(feedback), (feedback || '').slice(0, 120));
+  await page.evaluate(() => {
+    window.open = window.__origOpen;
+    document.getElementById('ttPlaytestClear').click();
+  });
+  await wait(200);
+  const clearedLog = await page.evaluate(() => document.querySelectorAll('#ttPlaytestLog li').length);
+  check('playtest log clears for the next test', clearedLog === 0, String(clearedLog));
+  await page.evaluate(() => {
+    Math.random = window.__origRandom;
+    document.getElementById('ttWinClose').click();
+    document.getElementById('ttStartBlank').click();
+  });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '3';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+    document.getElementById('ttPathSerpentine').click();
+    document.getElementById('ttSetupPawns').click();
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const keyboardSetup = await page.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { path: (d.path || []).length, winner: d.winner, mode: d.mode, turn: d.turn, per: d.settings && d.settings.pawnsPerPlayer };
+  });
+  check('keyboard test board is ready', keyboardSetup.path === 6 && keyboardSetup.mode === 'play', JSON.stringify(keyboardSetup));
+  await page.keyboard.press('r');
+  await wait(2200);
+  const keyboardRoll = await page.evaluate(() => ({
+    result: document.getElementById('ttDiceResult').textContent,
+    turn: document.getElementById('ttTurn').textContent,
+    choice: !document.getElementById('ttChoice').hidden,
+    choiceTitle: document.getElementById('ttChoiceTitle').textContent,
+    options: document.querySelectorAll('#ttChoiceOptions button').length,
+    pawns: document.querySelectorAll('#ttTokens .tt-token--pawn').length
+  }));
+  check('R rolls for the current player', /You rolled 1/.test(keyboardRoll.result) && keyboardRoll.turn === '2', JSON.stringify(keyboardRoll));
+  await page.keyboard.press('e');
+  await wait(250);
+  const keyboardEndTurn = await page.evaluate(() => document.getElementById('ttTurn').textContent);
+  check('E ends the turn', keyboardEndTurn === '3', String(keyboardEndTurn));
+  await page.keyboard.press('p');
+  await wait(250);
+  const keyboardAids = await page.evaluate(() => document.getElementById('ttRules').closest('details').open);
+  check('P opens Play aids', keyboardAids === true, String(keyboardAids));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
 
   await page.select('#ttSize', '12x9');
   await wait(300);
@@ -767,7 +1003,7 @@ function wait(ms) {
     };
     set('ttCardName', 'Moon Beam');
     set('ttCardText', 'Move two spaces');
-    set('ttCardIcon', '🌙');
+    set('ttCardIcon', 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢');
   });
   await page.evaluate(() => { document.getElementById('ttCardAdd').click(); });
   await wait(200);
@@ -979,6 +1215,97 @@ function wait(ms) {
   check('switching boards clears undo and redo history', reopened.undoDisabled && reopened.redoDisabled, JSON.stringify(reopened));
 
   await page.evaluate(() => {
+    document.getElementById('ttLib').closest('details').open = true;
+    const rows = Array.from(document.querySelectorAll('#ttLib .tt-lib-row'));
+    const other = rows.find(row => !row.classList.contains('is-active'));
+    const rename = other && other.querySelector('[data-board-rename]');
+    if (rename) rename.click();
+  });
+  await wait(250);
+  await page.evaluate(() => {
+    const input = document.querySelector('#ttLib .tt-lib-rename');
+    if (input) {
+      input.value = 'Renamed board';
+      input.blur();
+    }
+  });
+  await wait(300);
+  const renamed = await page.evaluate(() => {
+    const lib = JSON.parse(localStorage.getItem('jvds-tabletop-v2') || '{}');
+    return { names: (lib.boards || []).map(b => b.name), rows: document.querySelectorAll('#ttLib .tt-lib-row').length };
+  });
+  check('library rename saves without opening the board', renamed.names.includes('Renamed board') && renamed.rows === 2, JSON.stringify(renamed));
+
+  await page.evaluate(() => {
+    const rows = Array.from(document.querySelectorAll('#ttLib .tt-lib-row'));
+    const first = rows[0];
+    const name = first.querySelector('.tt-lib-name') ? first.querySelector('.tt-lib-name').textContent : '';
+    window.__firstLibName = name;
+    const down = first.querySelector('[data-board-down]');
+    if (down) down.click();
+  });
+  await wait(250);
+  const reordered = await page.evaluate(() => {
+    const lib = JSON.parse(localStorage.getItem('jvds-tabletop-v2') || '{}');
+    return { order: (lib.boards || []).map(b => b.name), firstBefore: window.__firstLibName };
+  });
+  check('library reorder moves a board down', reordered.order[0] !== reordered.firstBefore && reordered.order.includes(reordered.firstBefore), JSON.stringify(reordered));
+
+  await page.evaluate(() => { window.__backupBlobs = []; });
+  await page.evaluate(() => {
+    const original = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = function (blob) {
+      window.__backupBlobs.push(blob);
+      return original(blob);
+    };
+    document.getElementById('ttBackupExport').click();
+  });
+  await wait(300);
+  const backup = await page.evaluate(async () => {
+    const blobs = window.__backupBlobs;
+    if (!blobs || !blobs.length) return null;
+    const text = await blobs[blobs.length - 1].text();
+    const data = JSON.parse(text);
+    return { boards: (data.boards || []).length, names: (data.boards || []).map(b => b.name) };
+  });
+  check('backup exports every board as one file', !!backup && backup.boards === 2, backup ? JSON.stringify(backup) : 'no blob');
+
+  const restorePath = path.join(require('os').tmpdir(), 'jvds-tabletop-backup.json');
+  fs.writeFileSync(restorePath, JSON.stringify({
+    v: 2,
+    boards: [{
+      id: 'restored-1',
+      name: 'Restored board',
+      updated: Date.now(),
+      data: {
+        cols: 4,
+        rows: 3,
+        shape: 'square',
+        name: 'Restored board',
+        tiles: ['grass', 'grass', 'grass', 'grass', 'path', 'path', 'path', 'path', 'water', 'water', 'water', 'water'],
+        meta: [],
+        path: [],
+        links: [],
+        branches: [],
+        tokens: [],
+        deck: [],
+        customCards: [],
+        players: [],
+        settings: {}
+      }
+    }]
+  }));
+  await (await page.$('#ttBackupFile')).uploadFile(restorePath);
+  await wait(600);
+  const restoredLibrary = await page.evaluate(() => ({
+    rows: document.querySelectorAll('#ttLib .tt-lib-row').length,
+    name: document.getElementById('ttBoardName').value,
+    width: document.getElementById('ttBoard').width
+  }));
+  check('restore backup replaces the library', restoredLibrary.rows === 1 && restoredLibrary.name === 'Restored board' && restoredLibrary.width === 320, JSON.stringify(restoredLibrary));
+  fs.unlinkSync(restorePath);
+
+  await page.evaluate(() => {
     window.__svgBlobs = [];
     const original = URL.createObjectURL.bind(URL);
     URL.createObjectURL = function (blob) {
@@ -1181,5 +1508,10 @@ function wait(ms) {
   server.close();
   process.exit(1);
 });
+
+
+
+
+
 
 

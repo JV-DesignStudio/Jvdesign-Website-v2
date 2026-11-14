@@ -376,6 +376,14 @@
             </div>
             <button type="button" id="ttRulesGenerate" class="tt-btn tt-btn--wide tt-btn--quiet">📝 Write rules from this board</button>
             <p class="tt-help" id="ttRulesSummary"></p>
+            <div class="tt-field">
+              <button type="button" id="ttPlaytest" class="tt-btn tt-btn--wide tt-btn--quiet" aria-pressed="false">🔍 Playtest: off</button>
+              <ol class="tt-playtest-log" id="ttPlaytestLog" aria-live="polite"></ol>
+              <div class="tt-row">
+                <button type="button" id="ttPlaytestPrint" class="tt-btn tt-btn--quiet">🖨️ Feedback sheet</button>
+                <button type="button" id="ttPlaytestClear" class="tt-btn tt-btn--quiet">Clear log</button>
+              </div>
+            </div>
             <button type="button" id="ttSetupPawns" class="tt-btn tt-btn--wide tt-btn--quiet">🎭 Set up player pawns</button>
             <button type="button" id="ttBuyTile" class="tt-btn tt-btn--wide tt-btn--quiet">🏷️ Buy the tile under the pawn</button>
             <div class="tt-rule-toggles">
@@ -385,6 +393,16 @@
               <label class="tt-check"><input type="checkbox" id="ttRuleCapture"> Capture on landing (Ludo)</label>
               <label class="tt-check"><input type="checkbox" id="ttRuleStack"> Allow pieces to stack</label>
               <label class="tt-check"><input type="checkbox" id="ttRuleRent"> Pay £25 rent on owned tiles</label>
+              <label class="tt-check"><input type="checkbox" id="ttRuleAllPawns"> Win only when every pawn is home</label>
+            </div>
+            <div class="tt-field">
+              <label class="tt-label" for="ttPawnCount">Pawns each player</label>
+              <select id="ttPawnCount" class="tt-select">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
             </div>
             <div class="tt-field">
               <label class="tt-label" for="ttStartingMoney">Starting money</label>
@@ -425,6 +443,9 @@
               <div class="tt-lib-actions">
                 <button type="button" id="ttNewBoard" class="tt-btn tt-btn--quiet">New board</button>
                 <button type="button" id="ttDupBoard" class="tt-btn tt-btn--quiet">Duplicate</button>
+                <button type="button" id="ttBackupExport" class="tt-btn tt-btn--quiet">Backup all</button>
+                <button type="button" id="ttBackupRestore" class="tt-btn tt-btn--quiet">Restore backup</button>
+                <input type="file" id="ttBackupFile" accept="application/json,.json" hidden>
               </div>
             </div>
             <div class="tt-field">
@@ -596,6 +617,7 @@
               </button>
             </div>
             <div class="tt-empty-foot">
+              <a href="/workshops/make-your-first-board-game.html" class="tt-btn tt-btn--quiet">15 minute guide</a>
               <button type="button" id="ttStartBlank" class="tt-btn tt-btn--quiet">Start blank</button>
               <button type="button" id="ttEmptyHelp" class="tt-btn tt-btn--quiet">How to play</button>
             </div>
@@ -618,6 +640,7 @@
         <button type="button" id="ttQuickRoll" class="tt-btn tt-btn--primary">🎲 Roll d6</button>
         <span class="tt-bar-result" id="ttBarResult" aria-hidden="true"></span>
         <button type="button" id="ttQuickCard" class="tt-btn tt-btn--secondary">🃏 Draw card</button>
+        <button type="button" id="ttEndTurn" class="tt-btn tt-btn--quiet" hidden title="End turn (E)">End turn</button>
         <button type="button" id="ttPiecesOpen" class="tt-btn tt-btn--quiet">🧩 Pieces</button>
         <button type="button" id="ttHelpBtn" class="tt-btn tt-btn--quiet">❓ How to play</button>
         <button type="button" class="tt-turn-chip" id="ttTurnChip" title="Open Play aids">Round 1 · Turn 1</button>
@@ -648,9 +671,11 @@
         <li><strong>Add a piece.</strong> Pick a character or a prop, then drag it onto the board. Tap a counter to raise or lower its number.</li>
         <li><strong>Make cards.</strong> In Cards, write your own card, add it to the deck, then draw it. Tap a card on the board to flip it.</li>
         <li><strong>Play.</strong> Switch to Play, drag pieces anywhere, and use Play aids to track rounds, turns and your rules.</li>
+        <li><strong>Keyboard.</strong> R rolls, E ends the turn, P opens Play aids and 1 to 4 picks a choice. Arrow keys move the cursor in Build mode, Space paints and Backspace erases.</li>
         <li><strong>Save.</strong> It saves as you go. Keep several boards, print one, or save a picture and a play sheet.</li>
         <li><strong>Make it real.</strong> Save the board or pieces as an SVG, open it in Tinkercad, then extrude it for a 3D print.</li>
       </ol>
+      <p class="tt-help"><a href="/workshops/make-your-first-board-game.html">Do the 15 minute board game guide</a> if you want a step by step first game.</p>
       <button type="button" class="tt-btn tt-btn--primary tt-btn--wide" id="ttHelpStart">Let's paint</button>
     </section>
   </div>
@@ -706,11 +731,19 @@
           <option value="again">Roll again</option>
           <option value="card">Draw a card</option>
           <option value="money">Gain or lose money</option>
+          <option value="swap">Swap with the next rival</option>
+          <option value="toStart">Go back to the start</option>
+          <option value="collect">Collect £25 from every player</option>
+          <option value="nearest">Take the nearest snake or ladder</option>
         </select>
       </div>
       <div class="tt-field">
         <label class="tt-label" for="ttTileEffectValue" id="ttTileEffectLabel">Amount</label>
         <input type="number" id="ttTileEffectValue" class="tt-input" min="-999" max="999" step="1" value="1" inputmode="numeric">
+      </div>
+      <div class="tt-field">
+        <label class="tt-label" for="ttTileDeck">Draw from deck</label>
+        <select id="ttTileDeck" class="tt-select" aria-label="Deck to draw from"></select>
       </div>
       <div class="tt-field">
         <label class="tt-label" for="ttTileNote">Note for players</label>
