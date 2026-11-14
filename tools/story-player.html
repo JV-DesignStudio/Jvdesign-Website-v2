@@ -30,7 +30,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SSBc4aIWLE8J2+NzoP2P+wmNzXnthC66orFO5PGAm80=' 'sha256-jsEgwAR65wkMi7nhuvodICTdZ2WXYF0b7PnzfHXaFFk=' 'sha256-8ZfF+bVR7p6YOb7AtSs9UHorkGpLPw3m56r2/LAzQMU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SSBc4aIWLE8J2+NzoP2P+wmNzXnthC66orFO5PGAm80=' 'sha256-jsEgwAR65wkMi7nhuvodICTdZ2WXYF0b7PnzfHXaFFk=' 'sha256-vBL6fDZX+lKoGZyDFh+QkxBJDOiRRHz123nZzF8eHSQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -77,7 +77,7 @@
   <span>JVDesignStudio</span>
 </div>
 
-<div id="empty" style="display:none;">
+<div id="empty" role="region" aria-label="Story player" style="display:none;">
   <h2>✨ Story Player</h2>
   <p>No story link was given.<br>Open a shared play-link, or load a story JSON exported from the Story Editor.</p>
   <div id="dropzone">📂 Click to open a story <code>.json</code>, or drop one here</div>
@@ -85,13 +85,14 @@
   <p style="margin:16px 0 0;">Write your own at the <a href="story-editor.html">Story Editor →</a></p>
 </div>
 
-<div id="card" style="display:none;">
+<div id="card" role="region" aria-label="Story" style="display:none;">
   <h1 class="story-title" id="stTitle"></h1>
   <div class="story-byline">made with <a href="story-editor.html">JVDesignStudio Story Editor</a><span id="stTag"></span></div>
-  <div id="scene"></div>
+  <div id="scene" role="region" aria-label="Story scene" aria-live="polite" tabindex="-1"></div>
   <p class="use-it-with" style="margin:12px 0 0;padding:10px 14px;border-left:3px solid #70A3A7;background:rgba(112,163,167,.10);border-radius:10px;font-size:.9rem"><strong>Use it with:</strong> make your own branching story in the <a href="story-editor.html" style="color:#4e7d80;font-weight:800">Story Editor</a> or the <a href="../workshops/fairy-tale-builder.html" style="color:#4e7d80;font-weight:800">Fairy Tale Builder</a>.</p>
   <p class="char-touch"><img src="/assets/mascots/ember-badge.webp" alt="Ember" width="24" height="24" style="border-radius:50%;flex-shrink:0"><span><strong>Ember says:</strong> read a story, then make your own. Every path you pick shows you how branching stories work.</span></p>
   <div class="btn-row">
+    <button class="m-btn m-back" id="backBtn" aria-label="Go back one scene">← Back</button>
     <button class="m-btn m-ok" data-on="restart" data-on-plain>↺ Restart Story</button>
     <button class="m-btn m-cancel" data-on="showShare" data-on-plain>✨ Share</button>
     <button class="m-btn m-share" data-on="showEmbed" data-on-plain>🔗 Embed</button>
@@ -124,6 +125,8 @@ let nodes = [], chars = [], varsDef = [], storyName = 'Untitled Story';
 const STORY_EMBED = new URLSearchParams(location.search).has('embed');
 if (STORY_EMBED) document.documentElement.classList.add('story-embed');
 let currentId = null;
+let historyStack = [];   // previous scenes so Back can undo a choice
+let _focusScene = false; // move focus to the scene after a deliberate step
 let V = {};   // runtime variables (numeric internally; flags are 0/1)
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -162,6 +165,7 @@ function loadFromData(d){
   document.getElementById('card').style.display='block';
   document.getElementById('stTitle').textContent=storyName;
   restart();
+  tryResume();
 }
 function boot(){
   const m=location.hash.match(/^#s=(.+)$/);
@@ -230,22 +234,31 @@ function applyFx(list){
 const isFlag=name=>{ const d=varsDef.find(v=>v.name===name); return d?typeof d.start==='boolean':false; };
 
 function restart(){
+  historyStack=[];
   V={};
   varsDef.forEach(v=>{ V[v.name]=typeof v.start==='boolean'?(v.start?1:0):Number(v.start||0); });
   const start=find((nodes.find(n=>n.type==='start')||nodes[0]||{}).id);
   if(start){ currentId=start.id; applyFx(start.fx); renderScene(); }
 }
 
-function go(toId){
+function snap(){ return { id:currentId, vars:{...V} }; }
+function go(toId, fromHistory){
+  if(!fromHistory && currentId) historyStack.push(snap());
   if(toId && find(toId)){ currentId=toId; applyFx(find(toId).fx); }
   else currentId=null;
-  renderScene();
+  _focusScene=true; renderScene(); saveStoryState();
 }
 function pick(i){
   const n=find(currentId);
   if(!n||!n.choices[i]) return;
+  historyStack.push(snap());
   applyFx(n.choices[i].fx);
-  go(n.choices[i].to);
+  go(n.choices[i].to, true);
+}
+function back(){
+  if(!historyStack.length){ showToast('This is the start of the story'); return; }
+  const s=historyStack.pop(); currentId=s.id; V={...s.vars};
+  _focusScene=true; renderScene(); saveStoryState();
 }
 
 function varChips(){
@@ -272,7 +285,7 @@ function renderScene(){
 
   let choicesHTML='';
   if(n.type==='choice'&&n.choices.some(c=>c.text)){
-    choicesHTML='<div class="sc-choices">'+n.choices.map((c,i)=>{
+    choicesHTML='<div class="sc-choices" role="group" aria-label="Choices">'+n.choices.map((c,i)=>{
       if(!c.text) return '';
       const ok=evalCond(c.cond);
       if(ok&&c.to) return `<button class="sc-choice" data-on="pick" data-on-args="${i}">${esc(c.text)}</button>`;
@@ -280,7 +293,7 @@ function renderScene(){
       return `<button class="sc-choice" disabled title="Requires ${esc(condLabel(c.cond))}">🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
     }).join('')+'</div>';
   } else if(n.to&&find(n.to)){
-    choicesHTML=`<div class="sc-choices"><button class="sc-choice" data-continue="${esc(n.to)}">Continue →</button></div>`;
+    choicesHTML=`<div class="sc-choices" role="group" aria-label="Continue"><button class="sc-choice" data-continue="${esc(n.to)}">Continue →</button></div>`;
   } else {
     choicesHTML='<div class="sc-end">The End.</div>';
   }
@@ -298,11 +311,13 @@ function renderScene(){
 
   const cont=scene.querySelector('[data-continue]');
   if(cont) cont.addEventListener('click',()=>go(cont.getAttribute('data-continue')));
+  if(_focusScene){ _focusScene=false; try{ scene.focus({preventScroll:true}); }catch(e){} }
 }
 
 function showShare(){
-  const url=location.href.split('#')[0]+location.hash;
-  if(location.hash&&location.hash.startsWith('#s=')){
+  const payload=window._storyShareHash||(location.hash&&location.hash.startsWith('#s=')?location.hash:'');
+  const url=location.origin+location.pathname+payload;
+  if(payload){
     if(navigator.clipboard&&navigator.clipboard.writeText)
       navigator.clipboard.writeText(url).then(()=>showToast('Link copied!'),()=>prompt('Copy this link:',url));
     else prompt('Copy this link:',url);
@@ -322,26 +337,28 @@ function showEmbed(){
 }
 
 boot();
+var _backBtn=document.getElementById('backBtn');
+if(_backBtn) _backBtn.onclick=back;
 // Seen-key + ? help (full standard)
 (function(){
   var SEEN='jvds_storyplayer_seen';
   try{ if(!STORY_EMBED&&localStorage.getItem(SEEN)!=='1'){ showToast('✨ Open a shared play-link, or drop a story .json'); localStorage.setItem(SEEN,'1'); } }catch(e){}
   document.addEventListener('keydown',function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select') return;
     if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){
-      var tag=(e.target.tagName||'').toLowerCase();
-      if(tag==='input'||tag==='textarea'||tag==='select') return;
       e.preventDefault();
       showToast('✨ Play a story from a link, or drop a .json , Story Editor →');
     }
+    if(e.key==='Backspace'||(e.altKey&&e.key==='ArrowLeft')){ e.preventDefault(); back(); }
   });
 })();
-// ── AUTOSAVE (save story state per-story) ──
+// ── AUTOSAVE (save story state per-story, resume the same story) ──
 var _storySaveKey='jvds_story_state';
-function saveStoryState(){try{localStorage.setItem(_storySaveKey,JSON.stringify({currentId,vars:V,storyName}));}catch(e){}}
-function loadStoryState(){try{var r=localStorage.getItem(_storySaveKey);if(r){var d=JSON.parse(r);if(d.currentId){currentId=d.currentId;V=d.vars||{};storyName=d.storyName||storyName;renderScene();return true;}}}catch(e){}return false;}
+function saveStoryState(){try{localStorage.setItem(_storySaveKey||'jvds_story_state',JSON.stringify({currentId,vars:V,storyName}));}catch(e){}}
+function tryResume(){try{var r=localStorage.getItem('jvds_story_state');if(!r)return;var d=JSON.parse(r);if(d.storyName!==storyName)return;if(d.currentId&&find(d.currentId)){currentId=d.currentId;V=d.vars||{};renderScene();}}catch(e){}}
+function loadStoryState(){try{var r=localStorage.getItem(_storySaveKey||'jvds_story_state');if(r){var d=JSON.parse(r);if(d.currentId){currentId=d.currentId;V=d.vars||{};storyName=d.storyName||storyName;renderScene();return true;}}}catch(e){}return false;}
 window.addEventListener('beforeunload',saveStoryState);
-// Override go() to save state (deferred to ensure go() exists)
-setTimeout(function(){try{var origGo=window.go;window.go=function(id){origGo(id);saveStoryState();};}catch(e){}},100);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
 </script>
 <script defer src="../player-profile.js"></script>
