@@ -118,6 +118,17 @@ function check(name, ok, detail) {
   /* ── runtime errors ── */
   check('zero uncaught JS errors over HTTP', errors.length === 0, errors.slice(0, 3).join(' | '));
 
+  /* ── repaired copy renders cleanly at both widths ── */
+  for (const width of [390, 1440]) {
+    await page.setViewport({ width, height: 900 });
+    await page.goto(`http://127.0.0.1:${PORT}/tools/colour-palette.html`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.waitForSelector('.mood-card');
+    const copy = await page.evaluate(() => document.body.innerText);
+    check(width + 'px: no replacement characters', !/\uFFFD|\u00ef\u00bf\u00bd/.test(copy));
+    check(width + 'px: no literal ?? in copy', !/\?\?/.test(copy));
+    check(width + 'px: sci-fi preset copy readable', /Sci-Fi and more/.test(copy));
+  }
+
   await browser.close();
   server.close();
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nCOLOUR PALETTE HTTP CHECKS PASSED');
