@@ -414,7 +414,7 @@ window.JVDS_GAMES = [
    Test records (date + checklist pass) live in JVDS_GAME_TESTS below.
    Change a label here (one line) and it shows on the arcade cabinet automatically. */
 window.JVDS_GAME_QUALITY = {
-  "rustfall": "HIDDEN",
+  "rustfall": "BETA",
   "echo-flight": "READY",
   "nova-siege": "READY",
   "arcane-citadel": "READY",
