@@ -11,7 +11,7 @@ var q={};
 try{location.search.slice(1).split('&').forEach(function(p){var kv=p.split('=');if(kv[0])q[decodeURIComponent(kv[0])]=decodeURIComponent((kv[1]||'').replace(/\+/g,' '));});}catch(e){}
 var ids=(q.w||'').split(',').map(function(s){return s.trim();}).filter(Boolean).slice(0,12);
 var className=(q.n||'').slice(0,40);
-if(className)document.getElementById('class-title').textContent=className+': today\u2019s lessons';
+if(className)document.getElementById('class-title').textContent=className+': today\u2019s session';
 var storeKey='jvds_class_'+ids.join(',');
 function load(){try{return JSON.parse(localStorage.getItem(storeKey))||{};}catch(e){return{};}}
 function save(v){try{localStorage.setItem(storeKey,JSON.stringify(v));}catch(e){}}
@@ -19,13 +19,13 @@ function render(){
 var done=load();
 var list=document.getElementById('class-list');
 if(!ids.length){
-list.innerHTML='<div class="class-card"><h2>No lessons in this link yet</h2><p>Ask your teacher for the full class link, or browse every workshop below.</p><div class="class-row"><a class="link-btn" href="/workshop" style="font-weight:700">Browse workshops</a></div></div>';
+list.innerHTML='<div class="class-card"><h2>No activities in this link yet</h2><p>Ask your grown-up for the full family link, or browse every workshop below.</p><div class="class-row"><a class="link-btn" href="/workshop" style="font-weight:700">Browse workshops</a></div></div>';
 return;
 }
 list.innerHTML=ids.map(function(id,i){
 var w=CATALOG[id];
-var inner=w?'<h2>'+esc(w.title)+'</h2><div class="tp-meta"><span class="badge">'+esc(w.time)+'</span><span class="badge">'+esc(w.age)+'</span></div><div class="class-row"><a class="link-btn" href="'+w.url+'" style="background:var(--teal-dk);color:#fff;border-radius:8px;padding:10px 18px;text-decoration:none;font-weight:700">Start lesson '+(i+1)+'</a><button class="link-btn class-tick" data-tick="'+esc(id)+'" style="border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer">'+(done[id]?'✅ Done':'⬜ Mark done')+'</button></div>'
-:'<h2>Workshop link</h2><p>This step points somewhere unknown. Ask your teacher, or browse the hub.</p><div class="class-row"><a class="link-btn" href="/workshop" style="font-weight:700">Browse workshops</a></div>';
+var inner=w?'<h2>'+esc(w.title)+'</h2><div class="tp-meta"><span class="badge">'+esc(w.time)+'</span><span class="badge">'+esc(w.age)+'</span></div><div class="class-row"><a class="link-btn" href="'+w.url+'" style="background:var(--teal-dk);color:#fff;border-radius:8px;padding:10px 18px;text-decoration:none;font-weight:700">Start activity '+(i+1)+'</a><button class="link-btn class-tick" data-tick="'+esc(id)+'" style="border-radius:8px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer">'+(done[id]?'✅ Done':'⬜ Mark done')+'</button></div>'
+:'<h2>Workshop link</h2><p>This step points somewhere unknown. Ask your grown-up, or browse the hub.</p><div class="class-row"><a class="link-btn" href="/workshop" style="font-weight:700">Browse workshops</a></div>';
 return '<div class="class-card'+(done[id]?' done':'')+'"><span class="class-num">'+(i+1)+'</span>'+inner+'</div>';
 }).join('');
 }
