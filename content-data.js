@@ -656,54 +656,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/castle-siege-blueprint.html"
     },
     {
-      "id": "my-first-browser-game-run-sheet",
-      "title": "Classroom run-sheet: My First Browser Game",
-      "desc": "A printable one-page classroom run-sheet for the My First Browser Game course. Materials, timings, outcome and what to do when a learner is stuck.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "series",
-      "tags": [
-        "series"
-      ],
-      "steps": 0,
-      "themeColor": "#BC4749",
-      "cover": "og/learn.webp",
-      "url": "/workshops/run-sheets/my-first-browser-game-run-sheet.html"
-    },
-    {
-      "id": "my-first-scratch-game-run-sheet",
-      "title": "Classroom run-sheet: My First Scratch Game",
-      "desc": "A printable one-page classroom run-sheet for the My First Scratch Game course. Materials, timings, outcome and what to do when a learner is stuck.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "series",
-      "tags": [
-        "series"
-      ],
-      "steps": 0,
-      "themeColor": "#BC4749",
-      "cover": "og/learn.webp",
-      "url": "/workshops/run-sheets/my-first-scratch-game-run-sheet.html"
-    },
-    {
-      "id": "my-first-video-game-run-sheet",
-      "title": "Classroom run-sheet: My First Video Game",
-      "desc": "A printable one-page classroom run-sheet for the My First Video Game course in Godot. Materials, timings, outcome and what to do when a learner is stuck.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "series",
-      "tags": [
-        "series"
-      ],
-      "steps": 0,
-      "themeColor": "#BC4749",
-      "cover": "og/learn.webp",
-      "url": "/workshops/run-sheets/my-first-video-game-run-sheet.html"
-    },
-    {
       "id": "cyber-security",
       "title": "Cyber Defender! Understand Cyber Crime and Stay Safe Online",
       "desc": "A free Lumo-led cyber security workshop. Learn what cyber crime is, who the threat actors are, how attacks work and how to stay safe. Quizzes and XP included.",
@@ -730,6 +682,54 @@ window.JVDS_CONTENT = {
       "themeColor": "#f5f5f0",
       "cover": "/og/fairy-survivors-guide.webp",
       "url": "/workshops/fairy-survivors-guide.html"
+    },
+    {
+      "id": "my-first-browser-game-run-sheet",
+      "title": "Family run-sheet: My First Browser Game",
+      "desc": "A printable one-page family run-sheet for the My First Browser Game course. Materials, timings, outcome and what to do when a child is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/run-sheets/my-first-browser-game-run-sheet.html"
+    },
+    {
+      "id": "my-first-scratch-game-run-sheet",
+      "title": "Family run-sheet: My First Scratch Game",
+      "desc": "A printable one-page family run-sheet for the My First Scratch Game course. Materials, timings, outcome and what to do when a child is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/run-sheets/my-first-scratch-game-run-sheet.html"
+    },
+    {
+      "id": "my-first-video-game-run-sheet",
+      "title": "Family run-sheet: My First Video Game",
+      "desc": "A printable one-page family run-sheet for the My First Video Game course in Godot. Materials, timings, outcome and what to do when a child is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/run-sheets/my-first-video-game-run-sheet.html"
     },
     {
       "id": "diablo-blueprint",
@@ -762,6 +762,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#fef9f0",
       "cover": "/og/jump-jump-mario-workshop.webp",
       "url": "/workshops/jump-jump-mario-workshop.html"
+    },
+    {
+      "id": "make-your-first-board-game",
+      "title": "Make Your First Board Game in 15 Minutes",
+      "desc": "A free Ages 8+ guide to making your first playable board game in 15 minutes. Pick a board, change one rule, add a card and play it in Tabletop Studio. No install or account.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#f0ead6",
+      "cover": "/og/hub-tools.webp",
+      "url": "/workshops/make-your-first-board-game.html"
     },
     {
       "id": "my-achievements",
@@ -2148,7 +2162,7 @@ window.JVDS_CONTENT = {
     {
       "id": "minecraft-setup-check",
       "title": "Minecraft Modding: Check Your Computer Before You Start",
-      "desc": "Check your computer is ready for Minecraft modding with Fabric and Java. Covers Java 21, IntelliJ IDEA, disk space, install permissions and common Gradle errors. Free setup guide for learners and teachers.",
+      "desc": "Check your computer is ready for Minecraft modding with Fabric and Java. Covers Java 21, IntelliJ IDEA, disk space, install permissions and common Gradle errors. Free setup guide for families.",
       "engine": "Minecraft",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -5627,8 +5641,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-14T09:43:10.000Z",
-    "workshops": 282,
+    "generated": "2026-11-14T21:41:40.000Z",
+    "workshops": 283,
     "games": 16,
     "tools": 50,
     "books": 5,
@@ -5637,7 +5651,7 @@ window.JVDS_CONTENT = {
       "C++": 10,
       "Defold": 7,
       "GDevelop": 7,
-      "General": 51,
+      "General": 52,
       "GML/GameMaker": 6,
       "Godot": 17,
       "Java": 8,
