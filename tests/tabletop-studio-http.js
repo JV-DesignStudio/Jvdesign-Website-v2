@@ -4,7 +4,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 
 const root = path.join(__dirname, '..');
-const port = 19312;
+let port = 0;
 const mime = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -39,7 +39,10 @@ const server = http.createServer((req, res) => {
 });
 
 function listen() {
-  return new Promise(resolve => server.listen(port, resolve));
+  return new Promise(resolve => server.listen(0, '127.0.0.1', () => {
+    port = server.address().port;
+    resolve();
+  }));
 }
 
 let failures = 0;
@@ -105,7 +108,7 @@ function wait(ms) {
     emptyVisible: !document.getElementById('ttEmpty').hidden,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
-    cleanText: !/[ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½]/.test(document.body.innerText)
+    cleanText: !/[\u00C3\u00E2\u00F0\uFFFD]/.test(document.body.innerText)
   }));
 
   check('title loads', /Tabletop Studio/.test(initial.title), initial.title);
@@ -114,11 +117,11 @@ function wait(ms) {
   check('board canvas exists', initial.canvas);
   check('token layer exists', initial.tokensLayer);
   check('terrain swatches present (9 + erase)', initial.swatches === 14, String(initial.swatches));
-  check('characters, players and props present', initial.pieces === 26, String(initial.pieces));
+  check('characters, players and props present', initial.pieces === 40, String(initial.pieces));
   check('paint, fill, pick and tile tools present', initial.tools === 4, String(initial.tools));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
-  check('ten starter boards offered', initial.templates === 10, String(initial.templates));
+  check('thirteen starter boards offered', initial.templates === 13, String(initial.templates));
   check('character sprites are pieces', initial.pieceImgs === 6, String(initial.pieceImgs));
   check('saved-board library starts with one board', initial.libraryRows === 1, String(initial.libraryRows));
   check('zoom control present', initial.zoom);
@@ -162,7 +165,7 @@ function wait(ms) {
   await page.evaluate(() => {
     document.getElementById('ttTileNumber').value = '34';
     document.getElementById('ttTileLabel').value = 'Ladder';
-    document.getElementById('ttTileIcon').value = 'Ã°Å¸ÂªÂ ';
+    document.getElementById('ttTileIcon').value = 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂªÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ';
     document.getElementById('ttTileEffect').value = 'forward';
     document.getElementById('ttTileEffectValue').value = '4';
     document.getElementById('ttTileOwner').value = '2';
@@ -301,7 +304,10 @@ function wait(ms) {
     { id: 'property', cols: 11, rows: 11, path: 40, pieces: 4 },
     { id: 'life', cols: 9, rows: 9, path: 81, pieces: 2 },
     { id: 'draughts', cols: 8, rows: 8, path: 0, pieces: 24 },
-    { id: 'connect', cols: 7, rows: 6, path: 0, pieces: 0 }
+    { id: 'connect', cols: 7, rows: 6, path: 0, pieces: 0 },
+    { id: 'chess', cols: 8, rows: 8, path: 0, pieces: 32 },
+    { id: 'backgammon', cols: 13, rows: 13, path: 0, pieces: 30 },
+    { id: 'go', cols: 9, rows: 9, path: 0, pieces: 4 }
   ];
   for (const starter of starterChecks) {
     await page.evaluate(id => { document.querySelector('[data-template="' + id + '"]').click(); }, starter.id);
@@ -503,7 +509,7 @@ function wait(ms) {
     const players = data.players || [];
     return { p1: players[0] && players[0].money, p2: players[1] && players[1].money, rent: data.settings && data.settings.rent };
   });
-  check('rent moves ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£25 from the lander to the owner', rent.rent === true && rent.p1 === 1475 && rent.p2 === 1525, JSON.stringify(rent));
+  check('rent moves 25 from the lander to the owner', rent.rent === true && rent.p1 === 1475 && rent.p2 === 1525, JSON.stringify(rent));
 
   await page.evaluate(() => {
     document.getElementById('ttSetupPawns').click();
@@ -576,6 +582,44 @@ function wait(ms) {
     emptyHidden: document.getElementById('ttEmpty').hidden
   }));
   check('share code rebuilds the board', shareRestored.name === 'Property Loop' && shareRestored.tokens >= 4 && shareRestored.emptyHidden, JSON.stringify(shareRestored));
+
+  await page.evaluate(() => {
+    window.__playBlobs = [];
+    const original = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = function (blob) {
+      window.__playBlobs.push(blob);
+      return original(blob);
+    };
+    document.getElementById('ttExportPlayable').click();
+  });
+  await wait(400);
+  const playableHtml = await page.evaluate(async () => {
+    const blobs = window.__playBlobs;
+    return blobs && blobs.length ? await blobs[blobs.length - 1].text() : '';
+  });
+  check('playable HTML export is generated', /<!DOCTYPE html>/.test(playableHtml) && /var GAME=/.test(playableHtml) && /id="roll"/.test(playableHtml), playableHtml.slice(0, 90));
+
+  const playPage = await browser.newPage();
+  const playErrors = [];
+  playPage.on('pageerror', e => playErrors.push(e.message));
+  await playPage.setViewport({ width: 390, height: 844 });
+  await playPage.setContent(playableHtml, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await wait(500);
+  const playBefore = await playPage.evaluate(() => ({
+    canvas: !!document.getElementById('b') && document.getElementById('b').width > 0,
+    turn: document.getElementById('turn') ? document.getElementById('turn').textContent : '',
+    result: document.getElementById('result') ? document.getElementById('result').textContent : '',
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+  }));
+  await playPage.click('#roll');
+  await wait(400);
+  const playAfter = await playPage.evaluate(() => ({
+    result: document.getElementById('result').textContent,
+    turn: document.getElementById('turn').textContent
+  }));
+  check('exported game opens offline and plays a roll', playBefore.canvas && /Rolled \d/.test(playAfter.result) && playBefore.overflow <= 2, JSON.stringify({ playBefore, playAfter, errors: playErrors }));
+  check('exported game has no page errors', playErrors.length === 0, playErrors.join(' | '));
+  await playPage.close();
 
   const qolBox = await page.$eval('#ttBoard', el => {
     const r = el.getBoundingClientRect();
@@ -655,6 +699,77 @@ function wait(ms) {
   check('recent colours appear after painting', recent >= 2, String(recent));
 
   await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '4';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+    document.getElementById('ttPathSerpentine').click();
+    document.getElementById('ttSave').click();
+    document.getElementById('ttRotateBoard').click();
+    document.getElementById('ttSave').click();
+  });
+  await wait(400);
+  const rotated = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { cols: data.cols, rows: data.rows, w: document.getElementById('ttBoard').width, h: document.getElementById('ttBoard').height };
+  });
+  check('rotate board swaps width and height', rotated.cols === 2 && rotated.rows === 4 && rotated.w === 160 && rotated.h === 320, JSON.stringify(rotated));
+
+  await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '4';
+    document.getElementById('ttRows').value = '4';
+    document.getElementById('ttSizeApply').click();
+    document.querySelector('[data-terrain="sand"]').click();
+    document.getElementById('ttLineTool').click();
+  });
+  const shapeBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.evaluate((box) => {
+    const cv = document.getElementById('ttBoard');
+    const x1 = box.x + box.w * (0.5 / 4), y1 = box.y + box.h * (0.5 / 4);
+    const x2 = box.x + box.w * (3.5 / 4), y2 = box.y + box.h * (0.5 / 4);
+    cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: y1, pointerId: 91, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+    cv.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x2, clientY: y2, pointerId: 91, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+    cv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x2, clientY: y2, pointerId: 91, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+  }, shapeBox);
+  await wait(300);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const linePainted = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return (data.tiles || []).filter(t => t === 'sand').length;
+  });
+  check('line tool paints a straight row', linePainted === 4, String(linePainted));
+  await page.evaluate(() => { document.getElementById('ttUndo').click(); });
+  await wait(250);
+  await page.evaluate(() => {
+    document.getElementById('ttRectTool').click();
+    const cv = document.getElementById('ttBoard');
+    const box = cv.getBoundingClientRect();
+    const x1 = box.x + box.width * (0.5 / 4), y1 = box.y + box.height * (1.5 / 4);
+    const x2 = box.x + box.width * (1.5 / 4), y2 = box.y + box.height * (2.5 / 4);
+    cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x1, clientY: y1, pointerId: 92, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+    cv.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x2, clientY: y2, pointerId: 92, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+    cv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x2, clientY: y2, pointerId: 92, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+    document.getElementById('ttSave').click();
+  });
+  await wait(400);
+  const rectPainted = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return (data.tiles || []).filter(t => t === 'sand').length;
+  });
+  check('rectangle tool fills a dragged area', rectPainted === 4, String(rectPainted));
+
+  await page.evaluate(() => {
+    document.getElementById('ttStartBlank').click();
+    const brush = document.querySelector('[data-tool="brush"]');
+    if (brush) brush.click();
+  });
   await wait(300);
   await page.evaluate(() => {
     document.getElementById('ttCols').value = '4';
@@ -987,6 +1102,59 @@ function wait(ms) {
   await wait(200);
   const clearedLog = await page.evaluate(() => document.querySelectorAll('#ttPlaytestLog li').length);
   check('playtest log clears for the next test', clearedLog === 0, String(clearedLog));
+
+  await page.evaluate(() => {
+    const seconds = document.getElementById('ttTurnSeconds');
+    seconds.value = '5';
+    seconds.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('ttTimerStart').click();
+  });
+  await wait(1400);
+  const timerRan = await page.evaluate(() => ({
+    text: document.getElementById('ttTimerOut').textContent,
+    button: document.getElementById('ttTimerStart').textContent
+  }));
+  check('turn timer counts down', timerRan.text !== '00:05' && /Pause/.test(timerRan.button), JSON.stringify(timerRan));
+  await page.evaluate(() => { document.getElementById('ttTimerReset').click(); });
+  await wait(200);
+  const timerReset = await page.evaluate(() => document.getElementById('ttTimerOut').textContent);
+  check('turn timer resets', timerReset === '00:05', timerReset);
+  const sessionText = await page.evaluate(() => document.getElementById('ttSessionStats').textContent);
+  check('session stats show rolls and turns', /Rolls \d+/.test(sessionText) && /Turns \d+/.test(sessionText), sessionText);
+
+  await page.evaluate(() => {
+    window.__statsBlobs = [];
+    const original = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = function (blob) {
+      window.__statsBlobs.push(blob);
+      return original(blob);
+    };
+    document.getElementById('ttStatsCsv').click();
+  });
+  await wait(300);
+  const statsCsv = await page.evaluate(async () => {
+    const blobs = window.__statsBlobs;
+    return blobs && blobs.length ? await blobs[blobs.length - 1].text() : '';
+  });
+  check('session CSV exports the stats', /metric/.test(statsCsv) && /rolls/.test(statsCsv), statsCsv.slice(0, 80));
+
+  await page.evaluate(() => {
+    window.__designHtml = '';
+    window.__origOpen = window.open;
+    window.open = function () {
+      return {
+        document: { write: function (html) { window.__designHtml = html; }, close: function () {} },
+        focus: function () {},
+        print: function () {}
+      };
+    };
+    document.getElementById('ttDesignSheet').click();
+  });
+  await wait(700);
+  const designHtml = await page.evaluate(() => window.__designHtml);
+  check('design worksheet includes the planning prompts', /design sheet/.test(designHtml) && /How do you win/.test(designHtml) && /What does a turn look like/.test(designHtml), (designHtml || '').slice(0, 120));
+  await page.evaluate(() => { window.open = window.__origOpen; });
+
   await page.evaluate(() => {
     Math.random = window.__origRandom;
     document.getElementById('ttWinClose').click();
@@ -1184,6 +1352,42 @@ function wait(ms) {
   });
   check('redo puts the moved piece back', afterRedo === moved.left, afterRedo + ' vs ' + moved.left);
 
+  const piecePath = path.join(require('os').tmpdir(), 'jvds-tabletop-piece.png');
+  fs.writeFileSync(piecePath, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+  await page.evaluate(() => {
+    document.getElementById('ttPieceName').value = 'Rocket';
+    document.getElementById('ttPieces').closest('details').open = true;
+  });
+  await (await page.$('#ttPieceFile')).uploadFile(piecePath);
+  await wait(800);
+  const customPiece = await page.evaluate(() => {
+    const btn = document.querySelector('#ttPieces [data-piece^="custom-"]');
+    return {
+      exists: !!btn,
+      img: !!(btn && btn.querySelector('img') && /^data:image\//.test(btn.querySelector('img').src)),
+      label: btn ? btn.textContent : ''
+    };
+  });
+  check('custom piece art uploads into the palette', customPiece.exists && customPiece.img && /Rocket/.test(customPiece.label), JSON.stringify(customPiece));
+  await page.evaluate(() => {
+    const btn = document.querySelector('#ttPieces [data-piece^="custom-"]');
+    if (btn) btn.click();
+  });
+  await wait(300);
+  const customToken = await page.evaluate(() => {
+    const token = Array.from(document.querySelectorAll('#ttTokens .tt-token')).find(t => t.querySelector('img[src^="data:image/"]'));
+    return token ? !!token.querySelector('img') : false;
+  });
+  check('custom piece places on the board with its art', customToken);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const customSaved = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { pieces: (data.customPieces || []).length, tokens: (data.tokens || []).filter(t => /^custom-/.test(t.kind || '')).length };
+  });
+  check('custom piece art saves with the board', customSaved.pieces === 1 && customSaved.tokens === 1, JSON.stringify(customSaved));
+  fs.unlinkSync(piecePath);
+
   await page.evaluate(() => { document.getElementById('ttUndo').click(); });
   await wait(150);
 
@@ -1222,7 +1426,7 @@ function wait(ms) {
     };
     set('ttCardName', 'Moon Beam');
     set('ttCardText', 'Move two spaces');
-    set('ttCardIcon', 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢');
+    set('ttCardIcon', 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢');
   });
   await page.evaluate(() => { document.getElementById('ttCardAdd').click(); });
   await wait(200);
@@ -1622,7 +1826,7 @@ function wait(ms) {
     const blobs = window.__svgBlobs;
     return blobs.length ? await blobs[blobs.length - 1].text() : '';
   });
-  check('piece sheet SVG lists every piece', (piecesSvg.match(/data-piece="/g) || []).length === 26, String((piecesSvg.match(/data-piece="/g) || []).length));
+  check('piece sheet SVG lists every piece', (piecesSvg.match(/data-piece="/g) || []).length === 40, String((piecesSvg.match(/data-piece="/g) || []).length));
   check('piece sheet SVG names the characters', /Stardust/.test(piecesSvg) && /Barnaby/.test(piecesSvg));
   check('World Builder 3D link present', /href="\/workshops\/world-builder-3d.html"/.test(await page.content()));
   await page.select('#ttShape', 'square');
@@ -1772,16 +1976,23 @@ function wait(ms) {
 
   await browser.close();
   server.close();
+  if (server.closeAllConnections) server.closeAllConnections();
   if (failures) {
     console.log('\n' + failures + ' FAILURE(S)');
     process.exit(1);
   }
   console.log('\nALL TABLETOP STUDIO CHECKS PASSED');
+  process.exit(0);
 })().catch(err => {
   console.error(err);
   server.close();
+  if (server.closeAllConnections) server.closeAllConnections();
   process.exit(1);
 });
+
+
+
+
 
 
 

@@ -40,7 +40,21 @@
     { id: 'crown',   label: 'Crown',      glyph: '👑', color: '#c98a2e' },
     { id: 'wizard',  label: 'Wizard',     glyph: '🧙', color: '#7a5aa8' },
     { id: 'coin',    label: 'Coin',       glyph: '🪙', color: '#c98a2e' },
-    { id: 'cottage', label: 'Cottage',    glyph: '🏠', color: '#b8956a' }
+    { id: 'cottage', label: 'Cottage',    glyph: '🏠', color: '#b8956a' },
+    { id: 'chess-wk', label: 'White King',   glyph: '♔', color: '#1a1208' },
+    { id: 'chess-wq', label: 'White Queen',  glyph: '♕', color: '#1a1208' },
+    { id: 'chess-wr', label: 'White Rook',   glyph: '♖', color: '#1a1208' },
+    { id: 'chess-wb', label: 'White Bishop', glyph: '♗', color: '#1a1208' },
+    { id: 'chess-wn', label: 'White Knight', glyph: '♘', color: '#1a1208' },
+    { id: 'chess-wp', label: 'White Pawn',   glyph: '♙', color: '#1a1208' },
+    { id: 'chess-bk', label: 'Black King',   glyph: '♚', color: '#1a1208' },
+    { id: 'chess-bq', label: 'Black Queen',  glyph: '♛', color: '#1a1208' },
+    { id: 'chess-br', label: 'Black Rook',   glyph: '♜', color: '#1a1208' },
+    { id: 'chess-bb', label: 'Black Bishop', glyph: '♝', color: '#1a1208' },
+    { id: 'chess-bn', label: 'Black Knight', glyph: '♞', color: '#1a1208' },
+    { id: 'chess-bp', label: 'Black Pawn',   glyph: '♟', color: '#1a1208' },
+    { id: 'go-black', label: 'Black Stone',  glyph: '⚫', color: '#1a1208' },
+    { id: 'go-white', label: 'White Stone',  glyph: '⚪', color: '#403B33' }
   ];
 
   var TERRAIN = {
@@ -259,6 +273,22 @@
   var versionsBackdrop = document.getElementById('ttVersionsBackdrop');
   var versionsClose = document.getElementById('ttVersionsClose');
   var versionList = document.getElementById('ttVersionList');
+  var pieceNameInput = document.getElementById('ttPieceName');
+  var pieceUploadBtn = document.getElementById('ttPieceUpload');
+  var pieceFileInput = document.getElementById('ttPieceFile');
+  var lineToolBtn = document.getElementById('ttLineTool');
+  var rectToolBtn = document.getElementById('ttRectTool');
+  var rotateBoardBtn = document.getElementById('ttRotateBoard');
+  var turnSecondsInput = document.getElementById('ttTurnSeconds');
+  var timerOut = document.getElementById('ttTimerOut');
+  var timerStartBtn = document.getElementById('ttTimerStart');
+  var timerResetBtn = document.getElementById('ttTimerReset');
+  var timerAutoInput = document.getElementById('ttTimerAuto');
+  var sessionStats = document.getElementById('ttSessionStats');
+  var statsResetBtn = document.getElementById('ttStatsReset');
+  var statsCsvBtn = document.getElementById('ttStatsCsv');
+  var designSheetBtn = document.getElementById('ttDesignSheet');
+  var exportPlayableBtn = document.getElementById('ttExportPlayable');
   var branchLabelInput = document.getElementById('ttBranchLabel');
   var branchToolBtn = document.getElementById('ttBranchTool');
   var branchClearBtn = document.getElementById('ttBranchClear');
@@ -326,6 +356,11 @@
   var choiceCallback = null;
   var choiceTrigger = null;
   var renamingBoardId = '';
+  var shapeStart = null;
+  var shapePreview = null;
+  var timerLeft = 60;
+  var timerId = null;
+  var timerRunning = false;
 
   /* ------------------------------------------------------------------ */
   /* Small helpers                                                       */
@@ -348,6 +383,20 @@
   }
 
   function pieceDef(id) {
+    if (typeof S !== 'undefined' && S && Array.isArray(S.customPieces)) {
+      for (var c = 0; c < S.customPieces.length; c++) {
+        if (S.customPieces[c].id === id) {
+          return {
+            id: S.customPieces[c].id,
+            label: S.customPieces[c].name,
+            glyph: '🖼️',
+            color: S.customPieces[c].color,
+            img: S.customPieces[c].img,
+            custom: true
+          };
+        }
+      }
+    }
     for (var i = 0; i < PIECE_DEFS.length; i++) {
       if (PIECE_DEFS[i].id === id) return PIECE_DEFS[i];
     }
@@ -549,6 +598,39 @@
     };
   }
 
+  function defaultSession() {
+    return { rolls: 0, turns: 0, captures: 0, startedAt: 0, turnSeconds: 60, autoEnd: false };
+  }
+
+  function normaliseSession(raw) {
+    var out = defaultSession();
+    if (!raw || typeof raw !== 'object') return out;
+    out.rolls = clamp(Math.round(Number(raw.rolls) || 0), 0, 100000);
+    out.turns = clamp(Math.round(Number(raw.turns) || 0), 0, 100000);
+    out.captures = clamp(Math.round(Number(raw.captures) || 0), 0, 100000);
+    out.startedAt = clamp(Number(raw.startedAt) || 0, 0, Date.now());
+    out.turnSeconds = clamp(Math.round(Number(raw.turnSeconds) || 60), 5, 600);
+    out.autoEnd = !!raw.autoEnd;
+    return out;
+  }
+
+  function normaliseCustomPieces(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(function (piece) {
+      return piece && typeof piece.id === 'string' && piece.id.indexOf('custom-') === 0 &&
+        typeof piece.name === 'string' && piece.name.trim() &&
+        typeof piece.img === 'string' && /^data:image\//.test(piece.img) && piece.img.length < 300000;
+    }).slice(0, 6).map(function (piece, index) {
+      return {
+        id: piece.id.slice(0, 40),
+        name: piece.name.trim().slice(0, 20),
+        img: piece.img,
+        color: typeof piece.color === 'string' && /^#[0-9a-f]{3,8}$/i.test(piece.color) ? piece.color : PLAYER_COLORS[index % PLAYER_COLORS.length],
+        custom: true
+      };
+    });
+  }
+
   function normalisePlaytest(raw) {
     var out = { on: false, log: [] };
     if (!raw || typeof raw !== 'object') return out;
@@ -715,10 +797,12 @@
       deckStandard: true,
       decks: [],
       activeDeckId: '',
+      customPieces: [],
       spinner: defaultSpinner(),
       actionFaces: defaultActionFaces(),
       dieMode: 'numbers',
       playtest: { on: false, log: [] },
+      session: defaultSession(),
       rollMode: 'dice',
       players: defaultPlayers(),
       rules: '',
@@ -994,6 +1078,7 @@
     drawRoute(context);
     drawBranches(context);
     drawHomeLanes(context);
+    drawShapePreview(context);
     drawTileDetails(context);
     drawSelection(context);
 
@@ -1395,6 +1480,33 @@
         }
       }
     }
+  }
+
+  function drawShapePreview(context) {
+    if (!shapeStart || !shapePreview) return;
+    var a = shapeStart;
+    var b = shapePreview.b;
+    var c1 = Math.min(a.col, b.col);
+    var c2 = Math.max(a.col, b.col);
+    var r1 = Math.min(a.row, b.row);
+    var r2 = Math.max(a.row, b.row);
+    context.save();
+    context.fillStyle = 'rgba(201,138,46,.18)';
+    context.strokeStyle = 'rgba(201,138,46,.95)';
+    context.lineWidth = 2;
+    context.setLineDash([5, 4]);
+    if (S.shape === 'square') {
+      context.fillRect(c1 * CELL, r1 * CELL, (c2 - c1 + 1) * CELL, (r2 - r1 + 1) * CELL);
+      context.strokeRect(c1 * CELL, r1 * CELL, (c2 - c1 + 1) * CELL, (r2 - r1 + 1) * CELL);
+    } else {
+      var p1 = centerOf(a.col, a.row);
+      var p2 = centerOf(b.col, b.row);
+      context.beginPath();
+      context.moveTo(p1.x, p1.y);
+      context.lineTo(p2.x, p2.y);
+      context.stroke();
+    }
+    context.restore();
   }
 
   function drawSelection(context) {
@@ -2313,12 +2425,22 @@
   function setToolMode(tool) {
     S.tool = tool;
     lastPaintCell = null;
+    if (tool !== 'line' && tool !== 'rect') {
+      shapeStart = null;
+      shapePreview = null;
+    }
     pendingLink = tool === 'link' ? pendingLink : null;
     pendingBranch = tool === 'branch' ? pendingBranch : null;
     updateRouteState();
     updateStatus();
     syncControls();
     scheduleDraw();
+  }
+
+  function setShapeTool(tool) {
+    setToolMode(S.tool === tool ? 'brush' : tool);
+    if (S.tool === 'line') toast('Line tool on. Drag across the board.');
+    else if (S.tool === 'rect') toast('Rectangle tool on. Drag a box.');
   }
 
   function toggleRouteTool(tool) {
@@ -2815,6 +2937,101 @@
     toast('Board flipped.');
   }
 
+  function rotateBoard() {
+    pushUndo();
+    var oldCols = S.cols;
+    var oldRows = S.rows;
+    var oldTiles = S.tiles.slice();
+    var oldMeta = (S.meta || []).slice();
+    var tokenCells = S.tokens.map(function (t) { return t.inLane ? null : cellAt(t.x, t.y); });
+    var newCols = oldRows;
+    var newRows = oldCols;
+    function rot(cell) {
+      return { c: oldRows - 1 - cell.r, r: cell.c };
+    }
+    var tiles = [];
+    var meta = [];
+    for (var i = 0; i < newCols * newRows; i++) {
+      tiles.push(null);
+      meta.push(null);
+    }
+    for (var r = 0; r < oldRows; r++) {
+      for (var c = 0; c < oldCols; c++) {
+        var to = rot({ c: c, r: r });
+        tiles[to.r * newCols + to.c] = oldTiles[r * oldCols + c];
+        meta[to.r * newCols + to.c] = cloneMeta(oldMeta[r * oldCols + c]);
+      }
+    }
+    S.cols = newCols;
+    S.rows = newRows;
+    S.tiles = tiles;
+    S.meta = meta;
+    S.path = S.path.map(rot);
+    S.links = S.links.map(function (l) {
+      var from = rot(l.from);
+      var to2 = rot(l.to);
+      return { from: from, to: to2, label: l.label };
+    });
+    S.branches = S.branches.map(function (b) {
+      return { from: rot(b.from), to: rot(b.to), label: b.label };
+    });
+    S.homeCells = S.homeCells.map(function (cell) { return cell ? rot(cell) : null; });
+    S.homeLanes = S.homeLanes.map(function (lane) {
+      return (lane || []).map(rot);
+    });
+    S.safeCells = S.safeCells.map(rot);
+    S.tokens.forEach(function (t, idx) {
+      if (t.inLane) {
+        setLanePosition(t, true);
+      } else if (tokenCells[idx]) {
+        var cell = rot(tokenCells[idx]);
+        var centre = centerOf(cell.c, cell.r);
+        t.x = centre.x;
+        t.y = centre.y;
+      }
+    });
+    selection = null;
+    shapeStart = null;
+    shapePreview = null;
+    syncControls();
+    renderAll();
+    markDirty();
+    toast('Board rotated. Width and height swapped.');
+  }
+
+  function paintRect(a, b, terrain) {
+    var value = terrain === 'erase' ? null : terrain;
+    var c1 = Math.min(a.col, b.col);
+    var c2 = Math.max(a.col, b.col);
+    var r1 = Math.min(a.row, b.row);
+    var r2 = Math.max(a.row, b.row);
+    for (var r = r1; r <= r2; r++) {
+      for (var c = c1; c <= c2; c++) {
+        if (c < 0 || r < 0 || c >= S.cols || r >= S.rows) continue;
+        S.tiles[r * S.cols + c] = value;
+      }
+    }
+  }
+
+  function finishShape() {
+    if (!shapeStart) return;
+    var end = shapePreview ? shapePreview.b : shapeStart;
+    if (S.tool === 'rect') {
+      if (S.shape === 'hex') {
+        toast('Rectangle is for square boards. Use Line on hexes.');
+      } else {
+        paintRect(shapeStart, end, S.terrain);
+      }
+    } else if (S.tool === 'line') {
+      paintLine(shapeStart, end, S.terrain);
+    }
+    shapeStart = null;
+    shapePreview = null;
+    hideEmpty();
+    markDirty();
+    scheduleDraw();
+  }
+
   function duplicateRow() {
     if (S.rows >= MAX_ROWS) {
       toast('That is as tall as the board can get.');
@@ -3188,6 +3405,8 @@
       caught++;
     });
     if (caught) {
+      S.session.captures += caught;
+      renderSessionStats();
       toast('Captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
       announce('Captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
       if (playtestLog) playtestLog(activePlayerName() + ' captured ' + caught + ' pawn' + (caught > 1 ? 's' : '') + '.');
@@ -3339,6 +3558,8 @@
       if (next === 1) S.round = clamp((S.round || 1) + 1, 1, 99);
       S.turn = next;
     }
+    S.session.turns += 1;
+    renderSessionStats();
     renderPlayers();
     updatePlayAids();
     updateStatus();
@@ -3539,6 +3760,9 @@
     S.winner = 0;
     S.turn = 1;
     S.round = 1;
+    S.session = defaultSession();
+    stopTimer();
+    timerLeft = S.session.turnSeconds;
     S.players.forEach(function (p) { p.skip = false; });
     S.tokens.forEach(function (t) {
       if (t.pawn) {
@@ -3591,6 +3815,8 @@
       actionFaces: normaliseActionFaces(S.actionFaces),
       dieMode: S.dieMode === 'action' ? 'action' : 'numbers',
       playtest: normalisePlaytest(S.playtest),
+      customPieces: normaliseCustomPieces(S.customPieces),
+      session: normaliseSession(S.session),
       rollMode: S.rollMode === 'spinner' ? 'spinner' : 'dice',
       activeDeckId: S.activeDeckId || '',
       decks: (S.decks || []).map(function (deck) {
@@ -3673,6 +3899,9 @@
     S.actionFaces = normaliseActionFaces(snap.actionFaces);
     S.dieMode = snap.dieMode === 'action' ? 'action' : 'numbers';
     S.playtest = normalisePlaytest(snap.playtest);
+    S.customPieces = normaliseCustomPieces(snap.customPieces);
+    S.session = normaliseSession(snap.session);
+    try { buildPieces(); } catch (err) { /* palette may not be ready */ }
     S.rollMode = snap.rollMode === 'spinner' ? 'spinner' : 'dice';
     S.decks = Array.isArray(snap.decks) ? snap.decks.slice(0, 8).map(normaliseDeck) : [];
     S.activeDeckId = typeof snap.activeDeckId === 'string' ? snap.activeDeckId : '';
@@ -4473,6 +4702,8 @@
     S.actionFaces = normaliseActionFaces(data.actionFaces);
     S.dieMode = data.dieMode === 'action' ? 'action' : 'numbers';
     S.playtest = normalisePlaytest(data.playtest);
+    S.customPieces = normaliseCustomPieces(data.customPieces);
+    S.session = normaliseSession(data.session);
     S.rollMode = data.rollMode === 'spinner' ? 'spinner' : 'dice';
     S.decks = Array.isArray(data.decks) ? data.decks.slice(0, 8).map(normaliseDeck).filter(Boolean) : [];
     S.activeDeckId = typeof data.activeDeckId === 'string' ? data.activeDeckId : '';
@@ -4485,6 +4716,7 @@
       t.y = clamp(t.y, 10, size.H - 10);
     });
 
+    try { buildPieces(); } catch (err) { /* palette may not be ready */ }
     return true;
   }
 
@@ -4493,7 +4725,9 @@
   /* ------------------------------------------------------------------ */
 
   function preloadSprites() {
-    PIECE_DEFS.forEach(function (p) {
+    var defs = PIECE_DEFS.slice();
+    (S.customPieces || []).forEach(function (piece) { defs.push(pieceDef(piece.id)); });
+    defs.forEach(function (p) {
       if (!p.img || spriteCache[p.img]) return;
       var img = new Image();
       img.src = p.img;
@@ -4729,7 +4963,12 @@
       renderHistory();
       playSound('roll');
       announce('The wheel landed on ' + labels[index] + '.');
-      if (S.mode === 'play') playtestLog(activePlayerName() + ' spun ' + labels[index] + '.');
+      if (S.mode === 'play') {
+        playtestLog(activePlayerName() + ' spun ' + labels[index] + '.');
+        S.session.rolls += 1;
+        if (!S.session.startedAt) S.session.startedAt = Date.now();
+        renderSessionStats();
+      }
       spinnerSpinning = false;
       if (spinBtn) spinBtn.disabled = false;
       markDirty();
@@ -4980,6 +5219,9 @@
       announce(text);
       if (S.mode === 'play') {
         playtestLog(activePlayerName() + ' ' + (action ? 'rolled ' + faceLabel : 'rolled ' + total) + '.');
+        S.session.rolls += 1;
+        if (!S.session.startedAt) S.session.startedAt = Date.now();
+        renderSessionStats();
       }
 
       var entry = action
@@ -5099,6 +5341,14 @@
       statusEl.textContent = 'Tile settings: tap a tile';
       barText = 'Number it, name it or add a rule.';
       if (terrainHelp) terrainHelp.textContent = 'Tile is on. Tap a tile to set its number, name and effect.';
+    } else if (S.tool === 'line') {
+      statusEl.textContent = 'Line: drag from one tile to another';
+      barText = 'Drag to paint a straight line.';
+      if (terrainHelp) terrainHelp.textContent = 'Line tool is on. Drag across the board to paint a straight line.';
+    } else if (S.tool === 'rect') {
+      statusEl.textContent = 'Rectangle: drag a box';
+      barText = 'Drag to paint a filled rectangle.';
+      if (terrainHelp) terrainHelp.textContent = 'Rectangle tool is on. Drag a box to fill that area.';
     } else if (S.tool === 'fill') {
       statusEl.textContent = 'Fill: ' + terrainName + ' selected';
       barText = 'Fill floods a whole area.';
@@ -5189,7 +5439,10 @@
     S.homeLanes = [];
     S.safeCells = [];
     S.settings = defaultSettings();
+    S.session = defaultSession();
     S.winner = 0;
+    stopTimer();
+    timerLeft = S.session.turnSeconds;
     hideWin(false);
     S.bg = null;
     bgImg = null;
@@ -5632,6 +5885,62 @@
     S.round = 1;
   }
 
+  function buildChessTemplate() {
+    resetGridTo(8, 8, 'square');
+    for (var r = 0; r < 8; r++) {
+      for (var c = 0; c < 8; c++) setTileAt(c, r, (c + r) % 2 === 0 ? 'snow' : 'wall');
+    }
+    var back = ['chess-br', 'chess-bn', 'chess-bb', 'chess-bq', 'chess-bk', 'chess-bb', 'chess-bn', 'chess-br'];
+    var white = ['chess-wr', 'chess-wn', 'chess-wb', 'chess-wq', 'chess-wk', 'chess-wb', 'chess-wn', 'chess-wr'];
+    for (var i = 0; i < 8; i++) {
+      addPieceAtCell(back[i], i, 0);
+      addPieceAtCell('chess-bp', i, 1);
+      addPieceAtCell('chess-wp', i, 6);
+      addPieceAtCell(white[i], i, 7);
+    }
+    S.name = 'Chess Board';
+    S.rules = 'White moves first. Each piece moves in its own way and you win by checkmating the black king. Use this board to practise openings, puzzles or your own chess variant.';
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildBackgammonTemplate() {
+    resetGridTo(13, 13, 'square');
+    fillTiles('sand');
+    for (var r = 0; r < S.rows; r++) {
+      setTileAt(6, r, 'path');
+    }
+    for (var i = 0; i < 15; i++) {
+      var top = addPieceAtCell('meeple', 1 + (i % 6), 1 + Math.floor(i / 6));
+      top.color = '#f5efe0';
+      top.scale = 0.55;
+      top.note = 'W';
+      var bottom = addPieceAtCell('meeple', 1 + (i % 6), 9 + Math.floor(i / 6));
+      bottom.color = '#1a1208';
+      bottom.scale = 0.55;
+      bottom.note = 'B';
+    }
+    S.name = 'Backgammon Board';
+    S.rules = 'Each player has fifteen checkers. Roll two dice, move checkers around the twenty-four points and bear them off. A double lets you move four times. First player to bear off every checker wins.';
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildGoTemplate() {
+    resetGridTo(9, 9, 'square');
+    fillTiles('sand');
+    [[2, 2], [6, 2], [2, 6], [6, 6], [4, 4]].forEach(function (p) {
+      setTemplateMeta(p[0], p[1], { icon: '⭐', label: 'Star point' });
+    });
+    [[3, 3], [5, 5], [3, 5], [5, 3]].forEach(function (p) {
+      addPieceAtCell(p[0] < 4 ? 'go-black' : 'go-white', p[0], p[1]);
+    });
+    S.name = 'Go Board';
+    S.rules = 'Players take turns placing a stone on an empty intersection. Surround a group to capture it. The player with the most territory and captured stones wins. This 9 x 9 board is the small beginner size.';
+    S.turn = 1;
+    S.round = 1;
+  }
+
   function applyTemplate(id) {
     var names = {
       meadow: 'Meadow',
@@ -5644,7 +5953,10 @@
       property: 'Property Loop',
       life: 'Life Path',
       draughts: 'Draughts Board',
-      connect: 'Connect 4 Board'
+      connect: 'Connect 4 Board',
+      chess: 'Chess Board',
+      backgammon: 'Backgammon Board',
+      go: 'Go Board'
     };
     var hadContent = !!(S.bg || S.tokens.length || S.tiles.some(function (t) { return !!t; }));
     if (window.ToolAnalytics) {
@@ -5668,6 +5980,9 @@
     else if (id === 'life') buildLifeTemplate();
     else if (id === 'draughts') buildDraughtsTemplate();
     else if (id === 'connect') buildConnectTemplate();
+    else if (id === 'chess') buildChessTemplate();
+    else if (id === 'backgammon') buildBackgammonTemplate();
+    else if (id === 'go') buildGoTemplate();
     S.deck = makeDeck();
     if (id === 'property') seedPropertyDecks();
     if (/^(snakes|ludo|property|life)$/.test(id)) dieSides = 6;
@@ -5890,6 +6205,71 @@
       o.fillText('JVDesignStudio', x + cardW / 2, y + cardH - 18);
     });
     return out.toDataURL('image/png');
+  }
+
+  function buildPlayableHTML() {
+    var data = snapshot();
+    data.v = 3;
+    data.mode = 'play';
+    data.selectedId = 0;
+    var json = JSON.stringify(data).replace(/</g, '\\u003c');
+    var title = S.name || 'My board game';
+    var runtime = [
+      "(function(){",
+      "var D=GAME;",
+      "var T=" + JSON.stringify(TERRAIN) + ";",
+      "var cv=document.getElementById('b'),ctx=cv.getContext('2d');",
+      "var CELL=Math.max(32,Math.min(64,Math.floor(760/Math.max(D.cols,D.rows))));",
+      "cv.width=D.cols*CELL;cv.height=D.rows*CELL;",
+      "var turn=1,winner=0;",
+      "function toks(p){return D.tokens.filter(function(t){return t.pawn&&t.player===p;});}",
+      "function centre(c,r){return {x:(c+.5)*CELL,y:(r+.5)*CELL};}",
+      "function pathCell(i){return D.path[i]||null;}",
+      "function tokPos(t){var p=pathCell(t.pathIndex)||D.path[0];return p?centre(p.c,p.r):{x:0,y:0};}",
+      "function draw(){",
+      "ctx.fillStyle=D.bgColor||'#f0ead6';ctx.fillRect(0,0,cv.width,cv.height);",
+      "for(var r=0;r<D.rows;r++)for(var c=0;c<D.cols;c++){var k=D.tiles[r*D.cols+c];if(!k||!T[k])continue;var q=centre(c,r);ctx.fillStyle=T[k].color;ctx.fillRect(q.x-CELL/2+2,q.y-CELL/2+2,CELL-4,CELL-4);}",
+      "ctx.strokeStyle='rgba(40,35,30,.18)';ctx.lineWidth=1;for(var c2=0;c2<=D.cols;c2++){ctx.beginPath();ctx.moveTo(c2*CELL,0);ctx.lineTo(c2*CELL,cv.height);ctx.stroke();}for(var r2=0;r2<=D.rows;r2++){ctx.beginPath();ctx.moveTo(0,r2*CELL);ctx.lineTo(cv.width,r2*CELL);ctx.stroke();}",
+      "if(D.path&&D.path.length>1){ctx.strokeStyle='rgba(40,35,30,.35)';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();D.path.forEach(function(p,i){var q=centre(p.c,p.r);if(i)ctx.lineTo(q.x,q.y);else ctx.moveTo(q.x,q.y);});ctx.stroke();ctx.setLineDash([]);}",
+      "D.meta.forEach(function(m,i){if(!m)return;var c=i%D.cols,r=Math.floor(i/D.cols),q=centre(c,r);if(m.n){ctx.fillStyle='rgba(20,15,10,.82)';ctx.fillRect(q.x-CELL/2+4,q.y+CELL/2-18,18,14);ctx.fillStyle='#fff';ctx.font='700 10px system-ui';ctx.textAlign='center';ctx.fillText(String(m.n),q.x-CELL/2+13,q.y+CELL/2-7);}if(m.label){ctx.fillStyle='rgba(20,15,10,.75)';ctx.font='600 9px system-ui';ctx.textAlign='left';ctx.fillText(m.label.slice(0,14),q.x-CELL/2+4,q.y+CELL/2-22);}});",
+      "D.tokens.forEach(function(t){if(!t.pawn)return;var q=tokPos(t),col=(D.players[t.player-1]||{}).color||'#BC4749';ctx.beginPath();ctx.arc(q.x,q.y,CELL*.25,0,Math.PI*2);ctx.fillStyle=t.finished?'#c98a2e':col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();});",
+      "document.getElementById('turn').textContent=(D.players[turn-1]&&D.players[turn-1].name)||('Player '+turn);",
+      "document.getElementById('money').textContent=D.players.map(function(p,i){return ((p.name||('P'+(i+1)))+' £'+(p.money||0));}).join(' · ');",
+      "}",
+      "function finish(t,p){if(t.pathIndex<D.path.length-1)return false;t.finished=true;if(D.settings&&D.settings.allPawnsWin){if(toks(p).every(function(x){return x.finished;}))return true;}else return true;return false;}",
+      "function apply(t){var p=pathCell(t.pathIndex),m=p?D.meta[p.r*D.cols+p.c]:null;if(!m)return false;if(m.effect){var e=m.effect,v=Number(e.value)||0;if(e.type==='money'){D.players[turn-1].money+=v;}if(e.type==='toStart'){t.pathIndex=0;}if(e.type==='forward'){t.pathIndex=Math.min(D.path.length-1,t.pathIndex+v);}if(e.type==='back'){t.pathIndex=Math.max(0,t.pathIndex-v);}if(e.type==='goTo'){for(var i=0;i<D.meta.length;i++){if(D.meta[i]&&D.meta[i].n===v){t.pathIndex=D.path.findIndex(function(pp){return pp.c===i%D.cols&&pp.r===Math.floor(i/D.cols);});break;}}}}return false;}",
+      "function next(){if(winner)return;turn=(turn%D.players.length)+1;draw();}",
+      "function roll(){if(winner)return;var p=turn,list=toks(p).filter(function(t){return !t.finished;});if(!list.length){next();return;}var t=list[0],n=1+Math.floor(Math.random()*6),i;for(i=0;i<n;i++){if(t.pathIndex<D.path.length-1)t.pathIndex++;}apply(t);if(D.links){D.links.forEach(function(l){var a=pathCell(t.pathIndex);if(a&&a.c===l.from.c&&a.r===l.from.r){for(var j=0;j<D.path.length;j++){if(D.path[j].c===l.to.c&&D.path[j].r===l.to.r){t.pathIndex=j;break;}}}});}var won=finish(t,p);document.getElementById('result').textContent='Rolled '+n+(won?' · game over':' · next turn');if(won){winner=p;}else{turn=(turn%D.players.length)+1;}draw();}",
+      "document.getElementById('roll').onclick=roll;",
+      "document.getElementById('new').onclick=function(){turn=1;winner=0;D.tokens.forEach(function(t){if(t.pawn){t.pathIndex=0;t.finished=false;}});document.getElementById('result').textContent='New game';draw();};",
+      "draw();",
+      "})();"
+    ].join('\n');
+    return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<title>' + escapeHtml(title) + '</title><style>' +
+      'body{font-family:Inter,system-ui,sans-serif;background:#fbf8f2;color:#1a1208;margin:0;padding:14px;text-align:center}' +
+      'h1{font-size:1.35rem;margin:0 0 4px}p{margin:0 0 10px;line-height:1.45;color:#3d3224}' +
+      'canvas{max-width:100%;height:auto;border:2px solid #403B33;border-radius:10px;background:#f0ead6}' +
+      '.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}' +
+      'button{font:inherit;font-weight:800;padding:10px 16px;border:0;border-radius:9px;background:#4e7d80;color:#fff;cursor:pointer;min-height:44px}' +
+      'button.secondary{background:#fff;color:#1a1208;border:2px solid #403B33}' +
+      '#turn{font-weight:800}#money{font-size:.85rem;color:#3d3224}#result{font-weight:700;min-height:1.4em}' +
+      '.rules{max-width:620px;margin:12px auto 0;text-align:left;font-size:.9rem;line-height:1.5;white-space:pre-wrap}' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml(title) + '</h1>' +
+      '<p>Roll and play. This game works offline.</p>' +
+      '<canvas id="b" width="320" height="320" aria-label="Game board"></canvas>' +
+      '<div class="bar"><button id="roll">Roll</button><button id="new" class="secondary">New game</button></div>' +
+      '<p>Next: <span id="turn">Player 1</span></p><p id="money"></p><p id="result">Ready when you are.</p>' +
+      (S.rules ? '<div class="rules">' + escapeHtml(S.rules) + '</div>' : '') +
+      '<script>var GAME=' + json + ';<\/script><script>' + runtime + '<\/script></body></html>';
+  }
+
+  function exportPlayableHTML() {
+    var html = buildPlayableHTML();
+    downloadBlob(new Blob([html], { type: 'text/html' }), safeName() + '-play.html');
+    toast('Playable HTML game saved.');
+    announce('Playable HTML game saved. It works offline.');
   }
 
   function printKit() {
@@ -6147,11 +6527,12 @@
 
   function buildPieces() {
     var host = byId('ttPieces');
+    host.textContent = '';
     var frag = document.createDocumentFragment();
-    PIECE_DEFS.forEach(function (p) {
+    function addPieceButton(p, custom) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'tt-piece-btn' + (p.img ? ' tt-piece-btn--char' : '');
+      b.className = 'tt-piece-btn' + (p.img ? ' tt-piece-btn--char' : '') + (custom ? ' tt-piece-btn--custom' : '');
       b.dataset.piece = p.id;
       var glyph = document.createElement('span');
       glyph.className = 'tt-piece-glyph';
@@ -6172,8 +6553,78 @@
       label.textContent = p.label;
       b.appendChild(label);
       frag.appendChild(b);
-    });
+    }
+    PIECE_DEFS.forEach(function (p) { addPieceButton(p, false); });
+    (S.customPieces || []).forEach(function (piece) { addPieceButton(pieceDef(piece.id), true); });
     host.appendChild(frag);
+  }
+
+  function addCustomPiece(name, img) {
+    if (!Array.isArray(S.customPieces)) S.customPieces = [];
+    if (S.customPieces.length >= 6) {
+      toast('Six custom pieces is plenty for one board.');
+      return;
+    }
+    pushUndo();
+    var piece = {
+      id: 'custom-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 999),
+      name: String(name || 'My piece').trim().slice(0, 20) || 'My piece',
+      img: img,
+      color: PLAYER_COLORS[S.customPieces.length % PLAYER_COLORS.length],
+      custom: true
+    };
+    S.customPieces.push(piece);
+    preloadSprites();
+    buildPieces();
+    markDirty();
+    if (pieceNameInput) pieceNameInput.value = '';
+    toast('“' + piece.name + '” added to the pieces.');
+    announce(piece.name + ' added to the piece palette.');
+  }
+
+  function onPieceFile(event) {
+    var file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast('That image is too big. Try one under 2 MB.');
+      return;
+    }
+    var name = pieceNameInput && pieceNameInput.value.trim()
+      ? pieceNameInput.value.trim()
+      : file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+    var reader = new FileReader();
+    reader.onload = function () {
+      var result = String(reader.result);
+      if (/^data:image\/svg\+xml/.test(result)) {
+        if (result.length > 200000) {
+          toast('That SVG is too large. Try a smaller one.');
+          return;
+        }
+        addCustomPiece(name, result);
+        return;
+      }
+      var img = new Image();
+      img.onload = function () {
+        var max = 96;
+        var ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1);
+        var w = Math.max(8, Math.round(img.naturalWidth * ratio));
+        var h = Math.max(8, Math.round(img.naturalHeight * ratio));
+        var c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        var ctx2 = c.getContext('2d');
+        ctx2.drawImage(img, 0, 0, w, h);
+        try {
+          addCustomPiece(name, c.toDataURL('image/png'));
+        } catch (err) {
+          toast('That image could not be added.');
+        }
+      };
+      img.onerror = function () { toast('That image could not be opened.'); };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
   }
 
   function syncControls() {
@@ -6218,6 +6669,8 @@
     updateSelectHint();
     renderActionDie();
     updateCardEffectLabel();
+    if (lineToolBtn) lineToolBtn.setAttribute('aria-pressed', S.tool === 'line' ? 'true' : 'false');
+    if (rectToolBtn) rectToolBtn.setAttribute('aria-pressed', S.tool === 'rect' ? 'true' : 'false');
   }
 
   function renderPlayers() {
@@ -6299,6 +6752,133 @@
     });
   }
 
+  function formatClock(seconds) {
+    var safe = Math.max(0, Math.round(seconds));
+    var m = Math.floor(safe / 60);
+    var s = safe % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function renderTimer() {
+    if (timerOut) timerOut.textContent = formatClock(timerLeft);
+    if (timerStartBtn) timerStartBtn.textContent = timerRunning ? 'Pause timer' : 'Start timer';
+    if (turnSecondsInput && document.activeElement !== turnSecondsInput) {
+      turnSecondsInput.value = String(S.session.turnSeconds);
+    }
+    if (timerAutoInput) timerAutoInput.checked = S.session.autoEnd;
+  }
+
+  function stopTimer() {
+    timerRunning = false;
+    if (timerId) window.clearInterval(timerId);
+    timerId = null;
+    renderTimer();
+  }
+
+  function tickTimer() {
+    timerLeft -= 1;
+    renderTimer();
+    if (timerLeft <= 0) {
+      stopTimer();
+      timerLeft = S.session.turnSeconds;
+      announce('Time is up.');
+      if (S.session.autoEnd) endTurn();
+    }
+  }
+
+  function toggleTimer() {
+    if (timerRunning) {
+      stopTimer();
+      announce('Timer paused.');
+      return;
+    }
+    if (timerLeft <= 0) timerLeft = S.session.turnSeconds;
+    timerRunning = true;
+    timerId = window.setInterval(tickTimer, 1000);
+    renderTimer();
+    announce('Timer started.');
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerLeft = S.session.turnSeconds;
+    renderTimer();
+    announce('Timer reset.');
+  }
+
+  function renderSessionStats() {
+    if (!sessionStats) return;
+    var elapsed = S.session.startedAt ? Math.round((Date.now() - S.session.startedAt) / 1000) : 0;
+    sessionStats.textContent = 'Rolls ' + S.session.rolls + ' · Turns ' + S.session.turns +
+      ' · Captures ' + S.session.captures + ' · Time ' + formatClock(elapsed);
+  }
+
+  function resetStats() {
+    S.session = defaultSession();
+    timerLeft = S.session.turnSeconds;
+    renderSessionStats();
+    renderTimer();
+    markDirty();
+    toast('Session stats reset.');
+  }
+
+  function exportStatsCsv() {
+    var elapsed = S.session.startedAt ? Math.round((Date.now() - S.session.startedAt) / 1000) : 0;
+    var rows = [
+      ['metric', 'value'],
+      ['game', S.name || 'My board'],
+      ['rolls', S.session.rolls],
+      ['turns', S.session.turns],
+      ['captures', S.session.captures],
+      ['seconds', elapsed],
+      ['route stops', S.path.length],
+      ['players', S.players.length]
+    ];
+    var csv = rows.map(function (row) {
+      return row.map(function (cell) { return '"' + String(cell).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    downloadBlob(new Blob([csv], { type: 'text/csv' }), safeName() + '-session.csv');
+    toast('Session CSV saved.');
+  }
+
+  function printDesignSheet() {
+    var title = S.name || 'My board game';
+    var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
+      '<title>' + escapeHtml(title) + ' - design sheet</title>' +
+      '<style>@page { size: A4 portrait; margin: 12mm; }' +
+      'body { font-family: Inter, system-ui, sans-serif; color: #1a1208; margin: 0; }' +
+      'h1 { font-size: 20pt; margin: 0 0 2mm; } h2 { font-size: 13pt; margin: 6mm 0 2mm; }' +
+      '.q { border: 1px solid #999; border-radius: 3mm; padding: 4mm; margin: 3mm 0; min-height: 20mm; }' +
+      '.q strong { display: block; margin-bottom: 2mm; } .meta { font-size: 9pt; color: #555; }' +
+      '</style></head><body>' +
+      '<h1>' + escapeHtml(title) + ' - design sheet</h1>' +
+      '<p class="meta">Echo says: plan it, play it, then change one thing.</p>' +
+      '<div class="q"><strong>Game name</strong></div>' +
+      '<div class="q"><strong>Players and ages</strong></div>' +
+      '<div class="q"><strong>How do you win?</strong></div>' +
+      '<div class="q"><strong>What does a turn look like?</strong></div>' +
+      '<div class="q"><strong>What can go wrong or surprise you?</strong></div>' +
+      '<div class="q"><strong>What will you test first?</strong></div>' +
+      '<p class="meta">If the print dialog did not open, press Ctrl and P.</p>' +
+      '</body></html>';
+    var win = window.open('', '_blank');
+    if (!win) {
+      toast('Allow pop-ups to open the design worksheet.');
+      return;
+    }
+    try {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      window.setTimeout(function () {
+        try { win.print(); } catch (err) { /* optional */ }
+      }, 500);
+      toast('Design worksheet ready in a new tab.');
+    } catch (err) {
+      toast('Could not open the design worksheet.');
+    }
+  }
+
   function endTurn() {
     if (S.mode !== 'play') return;
     if (S.winner) {
@@ -6356,6 +6936,8 @@
     }
     renderPlayers();
     updateRouteState();
+    renderTimer();
+    renderSessionStats();
   }
 
   function changeRound(delta) {
@@ -7184,6 +7766,14 @@
       handleRouteTap(cell);
       return;
     }
+    if (S.tool === 'line' || S.tool === 'rect') {
+      pushUndo();
+      shapeStart = { col: cell.col, row: cell.row };
+      shapePreview = { a: shapeStart, b: shapeStart };
+      painting = true;
+      scheduleDraw();
+      return;
+    }
     if (S.tool === 'pick') {
       var idx = cell.row * S.cols + cell.col;
       var picked = S.tiles[idx];
@@ -7225,6 +7815,11 @@
   function onCanvasPointerMove(event) {
     if (S.mode !== 'build') return;
     var cell = pointerCell(event);
+    if (painting && shapeStart && (S.tool === 'line' || S.tool === 'rect')) {
+      shapePreview = { a: shapeStart, b: { col: cell.col, row: cell.row } };
+      scheduleDraw();
+      return;
+    }
     if (longPressCell && (longPressCell.col !== cell.col || longPressCell.row !== cell.row)) {
       paintMoved = true;
       window.clearTimeout(longPressTimer);
@@ -7244,6 +7839,11 @@
     window.clearTimeout(longPressTimer);
     longPressTimer = null;
     longPressCell = null;
+    if (painting && shapeStart && (S.tool === 'line' || S.tool === 'rect')) {
+      painting = false;
+      finishShape();
+      return;
+    }
     if (!painting) return;
     painting = false;
     lastPaintCell = null;
@@ -7582,6 +8182,10 @@
 
     byId('ttPieces').addEventListener('click', onPieceClick);
     byId('ttPieces').addEventListener('pointerdown', onPiecePointerDown);
+    if (pieceUploadBtn) pieceUploadBtn.addEventListener('click', function () {
+      if (pieceFileInput) pieceFileInput.click();
+    });
+    if (pieceFileInput) pieceFileInput.addEventListener('change', onPieceFile);
 
     byId('ttDrawCard').addEventListener('click', spawnCard);
     byId('ttQuickCard').addEventListener('click', spawnCard);
@@ -7689,6 +8293,7 @@
     byId('ttSave').addEventListener('click', function () { saveBoard(false); });
     byId('ttExport').addEventListener('click', exportPNG);
     byId('ttExportJson').addEventListener('click', exportJSON);
+    if (exportPlayableBtn) exportPlayableBtn.addEventListener('click', exportPlayableHTML);
     byId('ttLoadJson').addEventListener('click', function () { byId('ttLoadFile').click(); });
     byId('ttLoadFile').addEventListener('change', onLoadFile);
     var nameInput = byId('ttBoardName');
@@ -7728,6 +8333,9 @@
       updateSelectHint();
       if (S.tool === 'select') toast('Select on. Tap two corners of an area.');
     });
+    if (lineToolBtn) lineToolBtn.addEventListener('click', function () { setShapeTool('line'); });
+    if (rectToolBtn) rectToolBtn.addEventListener('click', function () { setShapeTool('rect'); });
+    if (rotateBoardBtn) rotateBoardBtn.addEventListener('click', rotateBoard);
     if (copyAreaBtn) copyAreaBtn.addEventListener('click', copyArea);
     if (stampAreaBtn) stampAreaBtn.addEventListener('click', stampArea);
     if (clearAreaBtn) clearAreaBtn.addEventListener('click', clearArea);
@@ -7777,6 +8385,26 @@
     if (setupPawnsBtn) setupPawnsBtn.addEventListener('click', function () { setupPawns(true); });
     if (buyTileBtn) buyTileBtn.addEventListener('click', buyCurrentTile);
     if (rulesGenerateBtn) rulesGenerateBtn.addEventListener('click', writeRulesFromBoard);
+    if (timerStartBtn) timerStartBtn.addEventListener('click', toggleTimer);
+    if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
+    if (turnSecondsInput) {
+      turnSecondsInput.addEventListener('change', function () {
+        S.session.turnSeconds = clamp(Math.round(Number(turnSecondsInput.value) || 60), 5, 600);
+        timerLeft = S.session.turnSeconds;
+        stopTimer();
+        renderTimer();
+        markDirty();
+      });
+    }
+    if (timerAutoInput) {
+      timerAutoInput.addEventListener('change', function () {
+        S.session.autoEnd = timerAutoInput.checked;
+        markDirty();
+      });
+    }
+    if (statsResetBtn) statsResetBtn.addEventListener('click', resetStats);
+    if (statsCsvBtn) statsCsvBtn.addEventListener('click', exportStatsCsv);
+    if (designSheetBtn) designSheetBtn.addEventListener('click', printDesignSheet);
     if (playtestBtn) playtestBtn.addEventListener('click', togglePlaytest);
     if (playtestPrintBtn) playtestPrintBtn.addEventListener('click', printPlaytest);
     if (playtestClearBtn) playtestClearBtn.addEventListener('click', clearPlaytest);
@@ -8314,6 +8942,11 @@
     init();
   }
 })();
+
+
+
+
+
 
 
 

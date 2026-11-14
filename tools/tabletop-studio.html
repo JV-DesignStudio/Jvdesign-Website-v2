@@ -168,6 +168,9 @@
             <button type="button" class="tt-starter" data-template="life" title="A winding life path with paydays and setbacks">🛣️ Life Path</button>
             <button type="button" class="tt-starter" data-template="draughts" title="8 x 8 board with 24 pieces">⚫ Draughts</button>
             <button type="button" class="tt-starter" data-template="connect" title="7 x 6 board for Connect 4">🔴 Connect 4</button>
+            <button type="button" class="tt-starter" data-template="chess" title="8 x 8 board with 32 pieces">♟️ Chess</button>
+            <button type="button" class="tt-starter" data-template="backgammon" title="13 x 13 board with 30 checkers">🎲 Backgammon</button>
+            <button type="button" class="tt-starter" data-template="go" title="9 x 9 Go board with stones">⚪ Go</button>
             <button type="button" class="tt-btn tt-btn--wide tt-btn--quiet" data-template="blank">Start blank</button>
             <p class="tt-help" style="margin-top:8px">Tap a board, then change anything you like.</p>
           </div>
@@ -203,6 +206,11 @@
           <summary><span>🧩 Pieces</span><span class="tt-sec-hint">drag or tap</span></summary>
           <div class="tt-sec-body">
             <input type="text" id="ttPieceSearch" class="tt-input" maxlength="24" placeholder="Search pieces" autocomplete="off" aria-label="Search pieces">
+            <div class="tt-row">
+              <input type="text" id="ttPieceName" class="tt-input" maxlength="20" placeholder="New piece name" autocomplete="off" aria-label="New piece name">
+              <button type="button" id="ttPieceUpload" class="tt-btn tt-btn--quiet">+ Art</button>
+              <input type="file" id="ttPieceFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+            </div>
             <div class="tt-pieces" id="ttPieces" role="group" aria-label="Pieces"></div>
             <p class="tt-help">Drag a piece onto the board, or tap it to drop it in the middle.</p>
             <button type="button" id="ttClearPieces" class="tt-btn tt-btn--wide tt-btn--quiet">Clear all pieces</button>
@@ -402,6 +410,27 @@
                 <button type="button" id="ttPlaytestClear" class="tt-btn tt-btn--quiet">Clear log</button>
               </div>
             </div>
+            <div class="tt-field">
+              <label class="tt-label" for="ttTurnSeconds">Turn timer (seconds)</label>
+              <div class="tt-row">
+                <input type="number" id="ttTurnSeconds" class="tt-input" min="5" max="600" step="5" value="60" inputmode="numeric">
+                <output id="ttTimerOut" aria-live="polite">01:00</output>
+              </div>
+              <div class="tt-row">
+                <button type="button" id="ttTimerStart" class="tt-btn tt-btn--quiet">Start timer</button>
+                <button type="button" id="ttTimerReset" class="tt-btn tt-btn--quiet">Reset</button>
+              </div>
+              <label class="tt-check"><input type="checkbox" id="ttTimerAuto"> End the turn when the timer reaches zero</label>
+            </div>
+            <div class="tt-field">
+              <span class="tt-label">Session</span>
+              <p class="tt-help" id="ttSessionStats">Rolls 0 · Turns 0 · Captures 0</p>
+              <div class="tt-row">
+                <button type="button" id="ttStatsReset" class="tt-btn tt-btn--quiet">Reset stats</button>
+                <button type="button" id="ttStatsCsv" class="tt-btn tt-btn--quiet">Export CSV</button>
+              </div>
+              <button type="button" id="ttDesignSheet" class="tt-btn tt-btn--wide tt-btn--quiet">🖨️ Print design worksheet</button>
+            </div>
             <button type="button" id="ttSetupPawns" class="tt-btn tt-btn--wide tt-btn--quiet">🎭 Set up player pawns</button>
             <button type="button" id="ttBuyTile" class="tt-btn tt-btn--wide tt-btn--quiet">🏷️ Buy the tile under the pawn</button>
             <div class="tt-rule-toggles">
@@ -502,6 +531,7 @@
               </div>
               <p class="tt-help">Any size from 2 x 2 up to 40 x 30.</p>
             </div>
+            <button type="button" id="ttRotateBoard" class="tt-btn tt-btn--wide tt-btn--quiet">↻ Rotate board 90°</button>
             <div class="tt-field">
               <label class="tt-label" for="ttBgColor">Board colour</label>
               <div class="tt-row tt-row--between">
@@ -518,6 +548,7 @@
             <button type="button" id="ttBgBtn" class="tt-btn tt-btn--wide">Upload a map image</button>
             <input type="file" id="ttBgFile" accept="image/*" hidden>
             <button type="button" id="ttBgRemove" class="tt-btn tt-btn--wide tt-btn--quiet">Remove map image</button>
+            <button type="button" id="ttExportPlayable" class="tt-btn tt-btn--wide tt-btn--quiet">▶ Save playable HTML game</button>
             <button type="button" id="ttExportJson" class="tt-btn tt-btn--wide tt-btn--quiet">Save board file (.json)</button>
             <button type="button" id="ttLoadJson" class="tt-btn tt-btn--wide tt-btn--quiet">Load board file (.json)</button>
             <input type="file" id="ttLoadFile" accept="application/json,.json" hidden>
@@ -538,6 +569,8 @@
           <div class="tt-sec-body">
             <button type="button" id="ttSelectArea" class="tt-btn tt-btn--wide tt-btn--quiet" aria-pressed="false">▭ Select an area</button>
             <div class="tt-route-btns">
+              <button type="button" id="ttLineTool" class="tt-btn tt-btn--quiet" aria-pressed="false">Line tool</button>
+              <button type="button" id="ttRectTool" class="tt-btn tt-btn--quiet" aria-pressed="false">Rectangle tool</button>
               <button type="button" id="ttCopyArea" class="tt-btn tt-btn--quiet">Copy area</button>
               <button type="button" id="ttStampArea" class="tt-btn tt-btn--quiet">Stamp copy</button>
               <button type="button" id="ttClearArea" class="tt-btn tt-btn--quiet">Clear area</button>
@@ -639,6 +672,20 @@
               <button type="button" class="tt-template" data-template="connect">
                 <span class="tt-template-emoji" aria-hidden="true">🔴</span>
                 <span class="tt-template-body"><strong>Connect 4</strong><small>7 x 6 board for four in a row</small></span>
+              </button>
+            </div>
+            <div class="tt-templates tt-templates--more" role="group" aria-label="More game starters">
+              <button type="button" class="tt-template" data-template="chess">
+                <span class="tt-template-emoji" aria-hidden="true">♟️</span>
+                <span class="tt-template-body"><strong>Chess</strong><small>8 x 8 board with 32 pieces</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="backgammon">
+                <span class="tt-template-emoji" aria-hidden="true">🎲</span>
+                <span class="tt-template-body"><strong>Backgammon</strong><small>24 points and 30 checkers</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="go">
+                <span class="tt-template-emoji" aria-hidden="true">⚪</span>
+                <span class="tt-template-body"><strong>Go</strong><small>9 x 9 board with stones</small></span>
               </button>
             </div>
             <div class="tt-empty-foot">
