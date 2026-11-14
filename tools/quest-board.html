@@ -18,7 +18,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5d8xLS1epUGjHTGMD+PAlSZWzgua12Nj8yw4RKCim2s=' 'sha256-zPzAS+qiGRRqi3edlI2ET2T9Rq6KRHfvK7ETFPPx9RI=' 'sha256-qkg0iQ9PeULKz/4q7AqFagCKCG6pPEH7/4vW7qSSFuM=' 'sha256-Z4HY+cN1+AbqHmaVDuaW+yWtz4mUbuoax6n8bjHKos8=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5d8xLS1epUGjHTGMD+PAlSZWzgua12Nj8yw4RKCim2s=' 'sha256-zPzAS+qiGRRqi3edlI2ET2T9Rq6KRHfvK7ETFPPx9RI=' 'sha256-WH0UJ0LEu38GdhHASWCgeTyrZ/gAIn9ycZFmdG34RCg=' 'sha256-Z4HY+cN1+AbqHmaVDuaW+yWtz4mUbuoax6n8bjHKos8=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -61,6 +61,10 @@
 .ach-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .settings-wide{grid-column:1/-1}
 .site-header{font-family:Inter,system-ui,sans-serif}
+.quest{touch-action:pan-y}
+.quest.dragging{opacity:.4}
+.drag-ghost{position:fixed;z-index:9500;pointer-events:none;opacity:.92;transform:rotate(2deg);box-shadow:0 18px 40px #0008;max-width:280px}
+.column.drop-target{outline:2px dashed var(--mint);outline-offset:-4px;background:rgba(66,211,178,.06)}
 @media(prefers-reduced-motion:reduce){.quest.pop{animation:none}.levelup{transition:opacity .2s}.levelup.show{transform:translate(-50%,0) scale(1)}}
 </style>
 <link rel="stylesheet" href="/style-mascots.css">
@@ -129,6 +133,9 @@
     </div>
     <div class="top-actions">
       <a class="btn ghost" href="../dev-tools.html">Tools</a>
+      <button class="btn ghost" id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="btn ghost" id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
+      <button class="btn ghost" id="shareBtn" title="Copy a link to this board">Share</button>
       <button class="btn ghost" id="exportBtn" data-on="exportData" data-on-plain>Export</button>
       <button class="btn ghost" id="importBtn" data-on="importData" data-on-plain>Import</button>
       <input id="importFile" type="file" accept="application/json" hidden>
@@ -214,27 +221,88 @@ function setFilter(next){filter=next;$$('[data-filter]').forEach(b=>b.classList.
 function filteredCards(){const q=$('#searchInput').value.trim().toLowerCase();return data.cards.filter(c=>(filter==='all'||c.priority===filter)&&(!q||(c.title+' '+(c.desc||'')).toLowerCase().includes(q)))}
 function renderHeader(){const active=data.cards.filter(c=>c.colId!=='done').length;$('#level').textContent=rpg.level;$('#xp').textContent=rpg.xp;$('#activeCount').textContent=active;$('#xpBar').style.width=Math.min(100,rpg.xp/levelXp()*100)+'%';$('#statusLine').textContent=data.cards.length+' quests · '+active+' active';const pn=$('#playerName');if(pn)pn.textContent=titleFor(rpg.level)}
 function render(){renderHeader();if(activeView==='settings')return renderSettings();if(activeView==='today')return renderList('#view-today',filteredCards().filter(c=>c.colId!=='done'),'Today');if(activeView==='done')return renderList('#view-done',filteredCards().filter(c=>c.colId==='done'),'Archive');renderBoard()}
-function renderBoard(){const root=$('#board');const cards=filteredCards();root.innerHTML=data.columns.map(col=>{const list=cards.filter(c=>c.colId===col.id);return '<section class="column"><div class="column-head"><i class="dot" style="background:'+col.colour+'"></i><strong>'+esc(col.title)+'</strong><span class="count">'+list.length+'</span></div><div class="quest-list">'+(list.length?list.map(cardHtml).join(''):'<div class="empty">Nothing here yet</div>')+'</div></section>'}).join('');bindCards(root)}
+function renderBoard(){const root=$('#board');const cards=filteredCards();root.innerHTML=data.columns.map(col=>{const list=cards.filter(c=>c.colId===col.id);return '<section class="column" data-col="'+col.id+'"><div class="column-head"><i class="dot" style="background:'+col.colour+'"></i><strong>'+esc(col.title)+'</strong><span class="count">'+list.length+'</span></div><div class="quest-list">'+(list.length?list.map(cardHtml).join(''):'<div class="empty">Nothing here yet</div>')+'</div></section>'}).join('');bindCards(root)}
 function renderList(sel,cards,title){const root=$(sel);root.innerHTML='<div class="column"><div class="column-head"><strong>'+esc(title)+'</strong><span class="count">'+cards.length+'</span></div><div class="quest-list">'+(cards.length?cards.map(cardHtml).join(''):'<div class="empty">No quests here yet</div>')+'</div></div>';bindCards(root)}
 function renderSettings(){const root=$('#view-settings');const got=rpg.achievements||[];root.innerHTML='<div class="settings-grid"><section class="column settings-card"><h2>Portable Data</h2><p>Exports use the shared questlog-v1 format, so backups can move between this desktop planner and the QuestLog app.</p><button class="btn ghost" data-on="exportData" data-on-plain>Export Backup</button> <button class="btn ghost" data-on="importData" data-on-plain>Import Backup</button></section><section class="column settings-card"><h2>Local Reset</h2><p>This only clears the planner data stored in this browser.</p><button class="btn danger" id="clearData">Clear Local Data</button></section><section class="column settings-card settings-wide"><h2>Achievements</h2><p>'+got.length+' of '+ACHIEVEMENTS.length+' unlocked. Complete quests and level up to earn them all.</p><div class="ach-list">'+ACHIEVEMENTS.map(a=>'<span class="pill'+(got.includes(a.id)?' on':'')+'">'+(got.includes(a.id)?'🏆 ':'🔒 ')+esc(a.label)+'</span>').join('')+'</div></section></div>';$('#clearData').onclick=()=>{if(confirm('Clear this browser data?')){localStorage.removeItem(DATA_KEY);localStorage.removeItem(RPG_KEY);location.reload()}}}
-function cardHtml(c){const label={high:'Main Quest',med:'Side Quest',low:'Guild Quest'}[c.priority]||'Quest';const colour={high:'#ef7182',med:'#f5c842',low:'#42d3b2'}[c.priority]||'#42d3b2';return '<article class="quest '+(c.colId==='done'?'done':'')+(c.id===_popId?' pop':'')+'" style="border-left-color:'+colour+'"><div class="quest-title">'+esc(c.title)+'</div>'+(c.desc?'<div class="quest-desc">'+esc(c.desc.slice(0,180))+'</div>':'')+'<div class="quest-meta"><span class="pill">'+label+'</span><span class="pill">'+new Date(c.createdAt).toLocaleDateString()+'</span><span class="quest-actions"><button class="icon" data-move="'+c.id+'" title="Move quest">→</button><button class="icon" data-edit="'+c.id+'" title="Edit quest">Edit</button><button class="icon" data-delete="'+c.id+'" title="Delete quest">×</button></span></div></article>'}
-function bindCards(root){root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openCardModal(b.dataset.edit));root.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteCard(b.dataset.delete));root.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>moveCard(b.dataset.move))}
+function cardHtml(c){const label={high:'Main Quest',med:'Side Quest',low:'Guild Quest'}[c.priority]||'Quest';const colour={high:'#ef7182',med:'#f5c842',low:'#42d3b2'}[c.priority]||'#42d3b2';return '<article class="quest '+(c.colId==='done'?'done':'')+(c.id===_popId?' pop':'')+'" data-id="'+c.id+'" style="border-left-color:'+colour+'"><div class="quest-title">'+esc(c.title)+'</div>'+(c.desc?'<div class="quest-desc">'+esc(c.desc.slice(0,180))+'</div>':'')+'<div class="quest-meta"><span class="pill">'+label+'</span><span class="pill">'+new Date(c.createdAt).toLocaleDateString()+'</span><span class="quest-actions"><button class="icon" data-move="'+c.id+'" title="Move quest">→</button><button class="icon" data-edit="'+c.id+'" title="Edit quest">Edit</button><button class="icon" data-delete="'+c.id+'" title="Delete quest">×</button></span></div></article>'}
+function bindCards(root){root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openCardModal(b.dataset.edit));root.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteCard(b.dataset.delete));root.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>moveCard(b.dataset.move));root.querySelectorAll('.quest[data-id]').forEach(el=>el.addEventListener('pointerdown',onCardPointerDown))}
 function openCardModal(id){const c=id&&data.cards.find(x=>x.id===id);$('#column').innerHTML=data.columns.map(col=>'<option value="'+col.id+'">'+esc(col.title)+'</option>').join('');$('#modalTitle').textContent=c?'Edit Quest':'New Quest';$('#title').value=c?.title||'';$('#description').value=c?.desc||'';$('#column').value=c?.colId||'todo';$('#priority').value=c?.priority||'med';$('#questForm').dataset.edit=c?.id||'';$('#cardModal').classList.add('open');setTimeout(()=>$('#title').focus(),30)}
 function closeCardModal(){$('#cardModal').classList.remove('open')}
 function openProjectSheet(id){const c=data.cards.find(x=>x.id===id);if(!c)return;$('#sheetTitle').textContent=c.title;$('#sheetBody').innerHTML='<p class="quest-desc">'+esc(c.desc||'No notes yet.')+'</p><p><span class="pill">'+esc(c.priority||'med')+'</span> <span class="pill">'+esc(c.colId)+'</span></p>';$('#sheetEdit').onclick=()=>{closeProjectSheet();openCardModal(id)};$('#projectSheet').classList.add('open')}
 function closeProjectSheet(){$('#projectSheet').classList.remove('open')}
-function moveCard(id){const c=data.cards.find(x=>x.id===id);if(!c)return;const i=data.columns.findIndex(col=>col.id===c.colId);const next=data.columns[Math.min(i+1,data.columns.length-1)];if(next.id===c.colId){toast('Already at the last stage');return}const wasDone=c.colId==='done';c.colId=next.id;_popId=c.id;save();if(next.id==='done'&&!wasDone)completeQuest(c);else if(!wasDone)moveForward(c);render();_popId=null}
-function deleteCard(id){if(!confirm('Delete this quest?'))return;data.cards=data.cards.filter(c=>c.id!==id);save();render();toast('Quest deleted')}
+function moveCard(id){const c=data.cards.find(x=>x.id===id);if(!c)return;pushUndo();const i=data.columns.findIndex(col=>col.id===c.colId);const next=data.columns[Math.min(i+1,data.columns.length-1)];if(next.id===c.colId){toast('Already at the last stage');return}const wasDone=c.colId==='done';c.colId=next.id;_popId=c.id;save();if(next.id==='done'&&!wasDone)completeQuest(c);else if(!wasDone)moveForward(c);render();_popId=null}
+function deleteCard(id){if(!confirm('Delete this quest?'))return;pushUndo();data.cards=data.cards.filter(c=>c.id!==id);save();render();toast('Quest deleted')}
 const _toastQ=[];let _toastBusy=false;
 function toast(text){_toastQ.push(text);if(!_toastBusy)_drainToast()}
 function _drainToast(){const el=$('#toast');if(!el){_toastQ.length=0;_toastBusy=false;return}if(!_toastQ.length){_toastBusy=false;return}_toastBusy=true;el.textContent=_toastQ.shift();el.classList.add('show');setTimeout(()=>{el.classList.remove('show');setTimeout(_drainToast,220)},1500)}
-$('#questForm').onsubmit=e=>{e.preventDefault();const title=$('#title').value.trim();if(!title)return;const id=$('#questForm').dataset.edit;const c=id&&data.cards.find(x=>x.id===id);const newCol=$('#column').value;if(c){const oldIdx=data.columns.findIndex(col=>col.id===c.colId);const newIdx=data.columns.findIndex(col=>col.id===newCol);const wasDone=c.colId==='done';c.title=title;c.desc=$('#description').value.trim();c.colId=newCol;c.priority=$('#priority').value;_popId=c.id;closeCardModal();save();if(newCol==='done'&&!wasDone)completeQuest(c);else if(newIdx>oldIdx)moveForward(c);render();_popId=null}else{data.cards.push({id:'q'+data.nextId++,title,desc:$('#description').value.trim(),colId:newCol,priority:$('#priority').value,createdAt:new Date().toISOString()});save();closeCardModal();render();toast('Quest added')}};
-$('#quickForm').onsubmit=e=>{e.preventDefault();const title=$('#quickTitle').value.trim();if(!title)return;data.cards.push({id:'q'+data.nextId++,title,desc:'',colId:'todo',priority:'med',createdAt:new Date().toISOString()});$('#quickTitle').value='';save();render();toast('Quest added')};
+$('#questForm').onsubmit=e=>{e.preventDefault();const title=$('#title').value.trim();if(!title)return;pushUndo();const id=$('#questForm').dataset.edit;const c=id&&data.cards.find(x=>x.id===id);const newCol=$('#column').value;if(c){const oldIdx=data.columns.findIndex(col=>col.id===c.colId);const newIdx=data.columns.findIndex(col=>col.id===newCol);const wasDone=c.colId==='done';c.title=title;c.desc=$('#description').value.trim();c.colId=newCol;c.priority=$('#priority').value;_popId=c.id;closeCardModal();save();if(newCol==='done'&&!wasDone)completeQuest(c);else if(newIdx>oldIdx)moveForward(c);render();_popId=null}else{data.cards.push({id:'q'+data.nextId++,title,desc:$('#description').value.trim(),colId:newCol,priority:$('#priority').value,createdAt:new Date().toISOString()});save();closeCardModal();render();toast('Quest added')}};
+$('#quickForm').onsubmit=e=>{e.preventDefault();const title=$('#quickTitle').value.trim();if(!title)return;pushUndo();data.cards.push({id:'q'+data.nextId++,title,desc:'',colId:'todo',priority:'med',createdAt:new Date().toISOString()});$('#quickTitle').value='';save();render();toast('Quest added')};
 $('#cancelBtn').onclick=closeCardModal;$('#cardModal').onclick=e=>{if(e.target.id==='cardModal')closeCardModal()};$('#projectSheet').onclick=e=>{if(e.target.id==='projectSheet')closeProjectSheet()};
 $$('[data-view]').forEach(b=>b.onclick=()=>switchView(b.dataset.view));$$('[data-filter]').forEach(b=>b.onclick=()=>setFilter(b.dataset.filter));
 function exportData(){const state={columns:data.columns,cards:data.cards,nextId:data.nextId};const blob=new Blob([JSON.stringify({state,data:state,rpg,format:'questlog-v1'},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='game-planner-backup.json';a.click();URL.revokeObjectURL(a.href);toast('Backup exported')}
-function importData(){const input=$('#importFile');input.onchange=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);const incoming=x.state||x.data||x;if(!incoming.cards)throw Error();data={...data,...incoming};rpg={...rpg,...(x.rpg||{})};normalise();save();render();toast('Backup imported')}catch{toast('That is not a Game Planner backup')}};reader.readAsText(f);input.value=''};input.click()}
+function importData(){const input=$('#importFile');input.onchange=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);const incoming=x.state||x.data||x;if(!incoming.cards)throw Error();pushUndo();data={...data,...incoming};rpg={...rpg,...(x.rpg||{})};normalise();save();render();toast('Backup imported')}catch{toast('That is not a Game Planner backup')}};reader.readAsText(f);input.value=''};input.click()}
+// UNDO / REDO
+let _undoStack=[],_redoStack=[];
+function _snap(){return JSON.stringify({data,rpg})}
+function pushUndo(){_undoStack.push(_snap());if(_undoStack.length>50)_undoStack.shift();_redoStack.length=0}
+function _restore(s){const o=JSON.parse(s);data=o.data;rpg=o.rpg;normalise();save();render()}
+function undo(){if(!_undoStack.length){toast('Nothing to undo');return}_redoStack.push(_snap());_restore(_undoStack.pop());toast('Undo')}
+function redo(){if(!_redoStack.length){toast('Nothing to redo');return}_undoStack.push(_snap());_restore(_redoStack.pop());toast('Redo')}
+document.addEventListener('keydown',e=>{const t=e.target;if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))return;const k=(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}else if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo()}});
+
+// SHARE LINK (#b=<base64 board>)
+function _enc(){const b=btoa(unescape(encodeURIComponent(JSON.stringify({columns:data.columns,cards:data.cards,nextId:data.nextId}))));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function _dec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(escape(atob(s))))}
+function shareBoard(){if(!data.cards.length){toast('Add a quest first');return}const b=_enc();const url=location.origin+location.pathname+'#b='+b;try{history.replaceState(null,'','#b='+b)}catch{}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>toast('Board link copied'),()=>prompt('Copy this link:',url))}else{prompt('Copy this link:',url)}}
+function loadShared(){const m=location.hash.match(/[#&]b=([^&]+)/);if(!m)return;try{const inc=_dec(m[1]);if(!inc||!Array.isArray(inc.cards))return;pushUndo();data={...data,...inc};normalise();save();render();toast('Shared board loaded')}catch{}}
+
+// DRAG: mouse drags straight away, touch uses a short long-press so scrolling still works
+let _drag=null,_dragTimer=null,_ghost=null;
+function onCardPointerDown(e){
+  if(e.button!=null&&e.button!==0)return;
+  if(e.target.closest&&e.target.closest('button,a,input,textarea,select'))return;
+  const card=e.currentTarget,id=card.dataset.id;if(!id)return;
+  _drag={card,id,startX:e.clientX,startY:e.clientY,touch:e.pointerType==='touch',active:false};
+  if(_drag.touch){clearTimeout(_dragTimer);_dragTimer=setTimeout(()=>{if(_drag)_startDrag()},180)}
+}
+function _startDrag(){
+  if(!_drag||_drag.active)return;_drag.active=true;
+  _drag.card.classList.add('dragging');
+  _ghost=_drag.card.cloneNode(true);_ghost.classList.remove('dragging');_ghost.className+=' drag-ghost';
+  const r=_drag.card.getBoundingClientRect();_ghost.style.width=r.width+'px';_ghost.style.left=(_drag.startX-r.width/2)+'px';_ghost.style.top=(_drag.startY-20)+'px';
+  document.body.appendChild(_ghost);document.body.style.userSelect='none';
+  try{if(navigator.vibrate)navigator.vibrate(8)}catch{}
+}
+function _moveDrag(e){
+  if(!_drag)return;
+  if(!_drag.active){
+    if(Math.abs(e.clientX-_drag.startX)+Math.abs(e.clientY-_drag.startY)>10){clearTimeout(_dragTimer);if(_drag.touch){_drag=null;return}else{_drag.startX=e.clientX;_drag.startY=e.clientY;_startDrag()}}
+    return;
+  }
+  if(_ghost){_ghost.style.left=(e.clientX-parseFloat(_ghost.style.width)/2)+'px';_ghost.style.top=(e.clientY-20)+'px'}
+  _hoverColumn(e.clientX,e.clientY);
+}
+function _hoverColumn(x,y){$$('.column.drop-target').forEach(c=>c.classList.remove('drop-target'));const el=document.elementFromPoint(x,y);const col=el&&el.closest?el.closest('.column'):null;if(col&&col.dataset.col)col.classList.add('drop-target')}
+function _endDrag(e){
+  clearTimeout(_dragTimer);if(!_drag)return;
+  const active=_drag.active,id=_drag.id,card=_drag.card;
+  card.classList.remove('dragging');$$('.column.drop-target').forEach(c=>c.classList.remove('drop-target'));
+  if(_ghost){_ghost.remove();_ghost=null}document.body.style.userSelect='';
+  if(active){
+    const el=document.elementFromPoint(e.clientX,e.clientY);const col=el&&el.closest?el.closest('.column'):null;const target=col&&col.dataset.col;
+    const c=data.cards.find(x=>x.id===id);
+    if(c&&target&&target!==c.colId){pushUndo();const wasDone=c.colId==='done';c.colId=target;_popId=c.id;if(target==='done'&&!wasDone)completeQuest(c);save();render();_popId=null;toast('Quest moved')}
+  }
+  _drag=null;
+}
+document.addEventListener('pointermove',_moveDrag);
+document.addEventListener('pointerup',_endDrag);
+document.addEventListener('pointercancel',_endDrag);
+document.addEventListener('touchmove',e=>{if(_drag&&_drag.active)e.preventDefault()},{passive:false});
+
 load();if(!Array.isArray(rpg.achievements))rpg.achievements=[];render();
+$('#undoBtn').onclick=undo;$('#redoBtn').onclick=redo;$('#shareBtn').onclick=shareBoard;
+loadShared();
 </script>
 <script defer src="/mascots.js"></script>
 <script defer src="/ember-guide.js"></script>
