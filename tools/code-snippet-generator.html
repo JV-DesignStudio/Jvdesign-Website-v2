@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-Z+W+fQIXp/ZBrQgW4+irlyZ0bWUQW78iLiJiKS1Aazg=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-/qUzdCx+PKjUM5XSTAQH1kmjGsOsemUWpPjoLjG2w7w=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -139,6 +139,7 @@
     <div class="hero-actions">
       <button class="btn btn-secondary" data-on="copyAll" data-on-plain title="Copy all visible snippets to the clipboard">📋 Copy all</button>
       <button class="btn btn-secondary" data-on="downloadMD" data-on-plain title="Download all visible snippets as a Markdown file">⬇ Download .md</button>
+      <button class="btn btn-secondary" data-on="shareConfig" data-on-plain title="Copy a link to this exact setup">Share</button>
       <button class="btn btn-secondary" data-on="surpriseMe" data-on-plain title="Jump to a random snippet">🎲 Surprise me</button>
       <button class="btn btn-secondary" data-on="openHelp" data-on-plain title="How to use this tool (press ?)">? Help</button>
       <label class="lang-pick">
@@ -1247,11 +1248,46 @@ function loadFilters(){
     }
   }catch(e){}
 }
+const CSG_OPTS_KEY='jvds_code_snippet_opts';
+function csgB64(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function csgUnb64(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return decodeURIComponent(escape(atob(s))); }
+function loadOpts(){
+  try{
+    const d=JSON.parse(localStorage.getItem(CSG_OPTS_KEY)||'null');
+    if(!d||typeof d!=='object') return;
+    Object.keys(d).forEach(sid=>{
+      const s=snippetById(sid);
+      if(s&&d[sid]&&typeof d[sid]==='object') genState[sid]={...defaultsFor(s),...d[sid]};
+    });
+  }catch(e){}
+}
+function saveOpts(){ try{ localStorage.setItem(CSG_OPTS_KEY,JSON.stringify(genState)); }catch(e){} }
+function optsParam(){
+  const diff={};
+  SNIPPETS.forEach(s=>{
+    const v=genState[s.id];
+    if(!v) return;
+    const d=defaultsFor(s), o={};
+    Object.keys(v).forEach(k=>{ if(String(v[k])!==String(d[k])) o[k]=v[k]; });
+    if(Object.keys(o).length) diff[s.id]=o;
+  });
+  return Object.keys(diff).length?csgB64(JSON.stringify(diff)):'';
+}
+let _csgHashTimer=null;
+function scheduleHash(){ clearTimeout(_csgHashTimer); _csgHashTimer=setTimeout(updateHash,120); }
+function shareConfig(){
+  updateHash();
+  const url=location.href;
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(url).then(()=>showToast('Link copied'),()=>prompt('Copy this link:',url));
+  else prompt('Copy this link:',url);
+}
 function updateHash(){
   const parts=[];
   if(currentLang!=='all') parts.push('lang='+encodeURIComponent(currentLang));
   if(currentCat!=='all') parts.push('cat='+encodeURIComponent(currentCat));
   if(currentQuery) parts.push('q='+encodeURIComponent(currentQuery));
+  const opts=optsParam(); if(opts) parts.push('opts='+opts);
   try{ history.replaceState(null,'',parts.length?'#'+parts.join('&'):location.pathname); }catch(e){}
 }
 function applyHash(){
@@ -1266,6 +1302,15 @@ function applyHash(){
   if(templateId){
     const snippet=snippetById(templateId);
     if(snippet){ currentQuery=snippet.title; currentCat='all'; currentLang=snippet.lang; any=true; }
+  }
+  if(p.has('opts')){
+    try{
+      const d=JSON.parse(csgUnb64(p.get('opts')));
+      Object.keys(d).forEach(sid=>{
+        const s=snippetById(sid);
+        if(s&&d[sid]&&typeof d[sid]==='object'){ genState[sid]={...defaultsFor(s),...d[sid]}; any=true; }
+      });
+    }catch(e){}
   }
   return any;
 }
@@ -1381,12 +1426,16 @@ function onParamInput(e){
   if(codeEl) codeEl.textContent=code;
   adaptedCode[sid]=code;
   paintCode(s,code);
+  saveOpts();
+  scheduleHash();
 }
 function resetSnippet(id){
   const s=snippetById(id);
   if(!s) return;
   genState[id]=defaultsFor(s);
   renderSnippets();
+  saveOpts();
+  updateHash();
 }
 function copyCode(btn,id){
   const code=adaptedCode[id]!=null?adaptedCode[id]:'';
@@ -1870,6 +1919,7 @@ document.addEventListener('keydown', e => {
 
 loadPins();
 loadFilters();
+loadOpts();
 applyHash();
 const _searchEl=document.getElementById('search');
 if(_searchEl){ _searchEl.value=currentQuery; _searchEl.addEventListener('input',onSearch); }
