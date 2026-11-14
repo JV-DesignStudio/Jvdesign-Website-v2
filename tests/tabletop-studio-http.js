@@ -115,10 +115,10 @@ function wait(ms) {
   check('token layer exists', initial.tokensLayer);
   check('terrain swatches present (9 + erase)', initial.swatches === 14, String(initial.swatches));
   check('characters, players and props present', initial.pieces === 26, String(initial.pieces));
-  check('paint and fill tools present', initial.tools === 3, String(initial.tools));
+  check('paint, fill, pick and tile tools present', initial.tools === 4, String(initial.tools));
   check('dice d4-d20 present', initial.dice === 6, String(initial.dice));
   check('build/play toggle present', initial.modes === 2, String(initial.modes));
-  check('four starter boards offered', initial.templates === 4, String(initial.templates));
+  check('ten starter boards offered', initial.templates === 10, String(initial.templates));
   check('character sprites are pieces', initial.pieceImgs === 6, String(initial.pieceImgs));
   check('saved-board library starts with one board', initial.libraryRows === 1, String(initial.libraryRows));
   check('zoom control present', initial.zoom);
@@ -129,6 +129,350 @@ function wait(ms) {
   check('empty state shows on a new board', initial.emptyVisible);
   check('no visible mojibake', initial.cleanText);
   check('no horizontal overflow at 1280px', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
+
+  await page.evaluate(() => { document.getElementById('ttSize').closest('details').open = true; });
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '10';
+    document.getElementById('ttRows').value = '10';
+    document.getElementById('ttSizeApply').click();
+  });
+  await wait(300);
+  const customSize = await page.evaluate(() => ({
+    w: document.getElementById('ttBoard').width,
+    h: document.getElementById('ttBoard').height,
+    cols: document.getElementById('ttCols').value,
+    rows: document.getElementById('ttRows').value
+  }));
+  check('custom 10 x 10 board size applies', customSize.w === 800 && customSize.h === 800 && customSize.cols === '10', JSON.stringify(customSize));
+  await page.select('#ttSize', '12x9');
+  await wait(300);
+  const presetSize = await page.evaluate(() => ({
+    w: document.getElementById('ttBoard').width,
+    h: document.getElementById('ttBoard').height
+  }));
+  check('classic size preset applies', presetSize.w === 960 && presetSize.h === 720, JSON.stringify(presetSize));
+
+  const canvasBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(canvasBox.x + 20, canvasBox.y + 20, { button: 'right' });
+  await wait(250);
+  const tilePanelOpen = await page.evaluate(() => !document.getElementById('ttTilePanel').hidden);
+  await page.evaluate(() => {
+    document.getElementById('ttTileNumber').value = '34';
+    document.getElementById('ttTileLabel').value = 'Ladder';
+    document.getElementById('ttTileIcon').value = '🪜';
+    document.getElementById('ttTileEffect').value = 'forward';
+    document.getElementById('ttTileEffectValue').value = '4';
+    document.getElementById('ttTileOwner').value = '2';
+    document.getElementById('ttTileSave').click();
+  });
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const tileSaved = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return (data.meta || [])[0];
+  });
+  check('tile settings panel opens on right click', tilePanelOpen);
+  check('tile number, label, icon and effect save', !!tileSaved && tileSaved.n === 34 && tileSaved.label === 'Ladder' && tileSaved.owner === 2 && tileSaved.effect && tileSaved.effect.value === 4, JSON.stringify(tileSaved));
+
+  await page.evaluate(() => { document.querySelector('[data-template="snakes"]').click(); });
+  await wait(500);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(350);
+  const snakes = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return {
+      cols: data.cols,
+      rows: data.rows,
+      path: (data.path || []).length,
+      links: (data.links || []).length,
+      pawns: (data.tokens || []).filter(t => t.pawn).length,
+      first: (data.meta || [])[0] && data.meta[0].n,
+      last: (data.meta || []).reduce((max, m) => Math.max(max, (m && m.n) || 0), 0),
+      canvas: document.getElementById('ttBoard').width
+    };
+  });
+  check('snakes starter builds a 10 x 10 numbered track', snakes.cols === 10 && snakes.rows === 10 && snakes.path === 100 && snakes.canvas === 800, JSON.stringify(snakes));
+  check('snakes starter adds links and four pawns', snakes.links === 15 && snakes.pawns === 4 && snakes.first === 1 && snakes.last === 100, JSON.stringify(snakes));
+  const snakeTeach = await page.evaluate(() => ({
+    step: document.querySelector('[data-step="roll"] .tt-step-text').textContent,
+    coach: document.getElementById('ttBarHint').textContent
+  }));
+  check('snakes starter teaches its own steps', /Roll and climb/.test(snakeTeach.step) && /ladder/i.test(snakeTeach.coach), JSON.stringify(snakeTeach));
+
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0.99;
+  });
+  await page.evaluate(() => { document.querySelector('.tt-mode-btn[data-mode="play"]').click(); });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(3200);
+  const afterRoll = await page.evaluate(() => ({
+    turn: document.getElementById('ttTurn').textContent,
+    result: document.getElementById('ttDiceResult').textContent,
+    winner: !document.getElementById('ttWin').hidden
+  }));
+  check('play roll moves the current pawn and passes the turn', afterRoll.turn === '2' && /You rolled 6/.test(afterRoll.result) && !afterRoll.winner, JSON.stringify(afterRoll));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+
+  await page.evaluate(() => { document.getElementById('ttPathClear').click(); });
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '2';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+  });
+  await wait(300);
+  await page.evaluate(() => { document.querySelector('.tt-mode-btn[data-mode="build"]').click(); });
+  await page.evaluate(() => { document.getElementById('ttPathDraw').click(); });
+  const tinyBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(tinyBox.x + tinyBox.w * 0.25, tinyBox.y + tinyBox.h * 0.25);
+  await page.mouse.click(tinyBox.x + tinyBox.w * 0.75, tinyBox.y + tinyBox.h * 0.25);
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttPathNumber').click(); });
+  await page.evaluate(() => { document.getElementById('ttSetupPawns').click(); });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const tiny = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { path: (data.path || []).length, cols: data.cols, rows: data.rows };
+  });
+  check('tiny board has a two stop route', tiny.path === 2 && tiny.cols === 2 && tiny.rows === 2, JSON.stringify(tiny));
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(3200);
+  const winState = await page.evaluate(() => ({
+    open: !document.getElementById('ttWin').hidden,
+    title: document.getElementById('ttWinTitle').textContent
+  }));
+  check('reaching the finish opens the win screen', winState.open && /wins/.test(winState.title), JSON.stringify(winState));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+  await page.evaluate(() => { document.getElementById('ttWinClose').click(); });
+
+  const starterChecks = [
+    { id: 'ludo', cols: 15, rows: 15, path: 56, pieces: 4 },
+    { id: 'property', cols: 11, rows: 11, path: 40, pieces: 4 },
+    { id: 'life', cols: 9, rows: 9, path: 81, pieces: 2 },
+    { id: 'draughts', cols: 8, rows: 8, path: 0, pieces: 24 },
+    { id: 'connect', cols: 7, rows: 6, path: 0, pieces: 0 }
+  ];
+  for (const starter of starterChecks) {
+    await page.evaluate(id => { document.querySelector('[data-template="' + id + '"]').click(); }, starter.id);
+    await wait(450);
+    await page.evaluate(() => { document.getElementById('ttSave').click(); });
+    await wait(300);
+    const built = await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+      return {
+        cols: data.cols,
+        rows: data.rows,
+        path: (data.path || []).length,
+        pieces: (data.tokens || []).length,
+        named: data.name
+      };
+    });
+    check('starter ' + starter.id + ' builds its board', built.cols === starter.cols && built.rows === starter.rows && built.path === starter.path && built.pieces === starter.pieces && !!built.named, JSON.stringify(built));
+  }
+
+  await page.evaluate(() => { document.querySelector('[data-template="ludo"]').click(); });
+  await wait(500);
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0.99;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(3200);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(3200);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const captured = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const pawns = (data.tokens || []).filter(t => t.pawn);
+    return {
+      p1: (pawns.find(t => t.player === 1) || {}).pathIndex,
+      p2: (pawns.find(t => t.player === 2) || {}).pathIndex,
+      capture: data.settings && data.settings.capture
+    };
+  });
+  check('capture sends a rival pawn back to the start', captured.capture === true && captured.p1 === 0 && captured.p2 === 6, JSON.stringify(captured));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+
+  await page.evaluate(() => { document.querySelector('[data-template="property"]').click(); });
+  await wait(500);
+  const propertyBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.mouse.click(propertyBox.x + propertyBox.w * (1.5 / 11), propertyBox.y + propertyBox.h * (0.5 / 11), { button: 'right' });
+  await wait(250);
+  await page.evaluate(() => {
+    document.getElementById('ttTileOwner').value = '2';
+    document.getElementById('ttTileSave').click();
+    const rent = document.getElementById('ttRuleRent');
+    rent.checked = true;
+    rent.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttRulesGenerate').click(); });
+  await wait(200);
+  const generatedRules = await page.evaluate(() => document.getElementById('ttRules').value);
+  check('rules summary describes the board and rule toggles', /40 stops/.test(generatedRules) && /£1500/.test(generatedRules) && /£25 rent/.test(generatedRules), generatedRules.slice(0, 140));
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(3200);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const rent = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const players = data.players || [];
+    return { p1: players[0] && players[0].money, p2: players[1] && players[1].money, rent: data.settings && data.settings.rent };
+  });
+  check('rent moves £25 from the lander to the owner', rent.rent === true && rent.p1 === 1475 && rent.p2 === 1525, JSON.stringify(rent));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+
+  await page.evaluate(() => {
+    window.__printHtml = '';
+    window.__printed = false;
+    window.__origOpen = window.open;
+    window.open = function () {
+      return {
+        document: {
+          write: function (html) { window.__printHtml = html; },
+          close: function () {}
+        },
+        focus: function () {},
+        print: function () { window.__printed = true; }
+      };
+    };
+  });
+  await page.evaluate(() => { document.getElementById('ttPrintKit').click(); });
+  await wait(900);
+  const kit = await page.evaluate(() => ({ html: window.__printHtml, printed: window.__printed }));
+  const kitOk = /@page \{ size: A4/.test(kit.html) && /<img class="board"/.test(kit.html) && /<img class="cards"/.test(kit.html) && /<h2>Rules<\/h2>/.test(kit.html) && kit.printed;
+  check('print kit includes the board, cards and rules', kitOk, (kit.html || '').slice(0, 160));
+  await page.select('#ttPrintSize', 'A3');
+  await page.evaluate(() => { document.getElementById('ttPrintKit').click(); });
+  await wait(900);
+  const kitA3 = await page.evaluate(() => window.__printHtml);
+  check('print kit switches to A3', /@page \{ size: A3/.test(kitA3));
+  await page.evaluate(() => { window.open = window.__origOpen; });
+
+  await page.evaluate(() => { document.getElementById('ttShareCopy').click(); });
+  await wait(300);
+  const shareCode = await page.evaluate(() => document.getElementById('ttShareCode').value);
+  check('share code is generated in the box', /^TT3-/.test(shareCode) && shareCode.length > 300, String(shareCode.length));
+  await page.click('#ttClear');
+  await page.click('#ttClear');
+  await wait(400);
+  await page.evaluate(code => { document.getElementById('ttShareCode').value = code; }, shareCode);
+  await page.evaluate(() => { document.getElementById('ttShareLoad').click(); });
+  await wait(700);
+  const shareRestored = await page.evaluate(() => ({
+    name: document.getElementById('ttBoardName').value,
+    tokens: document.querySelectorAll('#ttTokens .tt-token').length,
+    emptyHidden: document.getElementById('ttEmpty').hidden
+  }));
+  check('share code rebuilds the board', shareRestored.name === 'Property Loop' && shareRestored.tokens === 4 && shareRestored.emptyHidden, JSON.stringify(shareRestored));
+
+  const qolBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.evaluate((box) => {
+    document.getElementById('ttSelectArea').click();
+    const cv = document.getElementById('ttBoard');
+    const points = [
+      [box.x + box.w * (0.5 / 11), box.y + box.h * (0.5 / 11)],
+      [box.x + box.w * (2.5 / 11), box.y + box.h * (2.5 / 11)]
+    ];
+    points.forEach(([x, y], i) => {
+      cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 40 + i, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+      cv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, pointerId: 40 + i, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+    });
+  }, qolBox);
+  await wait(200);
+  const selectedArea = await page.evaluate(() => document.getElementById('ttSelectHint').textContent);
+  check('select area marks a rectangle', /Area: 3 x 3/.test(selectedArea), selectedArea);
+  await page.evaluate(() => { document.getElementById('ttCopyArea').click(); });
+  await wait(200);
+  const copyToast = await page.evaluate(() => document.getElementById('ttToast').textContent);
+  check('copy area reports the copied size', /Copied a 3 x 3 area/.test(copyToast), copyToast);
+  await page.evaluate(() => { document.getElementById('ttStampArea').click(); });
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttMirrorBoard').click(); });
+  await wait(200);
+  const mirrorToast = await page.evaluate(() => document.getElementById('ttToast').textContent);
+  check('mirror board runs', /Board mirrored/.test(mirrorToast), mirrorToast);
+  await page.evaluate(() => {
+    document.getElementById('ttDupRow').click();
+    document.getElementById('ttSave').click();
+  });
+  await wait(300);
+  await page.evaluate(() => { document.getElementById('ttDupCol').click(); });
+  await wait(200);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const grown = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { cols: data.cols, rows: data.rows, w: document.getElementById('ttBoard').width, h: document.getElementById('ttBoard').height };
+  });
+  check('duplicate row and column grow the board', grown.cols === 12 && grown.rows === 12 && grown.w === 960 && grown.h === 960, JSON.stringify(grown));
+
+  await page.evaluate(() => {
+    document.getElementById('ttRoundUp').closest('details').open = true;
+    document.getElementById('ttRoundUp').click();
+  });
+  await wait(150);
+  const roundUp = await page.evaluate(() => document.getElementById('ttRound').textContent);
+  await page.evaluate(() => { document.getElementById('ttUndo').click(); });
+  await wait(200);
+  const roundUndone = await page.evaluate(() => document.getElementById('ttRound').textContent);
+  check('undo restores a round change', roundUp === '2' && roundUndone === '1', roundUp + '/' + roundUndone);
+
+  await page.evaluate(() => {
+    const search = document.getElementById('ttPieceSearch');
+    search.value = 'dragon';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await wait(150);
+  const filtered = await page.evaluate(() => ({
+    visible: Array.from(document.querySelectorAll('#ttPieces [data-piece]')).filter(b => !b.hidden).length,
+    label: (Array.from(document.querySelectorAll('#ttPieces [data-piece]')).find(b => !b.hidden) || {}).textContent || ''
+  }));
+  check('piece search filters the palette', filtered.visible === 1 && /Dragon/.test(filtered.label), JSON.stringify(filtered));
+  await page.evaluate(() => {
+    const search = document.getElementById('ttPieceSearch');
+    search.value = '';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('[data-terrain="sand"]').click();
+    document.querySelector('[data-terrain="water"]').click();
+  });
+  await wait(200);
+  const recent = await page.evaluate(() => document.querySelectorAll('#ttRecentColours .tt-recent-colour').length);
+  check('recent colours appear after painting', recent >= 2, String(recent));
+
+  await page.select('#ttSize', '12x9');
+  await wait(300);
 
   await page.click('[data-template="dungeon"]');
   await wait(300);
@@ -326,6 +670,63 @@ function wait(ms) {
     return el ? { label: el.getAttribute('aria-label'), text: el.textContent } : null;
   });
   check('custom card draws onto the board', !!customCard && /Moon Beam/.test(customCard.label || ''), JSON.stringify(customCard));
+
+  await page.evaluate(() => {
+    document.getElementById('ttDiceTypes').closest('details').open = true;
+    document.getElementById('ttModeSpinner').click();
+    document.getElementById('ttSpinnerSize').value = '4';
+    document.getElementById('ttSpinnerSize').dispatchEvent(new Event('change', { bubbles: true }));
+    const labels = document.getElementById('ttSpinnerLabels');
+    labels.value = 'A, B, C, D';
+    labels.dispatchEvent(new Event('change', { bubbles: true }));
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+  });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttSpinBtn').click(); });
+  await wait(2200);
+  const spinner = await page.evaluate(() => ({
+    chips: document.querySelectorAll('#ttSpinnerWheel .tt-spinner-seg').length,
+    winner: (document.querySelector('#ttSpinnerWheel .is-winner') || {}).textContent || '',
+    result: document.getElementById('ttSpinnerResult').textContent,
+    panel: !document.getElementById('ttSpinnerPanel').hidden,
+    diceHidden: document.getElementById('ttDicePanel').hidden
+  }));
+  check('spinner has editable segments and lands on one', spinner.chips === 4 && spinner.winner === 'A' && /landed on A/.test(spinner.result) && spinner.panel && spinner.diceHidden, JSON.stringify(spinner));
+  await page.evaluate(() => {
+    Math.random = window.__origRandom;
+    document.getElementById('ttModeDice').click();
+  });
+  await wait(200);
+
+  await page.evaluate(() => {
+    document.getElementById('ttDeckSelect').closest('details').open = true;
+    document.getElementById('ttDeckName').value = 'Chance';
+    document.getElementById('ttDeckAdd').click();
+  });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCardName').value = 'Chance Card';
+    document.getElementById('ttCardText').value = 'Move to GO';
+    document.getElementById('ttCardAdd').click();
+  });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(350);
+  const decks = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const list = (data.decks || []).map(d => ({ name: d.name, cards: (d.customCards || []).length }));
+    return { list, options: document.querySelectorAll('#ttDeckSelect option').length, active: data.activeDeckId };
+  });
+  check('named decks keep their own cards', decks.list.length === 2 && decks.options === 2 && decks.list.some(d => d.name === 'Chance' && d.cards === 1) && decks.list.some(d => d.name === 'Main deck' && d.cards === 1), JSON.stringify(decks));
+  await page.evaluate(() => {
+    const select = document.getElementById('ttDeckSelect');
+    const main = Array.from(select.options).find(o => o.textContent === 'Main deck');
+    if (main) { select.value = main.value; select.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+  await wait(250);
+  const mainDeckRows = await page.evaluate(() => document.querySelectorAll('#ttCardList .tt-card-row').length);
+  check('switching decks switches the card list', mainDeckRows === 1, String(mainDeckRows));
 
   await page.evaluate(() => { document.querySelector('[data-piece="counter"]').click(); });
   await wait(200);
@@ -669,3 +1070,5 @@ function wait(ms) {
   server.close();
   process.exit(1);
 });
+
+
