@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       }));
       check(width + 'px: press page loads', /Press/i.test(info.title) && info.title.length > 5, info.title);
-      check(width + 'px: press page lists 15 games', /15 free browser games/.test(info.body));
+      check(width + 'px: press page lists 16 games', /16 free browser games/.test(info.body));
       check(width + 'px: no sideways scrolling', info.overflow <= 2, String(info.overflow));
       check(width + 'px: no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
       await page.close();

@@ -159,6 +159,9 @@
   var valueDownBtn = document.getElementById('ttValueDown');
   var valueUpBtn = document.getElementById('ttValueUp');
   var cardList = document.getElementById('ttCardList');
+  var cardEffectInput = document.getElementById('ttCardEffect');
+  var cardEffectValueInput = document.getElementById('ttCardEffectValue');
+  var cardEffectLabel = document.getElementById('ttCardEffectLabel');
   var libList = document.getElementById('ttLib');
   var libCount = document.getElementById('ttLibCount');
   var roundOut = document.getElementById('ttRound');
@@ -206,6 +209,8 @@
   var tileEffectLabel = document.getElementById('ttTileEffectLabel');
   var tileEffectValueInput = document.getElementById('ttTileEffectValue');
   var tileDeckInput = document.getElementById('ttTileDeck');
+  var tilePriceInput = document.getElementById('ttTilePrice');
+  var tileRentInput = document.getElementById('ttTileRent');
   var tileNoteInput = document.getElementById('ttTileNote');
   var tileRemoveBtn = document.getElementById('ttTileRemove');
   var tileSaveBtn = document.getElementById('ttTileSave');
@@ -241,6 +246,19 @@
   var backupRestoreBtn = document.getElementById('ttBackupRestore');
   var backupFileInput = document.getElementById('ttBackupFile');
   var endTurnBtn = document.getElementById('ttEndTurn');
+  var patternsInput = document.getElementById('ttPatterns');
+  var highContrastInput = document.getElementById('ttHighContrast');
+  var boardListBtn = document.getElementById('ttBoardListBtn');
+  var boardListEl = document.getElementById('ttBoardList');
+  var boardListBackdrop = document.getElementById('ttBoardListBackdrop');
+  var boardListClose = document.getElementById('ttBoardListClose');
+  var boardListBody = document.getElementById('ttBoardListBody');
+  var boardListCount = document.getElementById('ttBoardListCount');
+  var versionBtn = document.getElementById('ttVersionBtn');
+  var versionsEl = document.getElementById('ttVersions');
+  var versionsBackdrop = document.getElementById('ttVersionsBackdrop');
+  var versionsClose = document.getElementById('ttVersionsClose');
+  var versionList = document.getElementById('ttVersionList');
   var branchLabelInput = document.getElementById('ttBranchLabel');
   var branchToolBtn = document.getElementById('ttBranchTool');
   var branchClearBtn = document.getElementById('ttBranchClear');
@@ -367,6 +385,10 @@
     if (typeof raw.note === 'string' && raw.note.trim()) out.note = raw.note.trim().slice(0, 60);
     var owner = Number(raw.owner);
     if (isFinite(owner) && owner >= 1 && owner <= 4) out.owner = Math.round(owner);
+    var price = Number(raw.price);
+    if (isFinite(price) && price > 0) out.price = clamp(Math.round(price), 0, 99999);
+    var rent = Number(raw.rent);
+    if (isFinite(rent) && rent > 0) out.rent = clamp(Math.round(rent), 0, 99999);
     var effect = raw.effect;
     if (effect && typeof effect === 'object' && EFFECT_TYPES[effect.type]) {
       out.effect = {
@@ -387,6 +409,8 @@
     if (meta.group) copy.group = meta.group;
     if (meta.note) copy.note = meta.note;
     if (meta.owner) copy.owner = meta.owner;
+    if (meta.price) copy.price = meta.price;
+    if (meta.rent) copy.rent = meta.rent;
     if (meta.effect) {
       copy.effect = { type: meta.effect.type, value: meta.effect.value };
       if (meta.effect.deck) copy.effect.deck = meta.effect.deck;
@@ -457,6 +481,21 @@
     });
   }
 
+  function validCellList(raw, cols, rows) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(function (cell) {
+      return cell && Number.isInteger(cell.c) && Number.isInteger(cell.r) &&
+        cell.c >= 0 && cell.r >= 0 && cell.c < cols && cell.r < rows;
+    }).map(function (cell) { return { c: cell.c, r: cell.r }; }).slice(0, 200);
+  }
+
+  function validHomeLanes(raw, cols, rows) {
+    if (!Array.isArray(raw)) return [];
+    return raw.slice(0, 4).map(function (lane) {
+      return validCellList(lane, cols, rows).slice(0, 8);
+    });
+  }
+
   function normaliseSettings(raw) {
     var out = defaultSettings();
     if (!raw || typeof raw !== 'object') return out;
@@ -470,6 +509,10 @@
     out.snapPath = !!raw.snapPath;
     out.pawnsPerPlayer = clamp(Math.round(Number(raw.pawnsPerPlayer) || 1), 1, 4);
     out.allPawnsWin = !!raw.allPawnsWin;
+    out.patterns = !!raw.patterns;
+    out.highContrastLabels = !!raw.highContrastLabels;
+    out.useHomeLanes = !!raw.useHomeLanes;
+    out.blockades = !!raw.blockades;
     return out;
   }
 
@@ -498,7 +541,11 @@
       startingMoney: 0,
       snapPath: false,
       pawnsPerPlayer: 1,
-      allPawnsWin: false
+      allPawnsWin: false,
+      patterns: false,
+      highContrastLabels: false,
+      useHomeLanes: false,
+      blockades: false
     };
   }
 
@@ -657,6 +704,8 @@
       links: [],
       branches: [],
       homeCells: [],
+      homeLanes: [],
+      safeCells: [],
       settings: defaultSettings(),
       bg: null,
       bgColor: null,
@@ -913,6 +962,7 @@
           context.lineWidth = 1;
           context.stroke();
         }
+        if (S.settings && S.settings.patterns) drawTerrainPattern(context, t, c.x, c.y);
       }
     }
 
@@ -943,13 +993,14 @@
 
     drawRoute(context);
     drawBranches(context);
+    drawHomeLanes(context);
     drawTileDetails(context);
     drawSelection(context);
 
-    if (withCursor && S.mode === 'build') {
-      if (pendingLink) outlineCell(context, pendingLink.c, pendingLink.r, '#c98a2e', 4, []);
+    if (withCursor && (S.mode === 'build' || kbActive)) {
+      if (S.mode === 'build' && pendingLink) outlineCell(context, pendingLink.c, pendingLink.r, '#c98a2e', 4, []);
       if (kbActive) outlineCell(context, kbCursor.col, kbCursor.row, '#BC4749', 3, [7, 5]);
-      else if (hover) outlineCell(context, hover.col, hover.row, 'rgba(64,59,51,.55)', 2, []);
+      else if (hover && S.mode === 'build') outlineCell(context, hover.col, hover.row, 'rgba(64,59,51,.55)', 2, []);
     }
 
     context.strokeStyle = 'rgba(64,59,51,.26)';
@@ -968,6 +1019,126 @@
     } else {
       hexPath(context, c.x, c.y, hexMetrics().r - 3);
       context.stroke();
+    }
+    context.restore();
+  }
+
+  function drawTerrainPattern(context, terrain, cx, cy) {
+    context.save();
+    context.translate(cx, cy);
+    if (S.shape === 'square') {
+      context.beginPath();
+      context.rect(-CELL / 2 + 4, -CELL / 2 + 4, CELL - 8, CELL - 8);
+      context.clip();
+    } else {
+      hexPath(context, 0, 0, hexMetrics().r - 4);
+      context.clip();
+    }
+    context.strokeStyle = 'rgba(26,18,8,.24)';
+    context.fillStyle = 'rgba(26,18,8,.24)';
+    context.lineWidth = 1.4;
+    var x;
+    var y;
+    if (terrain === 'water' || terrain === 'sky') {
+      for (y = -20; y <= 20; y += 12) {
+        context.beginPath();
+        for (x = -32; x <= 32; x += 4) {
+          var wy = y + Math.sin(x / 7) * 2;
+          if (x === -32) context.moveTo(x, wy);
+          else context.lineTo(x, wy);
+        }
+        context.stroke();
+      }
+    } else if (terrain === 'grass' || terrain === 'swamp') {
+      for (y = -24; y <= 24; y += 14) {
+        for (x = -24 + (y % 28 === 0 ? 0 : 7); x <= 24; x += 14) {
+          context.beginPath();
+          context.moveTo(x, y);
+          context.lineTo(x + 4, y - 6);
+          context.stroke();
+        }
+      }
+    } else if (terrain === 'sand' || terrain === 'snow') {
+      for (y = -24; y <= 24; y += 12) {
+        for (x = -24; x <= 24; x += 12) {
+          context.beginPath();
+          context.arc(x + (y % 24 === 0 ? 0 : 6), y, 1.6, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+    } else if (terrain === 'forest') {
+      for (y = -22; y <= 22; y += 14) {
+        for (x = -22 + (y % 28 === 0 ? 0 : 8); x <= 22; x += 16) {
+          context.beginPath();
+          context.moveTo(x, y + 5);
+          context.lineTo(x + 5, y + 5);
+          context.lineTo(x + 2.5, y - 4);
+          context.closePath();
+          context.stroke();
+        }
+      }
+    } else if (terrain === 'stone') {
+      for (y = -24; y <= 24; y += 12) {
+        context.beginPath();
+        context.moveTo(-28, y);
+        context.lineTo(28, y);
+        context.stroke();
+      }
+      for (x = -24; x <= 24; x += 12) {
+        context.beginPath();
+        context.moveTo(x, -28);
+        context.lineTo(x, 28);
+        context.stroke();
+      }
+    } else if (terrain === 'path') {
+      for (y = -24; y <= 24; y += 12) {
+        context.beginPath();
+        context.moveTo(-20, y);
+        context.lineTo(-4, y);
+        context.stroke();
+      }
+    } else if (terrain === 'lava') {
+      for (y = -18; y <= 18; y += 12) {
+        context.beginPath();
+        for (x = -28; x <= 28; x += 8) {
+          var ly = y + ((x / 8) % 2 === 0 ? -3 : 3);
+          if (x === -28) context.moveTo(x, ly);
+          else context.lineTo(x, ly);
+        }
+        context.stroke();
+      }
+    } else if (terrain === 'wall') {
+      for (y = -20; y <= 20; y += 10) {
+        context.beginPath();
+        context.moveTo(-28, y);
+        context.lineTo(28, y);
+        context.stroke();
+        for (x = -20 + (y % 20 === 0 ? 0 : 10); x <= 20; x += 20) {
+          context.beginPath();
+          context.moveTo(x, y);
+          context.lineTo(x, y + 10);
+          context.stroke();
+        }
+      }
+    } else if (terrain === 'cave') {
+      for (x = -28; x <= 20; x += 10) {
+        context.beginPath();
+        context.moveTo(x, -24);
+        context.lineTo(x + 16, 24);
+        context.stroke();
+      }
+    } else if (terrain === 'magic') {
+      for (y = -20; y <= 20; y += 16) {
+        for (x = -20 + (y % 32 === 0 ? 0 : 8); x <= 20; x += 16) {
+          context.beginPath();
+          context.moveTo(x, y - 4);
+          context.lineTo(x + 4, y);
+          context.lineTo(x, y + 4);
+          context.lineTo(x - 4, y);
+          context.closePath();
+          context.stroke();
+        }
+      }
     }
     context.restore();
   }
@@ -1058,6 +1229,38 @@
     });
   }
 
+  function drawHomeLanes(context) {
+    (S.homeLanes || []).forEach(function (lane, idx) {
+      if (!lane || !lane.length) return;
+      var colour = PLAYER_COLORS[idx] || '#403B33';
+      lane.forEach(function (cell, i) {
+        var c = centerOf(cell.c, cell.r);
+        context.save();
+        context.strokeStyle = colour;
+        context.lineWidth = i === lane.length - 1 ? 4 : 2;
+        context.globalAlpha = 0.75;
+        if (S.shape === 'square') {
+          roundRect(context, c.x - CELL / 2 + 10, c.y - CELL / 2 + 10, CELL - 20, CELL - 20, 8);
+          context.stroke();
+        } else {
+          hexPath(context, c.x, c.y, hexMetrics().r * 0.55);
+          context.stroke();
+        }
+        context.restore();
+      });
+    });
+    (S.safeCells || []).forEach(function (cell) {
+      var c = centerOf(cell.c, cell.r);
+      context.save();
+      context.strokeStyle = 'rgba(255,255,255,.95)';
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(c.x, c.y, 12, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    });
+  }
+
   function drawBranches(context) {
     (S.branches || []).forEach(function (branch) {
       var from = centerOf(branch.from.c, branch.from.r);
@@ -1140,11 +1343,17 @@
         if (meta.n) {
           var num = String(meta.n);
           var w = 16 + num.length * 7;
+          var high = !!(S.settings && S.settings.highContrastLabels);
           context.save();
-          context.fillStyle = 'rgba(26,18,8,.82)';
+          context.fillStyle = high ? '#fff' : 'rgba(26,18,8,.82)';
           roundRect(context, c.x - CELL / 2 + 6, c.y + CELL / 2 - 23, w, 17, 7);
           context.fill();
-          context.fillStyle = '#fff';
+          if (high) {
+            context.strokeStyle = '#1a1208';
+            context.lineWidth = 1.5;
+            context.stroke();
+          }
+          context.fillStyle = high ? '#1a1208' : '#fff';
           context.font = '800 11px Inter, system-ui, sans-serif';
           context.textAlign = 'center';
           context.textBaseline = 'middle';
@@ -1274,7 +1483,8 @@
 
   function cardLabel(t) {
     if (t.card && t.card.name) {
-      return t.card.text ? '“' + t.card.name + '”, ' + t.card.text : '“' + t.card.name + '”';
+      var effect = t.card.effect ? ' (' + cardEffectText(t.card.effect) + ')' : '';
+      return (t.card.text ? '“' + t.card.name + '”, ' + t.card.text : '“' + t.card.name + '”') + effect;
     }
     var rank = RANK_NAMES[t.r] || String(t.r + 1);
     return rank + ' of ' + SUITS[t.s].name;
@@ -1484,10 +1694,111 @@
     announce(pieceDef(kind).label + ' placed on ' + posLabel(t) + '.');
   }
 
+  function tokenReachedFinish(token) {
+    if (!token) return false;
+    if (token.inLane) {
+      var lane = laneFor(token.player);
+      return lane.length > 0 && token.laneIndex >= lane.length - 1;
+    }
+    if (S.settings.useHomeLanes && laneFor(token.player).length) return false;
+    var last = S.path.length - 1;
+    return token.pathIndex >= last && (!S.settings.exactFinish || token.pathIndex === last);
+  }
+
+  function checkCardFinish(player, token) {
+    if (!token || !S.path.length) return;
+    if (tokenReachedFinish(token)) {
+      showWinner(player);
+      renderPlayers();
+      updatePlayAids();
+      scheduleDraw();
+      markDirty();
+    }
+  }
+
+  function applyCardEffect(player, card, token) {
+    if (!card || !card.effect) return { again: false };
+    var effect = card.effect;
+    var value = Number(effect.value) || 0;
+    var name = activePlayerName();
+    if (effect.type === 'money') {
+      S.players[player - 1].money += value;
+      toast(value >= 0 ? 'Collect £' + value + ' from the card.' : 'Pay £' + Math.abs(value) + ' to the card.');
+      announce(value >= 0 ? 'Collect ' + value + ' pounds.' : 'Pay ' + Math.abs(value) + ' pounds.');
+      playtestLog(name + ' drew ' + card.name + ' and ' + (value >= 0 ? 'collected £' : 'paid £') + Math.abs(value) + '.');
+      renderPlayers();
+      return { again: false };
+    }
+    if (effect.type === 'skip') {
+      S.players[player - 1].skip = true;
+      toast('The card says: miss a turn.');
+      announce('Miss a turn.');
+      playtestLog(name + ' drew ' + card.name + ' and will miss a turn.');
+      return { again: false };
+    }
+    if (effect.type === 'again') {
+      toast('The card says: roll again.');
+      announce('Roll again.');
+      playtestLog(name + ' drew ' + card.name + ' and rolls again.');
+      return { again: true };
+    }
+    if (effect.type === 'collect') {
+      var toll = value || 25;
+      var taken = 0;
+      S.players.forEach(function (p, idx) {
+        if (idx === player - 1) return;
+        p.money -= toll;
+        taken += toll;
+      });
+      S.players[player - 1].money += taken;
+      toast('Collected £' + taken + ' from the other players.');
+      announce('Collected ' + taken + ' pounds.');
+      playtestLog(name + ' collected £' + taken + ' with ' + card.name + '.');
+      renderPlayers();
+      return { again: false };
+    }
+    if (effect.type === 'toStart') {
+      if (token) setPawnPosition(token, 0, false);
+      toast('The card sends you back to the start.');
+      announce('Back to the start.');
+      playtestLog(name + ' drew ' + card.name + ' and went back to the start.');
+      return { again: false };
+    }
+    if (effect.type === 'goTo') {
+      var target = findCellByNumber(value);
+      var targetIndex = target ? pathIndexOf(target.c, target.r) : -1;
+      if (token && targetIndex >= 0) {
+        movePlayerBy(token, targetIndex - token.pathIndex, function () {
+          captureRivals(player, token);
+          checkCardFinish(player, token);
+        });
+        toast('The card moves you to tile ' + value + '.');
+        playtestLog(name + ' drew ' + card.name + ' and moved to tile ' + value + '.');
+      }
+      return { again: false };
+    }
+    if (effect.type === 'forward' || effect.type === 'back') {
+      if (token && value) {
+        var steps = effect.type === 'forward' ? Math.abs(value) : -Math.abs(value);
+        movePlayerBy(token, steps, function () {
+          captureRivals(player, token);
+          checkCardFinish(player, token);
+        });
+        toast('The card moves you ' + (steps > 0 ? 'forward ' : 'back ') + Math.abs(steps) + '.');
+        playtestLog(name + ' drew ' + card.name + ' and moved ' + (steps > 0 ? 'forward ' : 'back ') + Math.abs(steps) + '.');
+      }
+      return { again: false };
+    }
+    return { again: false };
+  }
+
   function spawnCard() {
     var spot = freeSpot();
     pushUndo();
     var t = addCard(spot.x, spot.y);
+    if (S.mode === 'play' && t.card && t.card.effect) {
+      applyCardEffect(S.turn || 1, t.card, playerToken(S.turn || 1));
+    }
     renderTokens();
     layoutTokens();
     hideEmpty();
@@ -1585,11 +1896,21 @@
     var color = typeof c.color === 'string' && /^#[0-9a-f]{3,8}$/i.test(c.color) ? c.color : '#BC4749';
     var id = typeof c.id === 'string' && c.id ? c.id.slice(0, 40) : '';
     if (!id) return null;
-    return { id: id, name: name, text: text, icon: icon, color: color };
+    var out = { id: id, name: name, text: text, icon: icon, color: color };
+    var cardEffectTypes = { forward: 1, back: 1, goTo: 1, money: 1, skip: 1, again: 1, collect: 1, toStart: 1 };
+    if (c.effect && typeof c.effect === 'object' && cardEffectTypes[c.effect.type]) {
+      out.effect = {
+        type: c.effect.type,
+        value: clamp(Math.round(Number(c.effect.value) || 0), -999, 999)
+      };
+    }
+    return out;
   }
 
   function cloneCustomCard(c) {
-    return { id: c.id, name: c.name, text: c.text, icon: c.icon, color: c.color };
+    var out = { id: c.id, name: c.name, text: c.text, icon: c.icon, color: c.color };
+    if (c.effect) out.effect = { type: c.effect.type, value: c.effect.value };
+    return out;
   }
 
   function customCardById(id) {
@@ -1750,6 +2071,39 @@
       : n + ' cards left' + suffix + '. Tap a card on the board to flip it.';
   }
 
+  function cardEffectText(effect) {
+    if (!effect) return '';
+    var value = Number(effect.value) || 0;
+    if (effect.type === 'forward') return 'Move forward ' + Math.abs(value);
+    if (effect.type === 'back') return 'Move back ' + Math.abs(value);
+    if (effect.type === 'goTo') return 'Go to tile ' + value;
+    if (effect.type === 'money') return value >= 0 ? 'Collect £' + value : 'Pay £' + Math.abs(value);
+    if (effect.type === 'skip') return 'Miss a turn';
+    if (effect.type === 'again') return 'Roll again';
+    if (effect.type === 'collect') return 'Collect £' + (value || 25) + ' from each player';
+    if (effect.type === 'toStart') return 'Go back to the start';
+    return '';
+  }
+
+  function updateCardEffectLabel() {
+    if (!cardEffectInput || !cardEffectLabel || !cardEffectValueInput) return;
+    var type = cardEffectInput.value;
+    var labels = {
+      none: 'Amount',
+      forward: 'How many tiles forward',
+      back: 'How many tiles back',
+      goTo: 'Go to which tile number',
+      money: 'Money up or down (-50 is a cost)',
+      skip: 'No amount needed',
+      again: 'No amount needed',
+      collect: 'Money each player pays',
+      toStart: 'No amount needed'
+    };
+    cardEffectLabel.textContent = labels[type] || 'Amount';
+    cardEffectValueInput.disabled = type === 'none' || type === 'skip' || type === 'again' || type === 'toStart';
+    if (type === 'collect' && Number(cardEffectValueInput.value) < 1) cardEffectValueInput.value = '25';
+  }
+
   function renderCardList() {
     if (!cardList) return;
     cardList.textContent = '';
@@ -1766,7 +2120,7 @@
       name.textContent = c.name;
       var text = document.createElement('span');
       text.className = 'tt-card-row-text';
-      text.textContent = c.text || '';
+      text.textContent = (c.text || '') + (c.effect ? ' · ' + cardEffectText(c.effect) : '');
       var del = document.createElement('button');
       del.type = 'button';
       del.className = 'tt-card-del';
@@ -1786,6 +2140,8 @@
     var textEl = byId('ttCardText');
     var iconEl = byId('ttCardIcon');
     var colorEl = byId('ttCardColor');
+    var effectEl = byId('ttCardEffect');
+    var effectValueEl = byId('ttCardEffectValue');
     var name = nameEl ? nameEl.value.trim() : '';
     if (!name) {
       toast('Give your card a name first.');
@@ -1797,7 +2153,10 @@
       name: name,
       text: textEl ? textEl.value : '',
       icon: iconEl ? iconEl.value : '★',
-      color: colorEl ? colorEl.value : '#BC4749'
+      color: colorEl ? colorEl.value : '#BC4749',
+      effect: (effectEl && effectEl.value && effectEl.value !== 'none')
+        ? { type: effectEl.value, value: effectValueEl ? Number(effectValueEl.value) || 0 : 0 }
+        : null
     });
     if (!card) return;
     if (S.customCards.length >= 20) {
@@ -2000,6 +2359,9 @@
     if (owners) parts.push(owners + ' tiles have an owner.');
     if (S.settings.pawnsPerPlayer > 1) parts.push('Each player has ' + S.settings.pawnsPerPlayer + ' pawns.');
     if (S.settings.allPawnsWin) parts.push('Bring every pawn home to win.');
+    if (S.settings.useHomeLanes) parts.push('Finish in your own home lane.');
+    if (S.settings.blockades) parts.push('Two pawns on a tile block rivals.');
+    if (S.safeCells && S.safeCells.length) parts.push(S.safeCells.length + ' safe squares cannot be captured.');
     if (S.settings.startingMoney) parts.push('Every player starts with £' + S.settings.startingMoney + '.');
     if (S.settings.sixToStart) parts.push('Roll a 6 to start.');
     if (S.settings.exactFinish && S.path.length) parts.push('Land on the last tile exactly.');
@@ -2137,6 +2499,8 @@
     S.links = [];
     S.branches = [];
     S.homeCells = [];
+    S.homeLanes = [];
+    S.safeCells = [];
     pendingLink = null;
     pendingBranch = null;
     scheduleDraw();
@@ -2407,6 +2771,10 @@
       return { from: { c: S.cols - 1 - b.from.c, r: b.from.r }, to: { c: S.cols - 1 - b.to.c, r: b.to.r }, label: b.label };
     });
     S.homeCells = S.homeCells.map(function (h) { return h ? { c: S.cols - 1 - h.c, r: h.r } : null; });
+    S.homeLanes = S.homeLanes.map(function (lane) {
+      return (lane || []).map(function (cell) { return { c: S.cols - 1 - cell.c, r: cell.r }; });
+    });
+    S.safeCells = S.safeCells.map(function (cell) { return { c: S.cols - 1 - cell.c, r: cell.r }; });
     selection = null;
     updateSelectHint();
     scheduleDraw();
@@ -2436,6 +2804,10 @@
       return { from: { c: b.from.c, r: S.rows - 1 - b.from.r }, to: { c: b.to.c, r: S.rows - 1 - b.to.r }, label: b.label };
     });
     S.homeCells = S.homeCells.map(function (h) { return h ? { c: h.c, r: S.rows - 1 - h.r } : null; });
+    S.homeLanes = S.homeLanes.map(function (lane) {
+      return (lane || []).map(function (cell) { return { c: cell.c, r: S.rows - 1 - cell.r }; });
+    });
+    S.safeCells = S.safeCells.map(function (cell) { return { c: cell.c, r: S.rows - 1 - cell.r }; });
     selection = null;
     updateSelectHint();
     scheduleDraw();
@@ -2562,6 +2934,40 @@
     return (S.homeCells && S.homeCells[player - 1]) || null;
   }
 
+  function laneFor(player) {
+    return (S.homeLanes && S.homeLanes[player - 1]) || [];
+  }
+
+  function pawnCell(token) {
+    if (!token) return null;
+    if (token.inLane) {
+      var lane = laneFor(token.player);
+      if (!lane.length) return null;
+      return lane[clamp(token.laneIndex, 0, lane.length - 1)] || null;
+    }
+    return pathCellAt(token.pathIndex);
+  }
+
+  function setLanePosition(token, instant) {
+    var lane = laneFor(token.player);
+    if (!lane.length) return;
+    token.laneIndex = clamp(token.laneIndex, 0, lane.length - 1);
+    var cell = lane[token.laneIndex];
+    if (!cell) return;
+    var centre = centerOf(cell.c, cell.r);
+    var off = pawnOffset(token.player, token.pawnIndex);
+    token.x = centre.x + off.x;
+    token.y = centre.y + off.y;
+    var el = tokensLayer.querySelector('.tt-token[data-id="' + token.id + '"]');
+    if (el) {
+      if (!instant && !reduceMotion()) {
+        el.classList.add('is-moving');
+        window.setTimeout(function () { el.classList.remove('is-moving'); }, 190);
+      }
+      updateTokenElement(token);
+    }
+  }
+
   function placePawnHome(token) {
     var cell = homeCellFor(token.player);
     if (!cell) return;
@@ -2595,6 +3001,8 @@
         token.pawnIndex = p;
         token.finished = false;
         token.started = false;
+        token.inLane = false;
+        token.laneIndex = 0;
         token.scale = perPlayer > 1 ? 0.72 : 0.92;
         token.color = player.color || PLAYER_COLORS[idx];
         token.pathIndex = 0;
@@ -2626,7 +3034,7 @@
       toast('Set up the player pawns first.');
       return;
     }
-    var pathCell = pathCellAt(token.pathIndex);
+    var pathCell = pawnCell(token);
     if (!pathCell) {
       toast('The current pawn is not on a route tile.');
       return;
@@ -2664,46 +3072,112 @@
       if (done) done();
       return;
     }
-    clearMoveTimers();
-    var from = Number.isFinite(token.pathIndex) ? token.pathIndex : 0;
-    var target = from + steps;
-    var last = S.path.length - 1;
-    if (target < 0) target = 0;
-    if (target > last) {
-      target = last;
-      if (S.settings.exactFinish && from + steps > last) {
-        target = from;
-        toast('Need the exact number to finish.');
-      }
-    }
-    if (steps > 0 && from >= last) {
+    if (!steps) {
       if (done) done();
       return;
     }
-    var direction = target >= from ? 1 : -1;
-    var current = from;
+    clearMoveTimers();
+    var direction = steps > 0 ? 1 : -1;
+    var remaining = Math.abs(steps);
+    var lane = laneFor(token.player);
+    var useLane = !!(S.settings.useHomeLanes && lane.length);
+    var last = S.path.length - 1;
     var stepTime = reduceMotion() ? 0 : 150;
-    function step() {
-      if (current === target) {
-        if (done) done();
+    function finish() {
+      if (done) done();
+    }
+    function tick() {
+      if (remaining <= 0) {
+        finish();
         return;
       }
-      current += direction;
-      setPawnPosition(token, current, false);
-      announce('Tile ' + (current + 1) + ' of ' + S.path.length + '.');
-      if (stepTime === 0) {
-        step();
+      if (token.inLane) {
+        var laneLast = lane.length - 1;
+        var nextLane = token.laneIndex + direction;
+        if (direction > 0 && S.settings.exactFinish && remaining > (laneLast - token.laneIndex)) {
+          toast('Need the exact number to finish.');
+          remaining = 0;
+          finish();
+          return;
+        }
+        if (nextLane < 0) {
+          token.inLane = false;
+          token.laneIndex = 0;
+          token.pathIndex = last;
+          setPawnPosition(token, last, false);
+          announce('Back on the shared track.');
+          remaining--;
+        } else if (nextLane > laneLast) {
+          token.laneIndex = laneLast;
+          setLanePosition(token);
+          remaining = 0;
+          finish();
+          return;
+        } else {
+          token.laneIndex = nextLane;
+          setLanePosition(token);
+          announce('Home lane ' + (nextLane + 1) + ' of ' + lane.length + '.');
+          remaining--;
+        }
       } else {
-        moveTimers.push(window.setTimeout(step, stepTime));
+        var nextIndex = token.pathIndex + direction;
+        if (direction > 0 && useLane && token.pathIndex >= last) {
+          token.inLane = true;
+          token.laneIndex = 0;
+          setLanePosition(token);
+          announce('Home lane 1 of ' + lane.length + '.');
+          remaining--;
+        } else {
+          if (nextIndex < 0) nextIndex = 0;
+          if (nextIndex > last) nextIndex = last;
+          if (direction > 0 && blockedAt(token.player, nextIndex)) {
+            toast('A blockade blocks the way.');
+            announce('Blocked by two rival pawns.');
+            remaining = 0;
+            finish();
+            return;
+          }
+          token.pathIndex = nextIndex;
+          setPawnPosition(token, nextIndex, false);
+          announce('Tile ' + (nextIndex + 1) + ' of ' + (last + 1) + '.');
+          remaining--;
+        }
+      }
+      if (remaining <= 0) {
+        finish();
+        return;
+      }
+      if (stepTime === 0) {
+        tick();
+      } else {
+        moveTimers.push(window.setTimeout(tick, stepTime));
       }
     }
-    step();
+    tick();
+  }
+
+  function blockedAt(player, pathIndex) {
+    if (!S.settings.blockades) return false;
+    var counts = {};
+    S.tokens.forEach(function (t) {
+      if (!t.pawn || t.finished || t.inLane || t.player === player) return;
+      if (t.pathIndex !== pathIndex) return;
+      counts[t.player] = (counts[t.player] || 0) + 1;
+    });
+    return Object.keys(counts).some(function (key) { return counts[key] >= 2; });
+  }
+
+  function isSafeCell(cell) {
+    if (!cell || !S.safeCells) return false;
+    return S.safeCells.some(function (safe) { return safe.c === cell.c && safe.r === cell.r; });
   }
 
   function captureRivals(player, token) {
     if (!S.settings.capture) return 0;
     token = token || playerToken(player);
-    if (!token) return 0;
+    if (!token || token.inLane) return 0;
+    var landing = pathCellAt(token.pathIndex);
+    if (isSafeCell(landing)) return 0;
     var caught = 0;
     S.tokens.forEach(function (t) {
       if (!t.pawn || t.finished || t.player === player) return;
@@ -2727,14 +3201,14 @@
       if (done) done({ again: againFlag });
       return;
     }
-    var pathCell = pathCellAt(token.pathIndex);
+    var pathCell = pawnCell(token);
     if (!pathCell) {
       if (done) done({ again: againFlag });
       return;
     }
     var meta = metaAt(pathCell.c, pathCell.r);
     if (meta && meta.owner && meta.owner !== player && S.settings.rent && depth === 0) {
-      var rent = 25;
+      var rent = meta.rent || 25;
       S.players[player - 1].money -= rent;
       S.players[meta.owner - 1].money += rent;
       toast('Pay £' + rent + ' rent to ' + (S.players[meta.owner - 1].name || 'Player ' + meta.owner) + '.');
@@ -2838,7 +3312,9 @@
       }
       var spot = freeSpotFrom(pathCell.c, pathCell.r, -1);
       var cardCentre = centerOf(spot.col, spot.row);
-      addCard(cardCentre.x, cardCentre.y);
+      var drawnCard = addCard(cardCentre.x, cardCentre.y);
+      var cardResult = applyCardEffect(player, drawnCard.card, token);
+      if (cardResult.again) againFlag = true;
       renderTokens();
       layoutTokens();
       toast('Draw a card.');
@@ -2931,8 +3407,7 @@
   }
 
   function completePlayTurn(player, token, again) {
-    var last = S.path.length - 1;
-    if (token && token.pathIndex >= last && (!S.settings.exactFinish || token.pathIndex === last)) {
+    if (tokenReachedFinish(token)) {
       if (homeCellFor(player)) placePawnHome(token);
       else token.finished = true;
       renderPlayers();
@@ -2963,39 +3438,88 @@
     scheduleDraw();
   }
 
+  function maybeOfferPurchase(player, token, done) {
+    if (!token) {
+      done();
+      return;
+    }
+    if (token.inLane) { done(); return; }
+    var cell = pawnCell(token);
+    var meta = cell ? metaAt(cell.c, cell.r) : null;
+    if (!meta || !meta.price || meta.owner) {
+      done();
+      return;
+    }
+    var playerData = S.players[player - 1];
+    var price = meta.price;
+    var title = meta.label || 'this tile';
+    if (playerData.money < price) {
+      toast(title + ' costs £' + price + '. ' + activePlayerName() + ' has £' + playerData.money + '.');
+      done();
+      return;
+    }
+    openChoiceDialog(
+      'Buy ' + title + '?',
+      activePlayerName() + ' has £' + playerData.money + '. ' + title + ' costs £' + price + '.',
+      [
+        { label: 'Buy for £' + price, value: 'buy' },
+        { label: 'Decline', value: 'decline' }
+      ],
+      function (choice) {
+        if (choice === 'buy') {
+          playerData.money -= price;
+          meta.owner = player;
+          S.meta[cellIndex(cell.c, cell.r)] = meta;
+          toast(activePlayerName() + ' bought ' + title + ' for £' + price + '.');
+          announce('Bought ' + title + ' for ' + price + ' pounds.');
+          playtestLog(activePlayerName() + ' bought ' + title + ' for £' + price + '.');
+          renderPlayers();
+          scheduleDraw();
+          markDirty();
+        } else {
+          toast('Declined ' + title + '.');
+        }
+        done();
+      }
+    );
+  }
+
   function afterPlayMove(player, token) {
     captureRivals(player, token);
     if (!token) {
       completePlayTurn(player, null, false);
       return;
     }
-    var cell = pathCellAt(token.pathIndex);
+    var cell = pawnCell(token);
     var landedMeta = cell ? metaAt(cell.c, cell.r) : null;
     playtestLog(activePlayerName() + ' landed on ' + (landedMeta && landedMeta.n ? 'tile ' + landedMeta.n : 'stop ' + (token.pathIndex + 1)) + '.');
-    var options = branchOptionsAt(cell);
-    if (options.length) {
-      showChoice(player, options, function (branch) {
-        if (!branch) {
-          completePlayTurn(player, token, false);
-          return;
-        }
-        playtestLog(activePlayerName() + ' chose ' + branch.label + '.');
-        var targetIndex = pathIndexOf(branch.to.c, branch.to.r);
-        if (targetIndex < 0) {
-          completePlayTurn(player, token, false);
-          return;
-        }
-        movePlayerBy(token, targetIndex - token.pathIndex, function () {
-          captureRivals(player, token);
-          resolveLanding(player, token, 1, false, function (state) {
-            completePlayTurn(player, token, state && state.again);
+    maybeOfferPurchase(player, token, function () {
+      cell = pawnCell(token);
+      var options = branchOptionsAt(cell);
+      if (options.length) {
+        showChoice(player, options, function (branch) {
+          if (!branch) {
+            completePlayTurn(player, token, false);
+            return;
+          }
+          playtestLog(activePlayerName() + ' chose ' + branch.label + '.');
+          var targetIndex = pathIndexOf(branch.to.c, branch.to.r);
+          if (targetIndex < 0) {
+            completePlayTurn(player, token, false);
+            return;
+          }
+          movePlayerBy(token, targetIndex - token.pathIndex, function () {
+            captureRivals(player, token);
+            resolveLanding(player, token, 1, false, function (state) {
+              completePlayTurn(player, token, state && state.again);
+            });
           });
         });
+        return;
+      }
+      resolveLanding(player, token, 0, false, function (state) {
+        completePlayTurn(player, token, state && state.again);
       });
-      return;
-    }
-    resolveLanding(player, token, 0, false, function (state) {
-      completePlayTurn(player, token, state && state.again);
     });
   }
 
@@ -3020,6 +3544,8 @@
       if (t.pawn) {
         t.started = false;
         t.finished = false;
+        t.inLane = false;
+        t.laneIndex = 0;
       }
     });
     if (S.path.length) {
@@ -3055,6 +3581,10 @@
         return { from: { c: b.from.c, r: b.from.r }, to: { c: b.to.c, r: b.to.r }, label: b.label || 'Choose' };
       }),
       homeCells: (S.homeCells || []).map(function (h) { return h ? { c: h.c, r: h.r } : null; }),
+      homeLanes: (S.homeLanes || []).map(function (lane) {
+        return (lane || []).map(function (cell) { return { c: cell.c, r: cell.r }; });
+      }),
+      safeCells: (S.safeCells || []).map(function (cell) { return { c: cell.c, r: cell.r }; }),
       settings: normaliseSettings(S.settings),
       winner: S.winner || 0,
       spinner: normaliseSpinner(S.spinner),
@@ -3129,6 +3659,8 @@
     S.links = validLinks(snap.links, S.cols, S.rows);
     S.branches = validBranches(snap.branches, S.cols, S.rows);
     S.homeCells = validHomeCells(snap.homeCells, S.cols, S.rows);
+    S.homeLanes = validHomeLanes(snap.homeLanes, S.cols, S.rows);
+    S.safeCells = validCellList(snap.safeCells, S.cols, S.rows);
     S.settings = normaliseSettings(snap.settings);
     S.winner = clamp(Number(snap.winner) || 0, 0, 4);
     S.bg = snap.bg;
@@ -3319,9 +3851,31 @@
       }
       board.name = String(S.name || board.name || 'My board').slice(0, 40) || 'My board';
       board.updated = Date.now();
+      var previous = board.data;
+      try {
+        if (previous && JSON.stringify(previous) !== JSON.stringify(payload)) {
+          board.versions = Array.isArray(board.versions) ? board.versions : [];
+          var lastVersion = board.versions[board.versions.length - 1];
+          if (!lastVersion || Date.now() - lastVersion.at > 10000) {
+            board.versions.push({ at: Date.now(), data: previous });
+            while (board.versions.length > 4) board.versions.shift();
+          }
+        }
+      } catch (err) { /* version history is optional */ }
       board.data = payload;
 
-      if (!writeLibrary()) throw new Error('storage full');
+      if (!writeLibrary()) {
+        if (board.versions && board.versions.length) {
+          board.versions = [];
+          if (writeLibrary()) {
+            dirty = false;
+            updateSaveState(quiet ? 'Autosaved' : 'Saved just now', false);
+            toast('Saved. Older versions were cleared to make room.');
+            return true;
+          }
+        }
+        throw new Error('storage full');
+      }
       try { localStorage.setItem(STORE_KEY, JSON.stringify(payload)); } catch (err) { /* My Stuff mirror is optional */ }
 
       dirty = false;
@@ -3483,6 +4037,87 @@
       announce(library.boards.length + ' boards restored from the backup.');
     };
     reader.readAsText(file);
+  }
+
+  function renderVersions() {
+    if (!versionList) return;
+    versionList.textContent = '';
+    var board = activeBoard();
+    var versions = board && Array.isArray(board.versions) ? board.versions : [];
+    if (!versions.length) {
+      var empty = document.createElement('p');
+      empty.className = 'tt-help';
+      empty.textContent = 'No earlier versions yet. Save a few changes and Echo will keep them here.';
+      versionList.appendChild(empty);
+      return;
+    }
+    versions.slice().reverse().forEach(function (version, reversedIndex) {
+      var index = versions.length - 1 - reversedIndex;
+      var row = document.createElement('div');
+      row.className = 'tt-version-row';
+      row.setAttribute('role', 'listitem');
+      var meta = document.createElement('div');
+      meta.className = 'tt-version-meta';
+      var strong = document.createElement('strong');
+      strong.textContent = new Date(version.at).toLocaleString();
+      var small = document.createElement('span');
+      var data = version.data || {};
+      small.textContent = (data.cols || '?') + ' x ' + (data.rows || '?') + ' · ' +
+        (Array.isArray(data.tokens) ? data.tokens.length : 0) + ' pieces';
+      meta.appendChild(strong);
+      meta.appendChild(small);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tt-btn tt-btn--quiet';
+      btn.dataset.versionIndex = String(index);
+      btn.textContent = 'Restore';
+      row.appendChild(meta);
+      row.appendChild(btn);
+      versionList.appendChild(row);
+    });
+  }
+
+  function openVersions() {
+    renderVersions();
+    versionsEl.hidden = false;
+    document.body.classList.add('tt-modal-open');
+    try { versionsClose.focus({ preventScroll: true }); } catch (err) { versionsClose.focus(); }
+  }
+
+  function closeVersions() {
+    if (!versionsEl || versionsEl.hidden) return;
+    versionsEl.hidden = true;
+    document.body.classList.remove('tt-modal-open');
+    if (versionBtn) {
+      try { versionBtn.focus({ preventScroll: true }); } catch (err) { versionBtn.focus(); }
+    }
+  }
+
+  function restoreVersion(index) {
+    var board = activeBoard();
+    if (!board || !Array.isArray(board.versions)) return;
+    var version = board.versions[index];
+    if (!version || !version.data) return;
+    if (!window.confirm('Restore the version from ' + new Date(version.at).toLocaleString() + '?')) return;
+    if (dirty && !saveBoard(true)) return;
+    board.data = JSON.parse(JSON.stringify(version.data));
+    board.name = String(board.data.name || board.name || 'My board').slice(0, 40);
+    board.updated = Date.now();
+    if (!writeLibrary()) {
+      toast('Could not restore that version. Browser storage may be full.');
+      return;
+    }
+    applyBoardData(board.data);
+    clearHistory();
+    emptyDismissed = true;
+    firstSteps.dismissed = true;
+    setBgImage(S.bg);
+    syncControls();
+    renderAll();
+    updateSaveState('Restored version', false);
+    closeVersions();
+    toast('Version restored.');
+    announce('Previous version restored.');
   }
 
   function renderLibrary() {
@@ -3760,6 +4395,8 @@
     S.links = validLinks(data.links, cols, rows);
     S.branches = validBranches(data.branches, cols, rows);
     S.homeCells = validHomeCells(data.homeCells, cols, rows);
+    S.homeLanes = validHomeLanes(data.homeLanes, cols, rows);
+    S.safeCells = validCellList(data.safeCells, cols, rows);
     S.settings = normaliseSettings(data.settings);
     S.winner = clamp(Number(data.winner) || 0, 0, 4);
     S.bg = typeof data.bg === 'string' ? data.bg : null;
@@ -3813,6 +4450,8 @@
             token.player = clamp(Math.round(Number(t.player) || 1), 1, 4);
             token.pawnIndex = clamp(Math.round(Number(t.pawnIndex) || 1), 1, 4);
             token.finished = !!t.finished;
+            token.inLane = !!t.inLane;
+            token.laneIndex = clamp(Math.round(Number(t.laneIndex) || 0), 0, 7);
             if (typeof t.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(t.color)) token.color = t.color;
             if (Number.isFinite(Number(t.pathIndex))) token.pathIndex = Math.round(Number(t.pathIndex));
           }
@@ -3945,6 +4584,8 @@
     S.links = validLinks(S.links, cols, rows);
     S.branches = validBranches(S.branches, cols, rows);
     S.homeCells = validHomeCells(S.homeCells, cols, rows);
+    S.homeLanes = validHomeLanes(S.homeLanes, cols, rows);
+    S.safeCells = validCellList(S.safeCells, cols, rows);
   }
 
   function resetGridTo(cols, rows, shape) {
@@ -3963,6 +4604,8 @@
     S.links = [];
     S.branches = [];
     S.homeCells = [];
+    S.homeLanes = [];
+    S.safeCells = [];
   }
 
   function setGrid(cols, rows, shape) {
@@ -4543,6 +5186,8 @@
     S.links = [];
     S.branches = [];
     S.homeCells = [];
+    S.homeLanes = [];
+    S.safeCells = [];
     S.settings = defaultSettings();
     S.winner = 0;
     hideWin(false);
@@ -4708,6 +5353,8 @@
         t.pathIndex = 0;
         t.started = false;
         t.finished = false;
+        t.inLane = false;
+        t.laneIndex = 0;
         setPawnPosition(t, 0, true);
       }
     }
@@ -4776,7 +5423,19 @@
     });
     S.settings.pawnsPerPlayer = 4;
     S.settings.allPawnsWin = true;
+    S.settings.useHomeLanes = true;
+    S.settings.blockades = true;
     S.homeCells = homes.map(function (home) { return { c: home.c, r: home.r }; });
+    S.homeLanes = [
+      [{ c: 1, r: 2 }, { c: 1, r: 3 }, { c: 1, r: 4 }, { c: 1, r: 5 }],
+      [{ c: 13, r: 2 }, { c: 13, r: 3 }, { c: 13, r: 4 }, { c: 13, r: 5 }],
+      [{ c: 2, r: 13 }, { c: 3, r: 13 }, { c: 4, r: 13 }, { c: 5, r: 13 }],
+      [{ c: 12, r: 13 }, { c: 11, r: 13 }, { c: 10, r: 13 }, { c: 9, r: 13 }]
+    ];
+    S.safeCells = [5, 13, 21, 29, 37, 45].map(function (n) {
+      var cell = findCellByNumber(n);
+      return cell ? { c: cell.c, r: cell.r } : null;
+    }).filter(Boolean);
     placeTemplatePawns(4);
     S.name = 'Ludo Loop';
     S.rules = 'Four players each have four pawns. Roll a 6 to leave home and choose which pawn to move. Land on a rival to send it back to the start. Bring all four pawns home to win.';
@@ -4787,32 +5446,33 @@
     S.round = 1;
   }
 
-  function makeSeedCard(name, text, icon, color) {
+  function makeSeedCard(name, text, icon, color, effect) {
     return sanitiseCustomCard({
       id: 'cc-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name: name,
       text: text,
       icon: icon,
-      color: color
+      color: color,
+      effect: effect || null
     });
   }
 
   function seedPropertyDecks() {
     var chance = [
-      makeSeedCard('Advance to GO', 'Move to tile 1.', '🚩', '#5E8C5A'),
-      makeSeedCard('Bank pays you', 'Collect £50.', '💷', '#c98a2e'),
-      makeSeedCard('Repair bill', 'Pay £25.', '🔧', '#BC4749'),
-      makeSeedCard('Go to Jail', 'Move to tile 11 and miss a turn.', '🔒', '#6B6257'),
-      makeSeedCard('Take another card', 'Draw again.', '🃏', '#3f6e71'),
-      makeSeedCard('Speeding fine', 'Pay £15.', '🚓', '#BC4749')
+      makeSeedCard('Advance to GO', 'Move to tile 1.', '🚩', '#5E8C5A', { type: 'goTo', value: 1 }),
+      makeSeedCard('Bank pays you', 'Collect £50.', '💷', '#c98a2e', { type: 'money', value: 50 }),
+      makeSeedCard('Repair bill', 'Pay £25.', '🔧', '#BC4749', { type: 'money', value: -25 }),
+      makeSeedCard('Go to Jail', 'Move to tile 11.', '🔒', '#6B6257', { type: 'goTo', value: 11 }),
+      makeSeedCard('Take another card', 'Draw again.', '🃏', '#3f6e71', { type: 'again', value: 0 }),
+      makeSeedCard('Speeding fine', 'Pay £15.', '🚓', '#BC4749', { type: 'money', value: -15 })
     ].filter(Boolean);
     var chest = [
-      makeSeedCard('Birthday money', 'Collect £20.', '🎁', '#c98a2e'),
-      makeSeedCard('Inheritance', 'Collect £100.', '🏦', '#3f6e71'),
-      makeSeedCard('School trip', 'Pay £30.', '🚌', '#BC4749'),
-      makeSeedCard('Prize winner', 'Collect £50.', '🏆', '#c98a2e'),
-      makeSeedCard('Hospital bill', 'Pay £40.', '🏥', '#BC4749'),
-      makeSeedCard('Get out of jail', 'Keep this card.', '🔑', '#5E8C5A')
+      makeSeedCard('Birthday money', 'Collect £20.', '🎁', '#c98a2e', { type: 'money', value: 20 }),
+      makeSeedCard('Inheritance', 'Collect £100.', '🏦', '#3f6e71', { type: 'money', value: 100 }),
+      makeSeedCard('School trip', 'Pay £30.', '🚌', '#BC4749', { type: 'money', value: -30 }),
+      makeSeedCard('Prize winner', 'Collect £50.', '🏆', '#c98a2e', { type: 'money', value: 50 }),
+      makeSeedCard('Hospital bill', 'Pay £40.', '🏥', '#BC4749', { type: 'money', value: -40 }),
+      makeSeedCard('Get out of jail', 'Keep this card.', '🔑', '#5E8C5A', null)
     ].filter(Boolean);
     S.decks = [
       {
@@ -4853,9 +5513,12 @@
       setMetaNumber(p.c, p.r, i + 1);
       var n = i + 1;
       if (n % 3 === 0 && n !== S.path.length) {
+        var groupIndex = n / 3 - 1;
         setTemplateMeta(p.c, p.r, {
-          group: groups[(n / 3 - 1) % groups.length],
-          label: 'Street ' + Math.ceil(n / 3)
+          group: groups[groupIndex % groups.length],
+          label: 'Street ' + Math.ceil(n / 3),
+          price: 80 + groupIndex * 20,
+          rent: 10 + groupIndex * 5
         });
       }
     });
@@ -4867,9 +5530,14 @@
     ];
     corners.forEach(function (corner) {
       var cell = findCellByNumber(corner[0]);
-      if (cell) setTemplateMeta(cell.c, cell.r, { label: corner[1], icon: corner[2], group: '#c98a2e' });
+      if (!cell) return;
+      var extra = { label: corner[1], icon: corner[2], group: '#c98a2e' };
+      if (corner[1] === 'GO') extra.effect = { type: 'money', value: 200 };
+      else if (corner[1] === 'Jail') extra.effect = { type: 'skip', value: 1 };
+      else if (corner[1] === 'Free') extra.effect = { type: 'money', value: 50 };
+      setTemplateMeta(cell.c, cell.r, extra);
     });
-    [6, 16, 26, 36].forEach(function (n, index) {
+    [8, 17, 28, 37].forEach(function (n, index) {
       var cell = findCellByNumber(n);
       if (cell) {
         setTemplateMeta(cell.c, cell.r, {
@@ -4879,14 +5547,15 @@
         });
       }
     });
-    [9, 29].forEach(function (n) {
+    [5, 25].forEach(function (n) {
       var cell = findCellByNumber(n);
-      if (cell) setTemplateMeta(cell.c, cell.r, { icon: '💰', label: 'Tax', effect: { type: 'money', value: -50 } });
+      if (cell) setTemplateMeta(cell.c, cell.r, { icon: '🤑', label: 'Tax', effect: { type: 'money', value: -50 } });
     });
     placeTemplatePawns(4);
     S.name = 'Property Loop';
-    S.rules = 'Start with £1500. Roll and move around the loop. Buy streets by marking them with your pawn colour. Land on Tax to pay £50. Draw a card on card tiles. Richest player when someone passes GO twice wins.';
+    S.rules = 'Start with £1500. Roll and move around the loop. Land on a street to buy it, then collect rent from anyone who lands there. GO pays £200, Tax costs £50, Jail misses a turn, and card tiles draw from Chance or Community Chest.';
     S.settings.startingMoney = 1500;
+    S.settings.rent = true;
     S.settings.snapPath = true;
     S.players.forEach(function (p) { p.money = 1500; });
     S.turn = 1;
@@ -4985,6 +5654,10 @@
     resetBoardDoc();
     S.templateId = id === 'blank' ? '' : id;
     S.name = id === 'blank' ? 'My board' : (names[id] || 'My board');
+    S.decks = [];
+    S.activeDeckId = '';
+    S.customCards = [];
+    S.deckStandard = true;
     if (id === 'meadow') buildMeadowTemplate();
     else if (id === 'dungeon') buildDungeonTemplate();
     else if (id === 'island') buildIslandTemplate();
@@ -5031,6 +5704,8 @@
     S.links = [];
     S.branches = [];
     S.homeCells = [];
+    S.homeLanes = [];
+    S.safeCells = [];
     S.settings = defaultSettings();
     S.winner = 0;
     S.templateId = '';
@@ -5066,6 +5741,8 @@
     S.links = [];
     S.branches = [];
     S.homeCells = [];
+    S.homeLanes = [];
+    S.safeCells = [];
     renderAll();
     markDirty();
     toast('Tiles cleared. Pieces are still on the board.');
@@ -5540,6 +6217,7 @@
     updatePlayAids();
     updateSelectHint();
     renderActionDie();
+    updateCardEffectLabel();
   }
 
   function renderPlayers() {
@@ -5668,6 +6346,8 @@
     if (ruleStackInput) ruleStackInput.checked = !!S.settings.stacking;
     if (ruleRentInput) ruleRentInput.checked = !!S.settings.rent;
     if (ruleAllPawnsInput) ruleAllPawnsInput.checked = !!S.settings.allPawnsWin;
+    if (patternsInput) patternsInput.checked = !!S.settings.patterns;
+    if (highContrastInput) highContrastInput.checked = !!S.settings.highContrastLabels;
     if (startingMoneyInput && document.activeElement !== startingMoneyInput) {
       startingMoneyInput.value = String(S.settings.startingMoney || 0);
     }
@@ -6134,6 +6814,69 @@
     if ((type === 'skip' || type === 'collect') && Number(tileEffectValueInput.value) < 1) tileEffectValueInput.value = type === 'collect' ? '25' : '1';
   }
 
+  function tileEffectText(effect) {
+    if (!effect) return '';
+    var value = Number(effect.value) || 0;
+    if (effect.type === 'forward') return 'Move forward ' + Math.abs(value);
+    if (effect.type === 'back') return 'Move back ' + Math.abs(value);
+    if (effect.type === 'goTo') return 'Go to tile ' + value;
+    if (effect.type === 'money') return value >= 0 ? 'Collect £' + value : 'Pay £' + Math.abs(value);
+    if (effect.type === 'skip') return 'Miss a turn';
+    if (effect.type === 'again') return 'Roll again';
+    if (effect.type === 'card') return 'Draw a card' + (effect.deck ? ' from ' + effect.deck : '');
+    if (effect.type === 'swap') return 'Swap with the next rival';
+    if (effect.type === 'toStart') return 'Go back to the start';
+    if (effect.type === 'collect') return 'Collect £' + (value || 25) + ' from each player';
+    if (effect.type === 'nearest') return 'Take the nearest snake or ladder';
+    return '';
+  }
+
+  function renderBoardList() {
+    if (!boardListBody) return;
+    boardListBody.textContent = '';
+    var cells = [];
+    if (S.path.length) {
+      S.path.forEach(function (p, index) {
+        cells.push({ c: p.c, r: p.r, stop: index + 1 });
+      });
+    } else {
+      for (var i = 0; i < S.tiles.length; i++) {
+        cells.push({ c: i % S.cols, r: Math.floor(i / S.cols), stop: i + 1 });
+      }
+    }
+    cells.forEach(function (entry) {
+      var meta = metaAt(entry.c, entry.r);
+      var terrain = S.tiles[cellIndex(entry.c, entry.r)];
+      var owner = meta && meta.owner ? (S.players[meta.owner - 1].name || 'Player ' + meta.owner) : '';
+      var price = meta && meta.price ? '£' + meta.price + (meta.rent ? ' / £' + meta.rent + ' rent' : '') : '';
+      var tr = document.createElement('tr');
+      [String(entry.stop), meta && meta.n ? String(meta.n) : '', meta && meta.label ? meta.label : '', terrain && TERRAIN[terrain] ? TERRAIN[terrain].name : 'Empty', tileEffectText(meta && meta.effect), owner, price].forEach(function (value) {
+        var td = document.createElement('td');
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+      boardListBody.appendChild(tr);
+    });
+    if (boardListCount) boardListCount.textContent = cells.length + ' tiles in route order.';
+  }
+
+  function openBoardList() {
+    renderBoardList();
+    boardListEl.hidden = false;
+    document.body.classList.add('tt-modal-open');
+    try { boardListClose.focus({ preventScroll: true }); } catch (err) { boardListClose.focus(); }
+    announce('Board list opened with ' + boardListBody.children.length + ' tiles.');
+  }
+
+  function closeBoardList() {
+    if (!boardListEl || boardListEl.hidden) return;
+    boardListEl.hidden = true;
+    document.body.classList.remove('tt-modal-open');
+    if (boardListBtn) {
+      try { boardListBtn.focus({ preventScroll: true }); } catch (err) { boardListBtn.focus(); }
+    }
+  }
+
   function openTilePanel(col, row) {
     if (col < 0 || row < 0 || col >= S.cols || row >= S.rows) {
       toast('Tap a tile on the board first.');
@@ -6153,6 +6896,8 @@
     tileEffectValueInput.value = meta.effect ? String(meta.effect.value) : '1';
     tileNoteInput.value = meta.note || '';
     if (tileOwnerInput) tileOwnerInput.value = String(meta.owner || 0);
+    if (tilePriceInput) tilePriceInput.value = String(meta.price || 0);
+    if (tileRentInput) tileRentInput.value = String(meta.rent || 0);
     if (tileDeckInput) {
       ensureDecks();
       tileDeckInput.textContent = '';
@@ -6197,6 +6942,8 @@
     if (tileGroupChosen && tileGroupInput.value) meta.group = tileGroupInput.value;
     if (tileNoteInput.value.trim()) meta.note = tileNoteInput.value.trim().slice(0, 60);
     if (tileOwnerInput && Number(tileOwnerInput.value)) meta.owner = clamp(Math.round(Number(tileOwnerInput.value)), 1, 4);
+    if (tilePriceInput && Number(tilePriceInput.value) > 0) meta.price = clamp(Math.round(Number(tilePriceInput.value)), 0, 99999);
+    if (tileRentInput && Number(tileRentInput.value) > 0) meta.rent = clamp(Math.round(Number(tileRentInput.value)), 0, 99999);
     var type = tileEffectInput.value;
     if (type && type !== 'none' && EFFECT_TYPES[type]) {
       meta.effect = {
@@ -6291,9 +7038,11 @@
       'Choose a pawn',
       activePlayerName() + ', choose which pawn to move.',
       tokens.map(function (token) {
-        var cell = pathCellAt(token.pathIndex);
+        var cell = pawnCell(token);
         var meta = cell ? metaAt(cell.c, cell.r) : null;
-        var where = token.pathIndex <= 0 ? 'at the start' : (meta && meta.n ? 'on tile ' + meta.n : 'on stop ' + (token.pathIndex + 1));
+        var where = token.inLane
+          ? 'in home lane ' + ((token.laneIndex || 0) + 1)
+          : (token.pathIndex <= 0 ? 'at the start' : (meta && meta.n ? 'on tile ' + meta.n : 'on stop ' + (token.pathIndex + 1)));
         return {
           label: 'Pawn ' + (token.pawnIndex || 1) + ' ' + where,
           value: token
@@ -6352,8 +7101,15 @@
 
   function announceCell() {
     var t = S.tiles[kbCursor.row * S.cols + kbCursor.col];
-    announce('Row ' + (kbCursor.row + 1) + ', column ' + (kbCursor.col + 1) + ', ' +
-      (t && TERRAIN[t] ? TERRAIN[t].name : 'empty') + '.');
+    var meta = metaAt(kbCursor.col, kbCursor.row);
+    var parts = ['Row ' + (kbCursor.row + 1), 'column ' + (kbCursor.col + 1)];
+    if (meta && meta.n) parts.push('tile ' + meta.n);
+    if (meta && meta.label) parts.push(meta.label);
+    parts.push(t && TERRAIN[t] ? TERRAIN[t].name : 'empty');
+    if (meta && meta.effect) parts.push(tileEffectText(meta.effect));
+    if (meta && meta.owner) parts.push('owned by ' + (S.players[meta.owner - 1].name || 'Player ' + meta.owner));
+    if (meta && meta.price) parts.push('costs £' + meta.price);
+    announce(parts.join(', ') + '.');
   }
 
   function clearArm() {
@@ -6495,7 +7251,6 @@
   }
 
   function onCanvasKeyDown(event) {
-    if (S.mode !== 'build') return;
     var key = event.key;
     var moves = {
       ArrowLeft: [-1, 0],
@@ -6510,6 +7265,13 @@
       kbCursor.row = clamp(kbCursor.row + moves[key][1], 0, S.rows - 1);
       scheduleDraw();
       announceCell();
+      return;
+    }
+    if (S.mode !== 'build') {
+      if (key === ' ' || key === 'Enter') {
+        event.preventDefault();
+        announceCell();
+      }
       return;
     }
     if (key === ' ' || key === 'Enter') {
@@ -6588,6 +7350,24 @@
   }
 
   function onGlobalKeyDown(event) {
+    if (versionsEl && !versionsEl.hidden) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeVersions();
+      } else if (event.key === 'Tab') {
+        trapFocus(versionsEl.querySelector('.tt-modal-card'), event);
+      }
+      return;
+    }
+    if (boardListEl && !boardListEl.hidden) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBoardList();
+      } else if (event.key === 'Tab') {
+        trapFocus(boardListEl.querySelector('.tt-modal-card'), event);
+      }
+      return;
+    }
     if (choiceEl && !choiceEl.hidden) {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -6806,6 +7586,7 @@
     byId('ttDrawCard').addEventListener('click', spawnCard);
     byId('ttQuickCard').addEventListener('click', spawnCard);
     byId('ttCardAdd').addEventListener('click', onCardAdd);
+    if (cardEffectInput) cardEffectInput.addEventListener('change', updateCardEffectLabel);
     if (cardList) cardList.addEventListener('click', onCardDelete);
 
     byId('ttRoundDown').addEventListener('click', function () { changeRound(-1); });
@@ -7048,6 +7829,32 @@
       resetGame();
     });
     if (cv) cv.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+    if (patternsInput) {
+      patternsInput.addEventListener('change', function () {
+        S.settings.patterns = patternsInput.checked;
+        scheduleDraw();
+        markDirty();
+        announce(S.settings.patterns ? 'Colour-blind patterns on.' : 'Colour-blind patterns off.');
+      });
+    }
+    if (highContrastInput) {
+      highContrastInput.addEventListener('change', function () {
+        S.settings.highContrastLabels = highContrastInput.checked;
+        scheduleDraw();
+        markDirty();
+        announce(S.settings.highContrastLabels ? 'High-contrast labels on.' : 'High-contrast labels off.');
+      });
+    }
+    if (boardListBtn) boardListBtn.addEventListener('click', openBoardList);
+    if (boardListClose) boardListClose.addEventListener('click', closeBoardList);
+    if (boardListBackdrop) boardListBackdrop.addEventListener('click', closeBoardList);
+    if (versionBtn) versionBtn.addEventListener('click', openVersions);
+    if (versionsClose) versionsClose.addEventListener('click', closeVersions);
+    if (versionsBackdrop) versionsBackdrop.addEventListener('click', closeVersions);
+    if (versionList) versionList.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-version-index]');
+      if (btn) restoreVersion(Number(btn.dataset.versionIndex));
+    });
 
     byId('ttBgBtn').addEventListener('click', function () { byId('ttBgFile').click(); });
     byId('ttBgFile').addEventListener('change', onBackgroundFile);
@@ -7507,6 +8314,9 @@
     init();
   }
 })();
+
+
+
 
 
 
