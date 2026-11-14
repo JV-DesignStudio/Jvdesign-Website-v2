@@ -29,7 +29,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c8PAhwtL7yHAgAedpXxk9iWfPIFzPsnPQkiIfRduGhE=' 'sha256-phBkRNpaPwXO/xzId/FDMTWgqU1Oan68PZ3jwSBgucM=' 'sha256-N6FpMWfHeXZ2DDwqX6EeSf0Jao9MRh1wlDvtOQCP7xw=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c8PAhwtL7yHAgAedpXxk9iWfPIFzPsnPQkiIfRduGhE=' 'sha256-phBkRNpaPwXO/xzId/FDMTWgqU1Oan68PZ3jwSBgucM=' 'sha256-wxY9XRnHbGKBU3QmeHk2DOLLw18ir8+z83uExBD4IUo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -138,6 +138,7 @@
  <span class="hero-badge">✦ Game Dev Toolbox</span>
  <h1>Palette Studio</h1>
  <p>Pick a mood, browse curated presets, then make a game-ready colour palette. Lock colours you love, shuffle the rest, and export for your project.</p>
+ <p class="brief-ember"><img src="/assets/mascots/ember-badge.webp" alt="" width="20" height="20" style="vertical-align:middle;border-radius:50%;margin-right:6px"><strong>Ember says:</strong> tap a swatch to lock a colour you like, then use the small colour box under it to pick your own.</p>
 </section>
 <div class="main">
 
@@ -593,6 +594,7 @@ function renderPalette(sat,bri,con){
         <span class="lock-icon" aria-hidden="true" style="color:${textCol}">${p.locked?'⭐':'✅'}</span>
       </div>
       <div class="swatch-hex" role="button" tabindex="0" aria-label="Copy hex ${p.hex}" title="Click to copy">${p.hex}</div>
+      <input type="color" class="swatch-pick" value="${p.hex}" aria-label="Pick colour ${i+1}" title="Pick your own colour for swatch ${i+1}">
       <div class="swatch-name">${colourName(h,s,l)}</div>
       <div class="swatch-contrast" title="Best text colour on this swatch, and its WCAG contrast ratio">${contrastBadge(p.hex)}</div>
     `;
@@ -602,6 +604,15 @@ function renderPalette(sat,bri,con){
     const hexEl=wrap.querySelector('.swatch-hex');
     hexEl.addEventListener('click',()=>copyHex(p.hex));
     hexEl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();copyHex(p.hex);}});
+    const pickEl=wrap.querySelector('.swatch-pick');
+    pickEl.addEventListener('change',()=>{
+      palPushUndo();
+      palette[i].hex=pickEl.value;
+      palette[i].locked=false;
+      applyAdjust();
+      schedulePaletteAutosave();
+      showToast('Picked '+pickEl.value);
+    });
     // Store adjusted hex back
     palette[i].adjHex = p.hex;
     row.appendChild(wrap);
