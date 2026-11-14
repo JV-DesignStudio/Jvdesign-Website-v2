@@ -1524,7 +1524,16 @@
 
   function maybeTour() {
     var s = allSettings();
-    if (s.seenWalkthrough || !S.tool) return;
+    // A2993: the first-mission flow is already a guided walkthrough. The generic
+    // tour card sits over the canvas on a phone, so the learner taps the card
+    // instead of drawing and the mission never advances.
+    if (s.seenWalkthrough || !S.tool || window._firstMission) return;
+    // A2995: Pixel Studio already opens with its own start panel and first
+    // mission. The generic tour card duplicated that, arrived late (it was the
+    // largest paint at ~5 s) and pushed the page's LCP budget over.
+    if (S.tool === 'pixel-studio') return;
+    if (location.hash.indexOf('#first-mission') === 0) return;
+    if (typeof URLSearchParams !== 'undefined' && new URLSearchParams(location.search).has('first-mission')) return;
     setTimeout(function () {
       var step = 0;
       var overlay = h('div', { class: 'jvs-tour', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'jvsTourTitle' });

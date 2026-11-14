@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-yE+yeng9EH+gqOyPUSdDDF65+6/grhpBObxUGkNT6wo=' 'sha256-YIa9WVx7wOgz7SjppswmanuC0JdmSuFdXWbayhL163k=' 'sha256-cPf3yu+hupQveRXv3CFHtGHqJxNVZuuYfuIk90A8CGg=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-SLzHOHLE+YuFtRM0DPcw4lqkU3LccAm5PhjVHQQUC4M=' 'sha256-YIa9WVx7wOgz7SjppswmanuC0JdmSuFdXWbayhL163k=' 'sha256-cPf3yu+hupQveRXv3CFHtGHqJxNVZuuYfuIk90A8CGg=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -1031,6 +1031,9 @@ function init(){
   setupEvents();
   initMagnifier();
   updateExportHint();
+  // A2995: reveal the canvas and panels only after they have their real size,
+  // so nothing moves after first paint.
+  document.documentElement.classList.add('ps-ready');
   if(window._firstMission){
     // A1459: if the visitor arrived with a doodle from the homepage canvas
     // (#first-mission&art=...), load that art instead of the blank character
@@ -3229,6 +3232,67 @@ function storageUsedKB(){
   }catch(e){return 0;}
 }
 // A2628: one clear save/export state so learners can see their work is kept.
+// A2998: IndexedDB keeps big projects (and school profiles whose localStorage
+// fills up) safe. localStorage stays the fast synchronous path; IndexedDB is the
+// mirror and the fallback when a save is too large for the 5 MB box.
+var _idbPromise=null;
+function idbOpen(){
+  if(_idbPromise) return _idbPromise;
+  _idbPromise=new Promise(function(resolve){
+    try{
+      if(window.JVDS_IDB_FORCE_FAIL||!window.indexedDB){ resolve(null); return; }
+      var req=indexedDB.open('jvds-pixel',1);
+      req.onupgradeneeded=function(){ try{ req.result.createObjectStore('projects'); }catch(e){} };
+      req.onsuccess=function(){ resolve(req.result); };
+      req.onerror=function(){ resolve(null); };
+      req.onblocked=function(){ resolve(null); };
+      setTimeout(function(){ resolve(null); },1500);
+    }catch(e){ resolve(null); }
+  });
+  return _idbPromise;
+}
+function idbPut(key,value){
+  if(window.JVDS_IDB_FORCE_FAIL) return Promise.resolve(false);
+  return idbOpen().then(function(db){
+    if(!db) return false;
+    return new Promise(function(resolve){
+      try{
+        var tx=db.transaction('projects','readwrite');
+        tx.objectStore('projects').put(value,key);
+        tx.oncomplete=function(){ resolve(true); };
+        tx.onerror=function(){ resolve(false); };
+        tx.onabort=function(){ resolve(false); };
+      }catch(e){ resolve(false); }
+    });
+  }).catch(function(){ return false; });
+}
+function idbGet(key){
+  if(window.JVDS_IDB_FORCE_FAIL) return Promise.resolve(null);
+  return idbOpen().then(function(db){
+    if(!db) return null;
+    return new Promise(function(resolve){
+      try{
+        var tx=db.transaction('projects','readonly');
+        var r=tx.objectStore('projects').get(key);
+        r.onsuccess=function(){ resolve(r.result||null); };
+        r.onerror=function(){ resolve(null); };
+      }catch(e){ resolve(null); }
+    });
+  }).catch(function(){ return null; });
+}
+function idbDel(key){
+  return idbOpen().then(function(db){
+    if(!db) return false;
+    return new Promise(function(resolve){
+      try{
+        var tx=db.transaction('projects','readwrite');
+        tx.objectStore('projects').delete(key);
+        tx.oncomplete=function(){ resolve(true); };
+        tx.onerror=function(){ resolve(false); };
+      }catch(e){ resolve(false); }
+    });
+  }).catch(function(){ return false; });
+}
 function jvdsKeepState(state){
   var conf={
     dirty:{t:'Not saved yet',bg:'rgba(255,255,255,.06)',bd:'var(--border2)',fg:'var(--muted)'},
@@ -3244,14 +3308,22 @@ function jvdsKeepState(state){
   for(var j=0;j<roots.length;j++){roots[j].setAttribute('data-state',state);}
 }
 try{ if(localStorage.getItem('jvds_pixel')) jvdsKeepState('saved'); else if(localStorage.getItem('jvds_pixel_auto')) jvdsKeepState('autosaved'); }catch(e){}
+// A2998: a large project may only exist in IndexedDB.
+idbGet('current').then(function(v){
+  if(!v) return;
+  try{ if(!localStorage.getItem('jvds_pixel')) jvdsKeepState('saved'); }catch(e){}
+});
 function saveProject(){
+  var json;
+  try{ json=serializeProject(); }catch(e){ json=''; }
   try{
     var usedKB=storageUsedKB();
     var tight=usedKB>2500;
     if(usedKB>3500){
       showToast('Storage almost full ('+usedKB+'KB). Use Backup .json now.');
     }
-    localStorage.setItem('jvds_pixel',serializeProject());
+    localStorage.setItem('jvds_pixel',json);
+    idbPut('current',json); // mirror for big reopen / quota later
     publishSpriteToBus();
     window._projectSaved=true;
     jvdsKeepState('saved');
@@ -3262,35 +3334,59 @@ function saveProject(){
     // A1692: school profiles can block storage outright (SecurityError). Do not
     // pretend the work was saved; point at Export PNG, which always works.
     var blocked=(e&&e.name==='SecurityError');
-    window._projectSaved=false;
-    window._storageBlocked=!!blocked;
-    jvdsKeepState('blocked');
-    if(blocked){
-      showToast('This computer blocks browser saving. Tap Export PNG to keep your work forever.');
-      var bar=document.getElementById('bottom-bar');
-      if(bar&&getComputedStyle(bar).display!=='none'&&typeof bbTab==='function'){
-        var tab=[].slice.call(document.querySelectorAll('.bb-tab')).filter(function(b){return /save/i.test(b.textContent);})[0];
-        if(tab) bbTab(3,tab);
-      }
-      var where=document.getElementById('fm-where');
-      if(where){
-        where.innerHTML='Saving is blocked here. Tap the <strong>Save</strong> tab, then <strong>PNG</strong>.';
-        where.style.display='block';
-      }
-    } else {
-      showToast('Storage full. Tap Export PNG to keep your work forever.');
-      exportProjectFile(true);
+    if(!blocked && json){
+      // A2998: the 5 MB localStorage box is full, but IndexedDB can take the
+      // large project. Save is async only on this path.
+      return idbPut('current',json).then(function(ok){
+        if(ok){
+          publishSpriteToBus();
+          window._projectSaved=true;
+          jvdsKeepState('saved');
+          showToast('Saved on this device (large project)');
+          return true;
+        }
+        return saveProjectQuotaFallback(e);
+      });
     }
-    return false;
+    return saveProjectQuotaFallback(e);
   }
 }
+function saveProjectQuotaFallback(e){
+  var blocked=(e&&e.name==='SecurityError');
+  window._projectSaved=false;
+  window._storageBlocked=!!blocked;
+  jvdsKeepState('blocked');
+  if(blocked){
+    showToast('This computer blocks browser saving. Tap Export PNG to keep your work forever.');
+    var bar=document.getElementById('bottom-bar');
+    if(bar&&getComputedStyle(bar).display!=='none'&&typeof bbTab==='function'){
+      var tab=[].slice.call(document.querySelectorAll('.bb-tab')).filter(function(b){return /save/i.test(b.textContent);})[0];
+      if(tab) bbTab(3,tab);
+    }
+    var where=document.getElementById('fm-where');
+    if(where){
+      where.innerHTML='Saving is blocked here. Tap the <strong>Save</strong> tab, then <strong>PNG</strong>.';
+      where.style.display='block';
+    }
+  } else {
+    showToast('Storage full. Tap Export PNG to keep your work forever.');
+    exportProjectFile(true);
+  }
+  return false;
+}
 function loadProject(){
-  try{
-    const raw=localStorage.getItem('jvds_pixel');
-    if(!raw){showToast('No saved project');return;}
-    applyProject(JSON.parse(raw));
-    showToast('Loaded ?');
-  }catch(e){showToast('Load failed');}
+  var raw=null;
+  try{ raw=localStorage.getItem('jvds_pixel'); }catch(e){}
+  if(raw){
+    try{ applyProject(JSON.parse(raw)); showToast('Loaded ?'); return true; }
+    catch(e){}
+  }
+  // A2998: a project too large for localStorage lives in IndexedDB.
+  return idbGet('current').then(function(idbRaw){
+    if(!idbRaw){ showToast('No saved project'); return false; }
+    try{ applyProject(JSON.parse(idbRaw)); showToast('Loaded ?'); return true; }
+    catch(e){ showToast('Load failed'); return false; }
+  });
 }
 function exportProjectFile(quiet){
   try{
@@ -3527,46 +3623,83 @@ function markDirty(){
 }
 function autoSave(){
   if(!dirty) return;
+  var json;
+  try{ json=serializeProject(); }catch(e){ return; }
+  var localOk=false;
   try{
-    localStorage.setItem('jvds_pixel_auto',serializeProject());
-    dirty=false;
-    jvdsKeepState('autosaved');
+    localStorage.setItem('jvds_pixel_auto',json);
+    localOk=true;
   }catch(e){
     // A1789: a policy block is not a full disk, and Save cannot download a
-    // backup on that profile. Point at the controls that actually work.
+    // backup on that profile. Do not quietly move the work to IndexedDB behind
+    // an explicit browser block; say what happened and point at Export PNG.
     var blocked=(e&&e.name==='SecurityError');
-    window._storageBlocked=window._storageBlocked||!!blocked;
+    if(blocked){
+      window._storageBlocked=true;
+      if(!autoSave._blockedWarned){
+        autoSave._blockedWarned=true;
+        showToast('This computer blocks browser saving. Use Export PNG to keep your art.');
+      }
+      return;
+    }
     if(!autoSave._warned){
       autoSave._warned=true;
-      showToast(blocked
-        ? 'This computer blocks browser saving. Use Export PNG to keep your art.'
-        : 'Storage full - autosave paused. Use Project to download a .json backup.');
+      showToast('Storage full - trying the larger device store.');
     }
   }
+  idbPut('auto',json).then(function(idbOk){
+    if(localOk||idbOk){
+      dirty=false;
+      jvdsKeepState('autosaved');
+      if(!localOk&&idbOk&&!autoSave._largeWarned){
+        autoSave._largeWarned=true;
+        showToast('Autosaved on this device (large project)');
+      }
+    } else if(!autoSave._warned){
+      autoSave._warned=true;
+      showToast('This computer blocks browser saving. Use Export PNG to keep your art.');
+    }
+  });
+}
+function _autosaveRestorable(raw){
+  if(!raw) return false;
+  try{
+    const d=JSON.parse(raw);
+    return !!(d&&Array.isArray(d.frames)&&d.frames.length&&d.frames[0].some(l=>l));
+  }catch(e){ return false; }
 }
 function setupAutosave(){
-  let raw=null;
+  var raw=null;
   try{raw=localStorage.getItem('jvds_pixel_auto');}catch(e){}
-  let restorable=false;
-  if(raw){
-    try{
-      const d=JSON.parse(raw);
-      restorable=!!(d&&Array.isArray(d.frames)&&d.frames.length&&d.frames[0].some(l=>l));
-    }catch(e){}
-  }
-  if(restorable){ openModal('restoreModal'); return; }
-  if(!hasSeen()) openStart();
+  if(_autosaveRestorable(raw)){ openModal('restoreModal'); return; }
+  idbGet('auto').then(function(idbRaw){
+    if(_autosaveRestorable(idbRaw)){ openModal('restoreModal'); return; }
+    if(!hasSeen()) openStart();
+  });
 }
 function restoreAutosave(){
-  try{
-    const raw=localStorage.getItem('jvds_pixel_auto');
-    if(raw) applyProject(JSON.parse(raw));
-    showToast('Session restored ?');
-  }catch(e){showToast('Restore failed');}
-  closeModal('restoreModal');
+  function apply(raw){
+    try{ applyProject(JSON.parse(raw)); showToast('Session restored ?'); return true; }
+    catch(e){ showToast('Restore failed'); return false; }
+  }
+  var raw=null;
+  try{ raw=localStorage.getItem('jvds_pixel_auto'); }catch(e){}
+  function finish(ok){
+    idbDel('auto');
+    try{ localStorage.removeItem('jvds_pixel_auto'); }catch(e){}
+    closeModal('restoreModal');
+    return ok;
+  }
+  if(raw) return finish(apply(raw));
+  return idbGet('auto').then(function(idbRaw){
+    if(idbRaw) return finish(apply(idbRaw));
+    showToast('No autosave to restore');
+    return finish(false);
+  });
 }
 function discardAutosave(){
   try{localStorage.removeItem('jvds_pixel_auto');}catch(e){}
+  idbDel('auto');
   closeModal('restoreModal');
 }
 

@@ -7,6 +7,7 @@
 // budget exits 1, so CI fails on a regression.
 //
 //   node scripts/check-performance.js             gate (uses performance-budget.json)
+//   node scripts/check-performance.js --only /tools/pixel-studio.html   one route
 //   node scripts/check-performance.js --report    print numbers only, never fail
 //   node scripts/check-performance.js --json out.json
 //   node scripts/check-performance.js --baseline  append a dated run to
@@ -49,6 +50,13 @@ const JSON_OUT = jsonArg > -1 ? process.argv[jsonArg + 1] : null;
 // and the best run is used. A real regression breaches every run.
 const retriesArg = process.argv.indexOf('--retries');
 const RETRIES = retriesArg > -1 ? Math.max(0, parseInt(process.argv[retriesArg + 1], 10) || 0) : 2;
+// --only /tools/pixel-studio.html[,/other] measures just one or two pages while
+// keeping the same budget and profile. Useful when fixing one route without
+// waiting for the other budget rows.
+const onlyArg = process.argv.indexOf('--only');
+const ONLY = onlyArg > -1
+  ? String(process.argv[onlyArg + 1] || '').split(',').map(s => s.trim()).filter(Boolean)
+  : null;
 const PORT = 19270;
 
 const MIME = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.json':'application/json','.woff2':'font/woff2','.woff':'font/woff','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.mp3':'audio/mpeg','.ogg':'audio/ogg','.wav':'audio/wav'};
@@ -227,6 +235,7 @@ function limitFor(budget, url, metric) {
 
   try {
     for (const url of budget.pages_list) {
+    if (ONLY && !ONLY.includes(url)) continue;
       for (const vp of budget.viewports) {
         const viewport = { width: vp.width, height: vp.height, isMobile: vp.width < 800, hasTouch: vp.width < 800 };
         let row = { url, viewport: vp.name, ...(await measure(browser, url, viewport, budget.profile)) };

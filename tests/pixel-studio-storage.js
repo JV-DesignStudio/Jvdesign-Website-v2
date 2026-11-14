@@ -59,20 +59,35 @@ const check = (name, ok, detail) => { console.log((ok?'PASS ':'FAIL ')+name+(det
   });
   check('visible Backup .json button on desktop and mobile', backup.keep && backup.mobile && /Backup/i.test(backup.label), JSON.stringify(backup));
 
-  // 3. A quota failure is visible, not silent, and offers the backup.
-  const fail = await page.evaluate(() => {
+  // 3. A quota failure with no IndexedDB fallback is visible and offers the backup.
+  const fail = await page.evaluate(async () => {
     const real = Storage.prototype.setItem;
     Storage.prototype.setItem = function(){ throw new DOMException('full', 'QuotaExceededError'); };
+    window.JVDS_IDB_FORCE_FAIL = true;
     let called = false;
     const origExport = exportProjectFile;
     exportProjectFile = function(){ called = true; };
-    const ok = saveProject();
+    let ok;
+    try { ok = await saveProject(); } catch(e) { ok = 'threw'; }
     const out = { ok, saved: window._projectSaved, toast: (document.getElementById('toast')||{}).textContent || '', called };
     Storage.prototype.setItem = real;
     exportProjectFile = origExport;
+    window.JVDS_IDB_FORCE_FAIL = false;
     return out;
   });
   check('quota failure is visible and offers a backup', fail.ok===false && fail.saved===false && /storage|backup|export/i.test(fail.toast) && fail.called, JSON.stringify(fail));
+
+  // 3b. A2998: when localStorage is full, IndexedDB saves the project instead.
+  const large = await page.evaluate(async () => {
+    const real = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(){ throw new DOMException('full', 'QuotaExceededError'); };
+    let ok;
+    try { ok = await saveProject(); } catch(e) { ok = 'threw'; }
+    const out = { ok, saved: window._projectSaved, toast: (document.getElementById('toast')||{}).textContent || '' };
+    Storage.prototype.setItem = real;
+    return out;
+  });
+  check('quota save falls back to IndexedDB', large.ok===true && large.saved===true && /large project|saved on this device/i.test(large.toast), JSON.stringify(large));
 
   // 4. A backup restores in a fresh browser profile.
   const project = await page.evaluate(() => {

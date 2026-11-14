@@ -188,14 +188,19 @@ function resolveFile(urlPath) {
     await page.evaluate(() => window.loadProject());
     assert.equal(await page.evaluate(() => window._projectSaved !== false), true, 'Pixel Studio failed to load its saved project');
 
-    const toolFail = await page.evaluate(() => {
+    const toolFail = await page.evaluate(async () => {
+      // A2998: a full localStorage box now falls back to IndexedDB. Force that
+      // path off to prove the visible full-box message still exists.
       window.__storageFail = true;
-      const ok = window.saveProject();
+      window.JVDS_IDB_FORCE_FAIL = true;
+      let ok;
+      try { ok = await window.saveProject(); } catch (e) { ok = 'threw'; }
       const out = {
         ok,
         saved: window._projectSaved,
         toast: (document.getElementById('toast') || {}).textContent || ''
       };
+      window.JVDS_IDB_FORCE_FAIL = false;
       window.__storageFail = false;
       return out;
     });
