@@ -471,6 +471,117 @@ function wait(ms) {
   const recent = await page.evaluate(() => document.querySelectorAll('#ttRecentColours .tt-recent-colour').length);
   check('recent colours appear after painting', recent >= 2, String(recent));
 
+  await page.evaluate(() => { document.getElementById('ttStartBlank').click(); });
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttCols').value = '4';
+    document.getElementById('ttRows').value = '2';
+    document.getElementById('ttSizeApply').click();
+    document.getElementById('ttPathSerpentine').click();
+  });
+  await wait(300);
+  const branchBox = await page.$eval('#ttBoard', el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  await page.evaluate((box) => {
+    document.getElementById('ttBranchLabel').value = 'Career';
+    document.getElementById('ttBranchTool').click();
+    const cv = document.getElementById('ttBoard');
+    const points = [
+      [box.x + box.w * (1.5 / 4), box.y + box.h * (0.5 / 2)],
+      [box.x + box.w * (1.5 / 4), box.y + box.h * (1.5 / 2)]
+    ];
+    points.forEach(([x, y], i) => {
+      cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: x, clientY: y, pointerId: 60 + i, isPrimary: true, button: 0, buttons: 1, pointerType: 'mouse' }));
+      cv.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x, clientY: y, pointerId: 60 + i, isPrimary: true, button: 0, buttons: 0, pointerType: 'mouse' }));
+    });
+  }, branchBox);
+  await wait(300);
+  await page.evaluate(() => {
+    document.getElementById('ttSetupPawns').click();
+    document.getElementById('ttSave').click();
+  });
+  await wait(350);
+  const branchSaved = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    return { branches: (data.branches || []).length, path: (data.path || []).length, label: (data.branches || [])[0] && data.branches[0].label };
+  });
+  check('branch saves with the board', branchSaved.branches === 1 && branchSaved.path === 8 && branchSaved.label === 'Career', JSON.stringify(branchSaved));
+
+  await page.evaluate(() => {
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+    document.querySelector('.tt-mode-btn[data-mode="play"]').click();
+  });
+  await wait(350);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2600);
+  const choice = await page.evaluate(() => ({
+    open: !document.getElementById('ttChoice').hidden,
+    options: document.querySelectorAll('#ttChoiceOptions button').length,
+    label: (document.querySelector('#ttChoiceOptions button') || {}).textContent || ''
+  }));
+  check('landing on a branch opens the choice dialog', choice.open && choice.options === 1 && /Career/.test(choice.label), JSON.stringify(choice));
+  await page.evaluate(() => { const b = document.querySelector('#ttChoiceOptions button'); if (b) b.click(); });
+  await wait(2600);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const branchMove = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const pawn = (data.tokens || []).find(t => t.pawn && t.player === 1);
+    return { pathIndex: pawn && pawn.pathIndex, turn: data.turn };
+  });
+  check('choosing a branch moves the pawn and continues the turn', branchMove.pathIndex === 6 && branchMove.turn === 2, JSON.stringify(branchMove));
+  await page.evaluate(() => { Math.random = window.__origRandom; });
+
+  await page.evaluate(() => {
+    document.getElementById('ttDiceTypes').closest('details').open = true;
+    const faces = document.getElementById('ttActionFaces');
+    faces.value = 'Climb, 2, Draw a card, Miss a turn, Roll again, 3';
+    document.getElementById('ttActionSave').click();
+    document.getElementById('ttDiceAction').click();
+    window.__origRandom = Math.random;
+    Math.random = () => 0;
+  });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2500);
+  const actionRoll = await page.evaluate(() => ({
+    result: document.getElementById('ttDiceResult').textContent,
+    history: document.getElementById('ttDiceHistory').textContent,
+    actionPressed: document.getElementById('ttDiceAction').getAttribute('aria-pressed'),
+    label: document.getElementById('ttBarResult').textContent
+  }));
+  check('action die shows the custom face label', /Climb/.test(actionRoll.result) && /Action = Climb/.test(actionRoll.history) && actionRoll.actionPressed === 'true' && actionRoll.label === 'Climb', JSON.stringify(actionRoll));
+
+  await page.evaluate(() => {
+    const faces = document.getElementById('ttActionFaces');
+    faces.value = '2, Climb, Draw a card, Miss a turn, Roll again, 3';
+    document.getElementById('ttActionSave').click();
+    document.getElementById('ttSetupPawns').click();
+    document.getElementById('ttTurnDown').click();
+    document.getElementById('ttTurnDown').click();
+    Math.random = () => 0;
+  });
+  await wait(250);
+  await page.evaluate(() => { document.getElementById('ttQuickRoll').click(); });
+  await wait(2600);
+  await page.evaluate(() => { document.getElementById('ttSave').click(); });
+  await wait(300);
+  const actionMove = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem('jvds-tabletop-v1') || '{}');
+    const pawn = (data.tokens || []).find(t => t.pawn && t.player === 1);
+    return { pathIndex: pawn && pawn.pathIndex, turn: data.turn, faces: (data.actionFaces || []).length, mode: data.dieMode };
+  });
+  check('action face starting with a number moves the pawn', actionMove.pathIndex === 2 && actionMove.turn === 2 && actionMove.faces === 6, JSON.stringify(actionMove));
+  check('action faces save with the board', actionMove.faces === 6 && actionMove.mode === 'action', JSON.stringify(actionMove));
+  await page.evaluate(() => {
+    Math.random = window.__origRandom;
+    document.getElementById('ttDiceNormal').click();
+  });
+  await wait(200);
+
   await page.select('#ttSize', '12x9');
   await wait(300);
 
