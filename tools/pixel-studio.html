@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-SLzHOHLE+YuFtRM0DPcw4lqkU3LccAm5PhjVHQQUC4M=' 'sha256-YIa9WVx7wOgz7SjppswmanuC0JdmSuFdXWbayhL163k=' 'sha256-cPf3yu+hupQveRXv3CFHtGHqJxNVZuuYfuIk90A8CGg=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-fjyu0uHkg2U0RMeAaLZKjVgUyrxWYMi8ALPYrBEpu6o=' 'sha256-YIa9WVx7wOgz7SjppswmanuC0JdmSuFdXWbayhL163k=' 'sha256-cPf3yu+hupQveRXv3CFHtGHqJxNVZuuYfuIk90A8CGg=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -99,7 +99,8 @@
 }
 </script>
 <style>/* A2599: keep finger drawing inside the canvas instead of scrolling or zooming the page */
-#main-canvas,#char-canvas-unified,#onion-canvas,#cursor-canvas{touch-action:none}</style>
+#main-canvas,#char-canvas-unified,#onion-canvas,#cursor-canvas,#reference-canvas{touch-action:none}
+#reference-canvas{position:absolute;top:0;left:0;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges;}</style>
 </head>
 <body>
 <!-- A2233: run before first paint so the fixed consent banner reserves its
@@ -175,10 +176,26 @@
       <button role="tab" aria-selected="true" data-mode="draw" data-on="setStudioMode" data-on-arg="draw" data-on-plain style="padding:5px 12px;border-radius:999px;border:none;background:var(--accent);color:#fff;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;" title="Draw pixels on your canvas">✏️ Draw</button>
       <button role="tab" aria-selected="false" data-mode="character" data-on="setStudioMode" data-on-arg="character" data-on-plain style="padding:5px 12px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.72rem;cursor:pointer;" title="Design a character, then stamp it to your canvas">🧑 Character</button>
       <button role="tab" aria-selected="false" data-mode="animate" data-on="setStudioMode" data-on-arg="animate" data-on-plain style="padding:5px 12px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.72rem;cursor:pointer;" title="Add frames and animate your pixel art">▶️ Animate</button>
+      <button role="tab" aria-selected="false" id="tileModeBtn" data-on="toggleTileMode" data-on-plain style="padding:5px 12px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.72rem;cursor:pointer;" title="Make a repeating tile and check the seams">🧱 Tiles</button>
     </div>
     <button class="help-btn" data-on="EmberGuide.show" data-on-plain title="Ember quick guide" aria-label="Ember quick guide" style="min-width:34px;padding:5px 9px;">?</button>
+    <button class="help-btn" data-on="openModal" data-on-arg="refModal" data-on-plain title="Trace a reference image" aria-label="Reference image" style="min-width:34px;padding:5px 9px;background:rgba(255,255,255,.06);border-color:var(--border2)">📷 Ref</button>
     <button class="help-btn" data-on="openStart" data-on-plain title="Templates and shortcuts" aria-label="Templates and shortcuts" style="min-width:34px;padding:5px 9px;background:rgba(255,255,255,.06);border-color:var(--border2)">Templates</button>
   </div>
+</section>
+<!-- A2999: tile mode. A single tile is drawn on the canvas, and the 3x3 preview
+     repeats it so seams are visible before export. -->
+<section id="tilePanel" hidden aria-label="Tile mode" style="display:none;align-items:center;gap:10px;padding:8px 14px;background:rgba(124,58,237,.08);border-bottom:1px solid var(--border2);flex-wrap:wrap;">
+  <strong style="font-size:.68rem;color:var(--accent2);">Tile mode</strong>
+  <div role="group" aria-label="Tile size" style="display:flex;gap:4px;">
+    <button class="lb" data-on="setTileSize" data-on-arg="8" data-on-num data-on-plain style="height:auto;padding:4px 9px;">8</button>
+    <button class="lb" data-on="setTileSize" data-on-arg="16" data-on-num data-on-plain style="height:auto;padding:4px 9px;">16</button>
+    <button class="lb" data-on="setTileSize" data-on-arg="32" data-on-num data-on-plain style="height:auto;padding:4px 9px;">32</button>
+  </div>
+  <label style="font-size:.62rem;display:flex;align-items:center;gap:4px;color:var(--muted);"><input type="checkbox" id="tileSnap" checked data-on="onTileSnap" data-on-event="change" data-on-args="checked" style="accent-color:var(--accent);"> Snap grid</label>
+  <canvas id="tilePreview" width="192" height="192" role="img" aria-label="The tile repeated three by three to show seams" style="width:96px;height:96px;image-rendering:pixelated;border:1px solid var(--border2);border-radius:6px;background:#111118;"></canvas>
+  <button class="ab ab-s" data-on="exportTile" data-on-plain style="height:auto;padding:6px 10px;">Export tile PNG</button>
+  <button class="ab ab-s" data-on="exportSheet" data-on-plain style="height:auto;padding:6px 10px;">Tile sheet</button>
 </section>
 <!-- Character templates strip (shown in Character mode) -->
 <section id="character-strip" style="display:none;flex-direction:column;gap:0;border-bottom:2px solid var(--border2);background:rgba(124,58,237,.06);">
@@ -419,6 +436,14 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
           <button class="lb" data-on="copySelection" data-on-plain title="Copy the selected pixels (Ctrl+C)" aria-label="Copy selection" style="height:auto;padding:6px 0;flex:1;">⧉ Copy</button>
           <button class="lb" data-on="pasteSelection" data-on-plain title="Paste the copied pixels (Ctrl+V)" aria-label="Paste selection" style="height:auto;padding:6px 0;flex:1;">📋 Paste</button>
         </div>
+        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+          <button class="lb" data-on="flipSelection" data-on-arg="x" data-on-plain title="Flip the selected pixels left to right" style="height:auto;padding:6px 0;flex:1;">↔ Sel</button>
+          <button class="lb" data-on="flipSelection" data-on-arg="y" data-on-plain title="Flip the selected pixels top to bottom" style="height:auto;padding:6px 0;flex:1;">↕ Sel</button>
+          <button class="lb" data-on="rotateSelection" data-on-plain title="Rotate the selected pixels 90 degrees" style="height:auto;padding:6px 0;flex:1;">⟳ Sel</button>
+          <button class="lb" data-on="scaleSelection" data-on-arg="2" data-on-num data-on-plain title="Scale the selection up 2x" style="height:auto;padding:6px 0;flex:1;">2×</button>
+          <button class="lb" data-on="scaleSelection" data-on-arg="0.5" data-on-num data-on-plain title="Scale the selection down 2x" style="height:auto;padding:6px 0;flex:1;">½×</button>
+          <button class="lb" data-on="cancelSelectionTransform" data-on-plain title="Undo the last selection change" style="height:auto;padding:6px 0;flex:1;">Cancel</button>
+        </div>
       </details>
       <div style="margin-top:6px;">
         <div class="pt">Brush Size</div>
@@ -451,6 +476,7 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
         <button class="lb" data-on="triggerImportPalette" data-on-plain title="Import a .gpl or .hex palette" style="height:auto;padding:4px 6px;flex:1;font-size:.55rem;">Import</button>
       </div>
       <input type="file" id="paletteInput" accept=".gpl,.hex,.txt,text/plain" style="display:none;" data-on="handlePaletteFile" data-on-event="change" data-on-args="this">
+    <label style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:.52rem;color:var(--muted);"><input type="checkbox" id="cbToggle" data-on="toggleColourBlind" data-on-event="change" style="accent-color:var(--accent);"> Colour-blind labels</label>
       <div class="pt">Recent</div>
       <div class="recent-row" id="recentRow"></div>
     </div>
@@ -530,6 +556,11 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
           <option value="7">Bottom-centre</option>
         </select>
       </div>
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap;font-size:.48rem;color:var(--muted);">
+        <label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" id="exportTrim" data-on="toggleExportTrim" style="accent-color:var(--accent);">Trim</label>
+        <label style="display:flex;align-items:center;gap:3px;">Pad <select id="exportPad" data-on="setExportPad" data-on-event="change" data-on-args="value" style="padding:1px 3px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.5rem;"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select></label>
+        <label style="display:flex;align-items:center;gap:3px;">Pivot <select id="exportPivot" data-on="setExportPivot" data-on-event="change" data-on-args="value" style="padding:1px 3px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.5rem;"><option value="0">Top-left</option><option value="4" selected>Centre</option><option value="7">Bottom</option></select></label>
+      </div>
       <!-- AUD-CT-02: id added so first-visit hint JS can target it -->
       <button id="exportPNGBtn" class="ab ab-p" data-on="exportPNG" data-on-plain title="Download this frame as a PNG (best for shared PCs)">⬇️ Export PNG</button>
       <button id="sendSpriteToQuestBtn" class="ab" style="background:#0f766e;color:white;box-shadow:0 2px 0 #115e59;" data-on="sendSpriteToQuest" data-on-plain title="Draw a sprite, then play as it in the Mario Jump Lab (no download, no account)">Load Sprite into Quest Game</button>
@@ -549,9 +580,11 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
 
   <!-- CANVAS -->
   <div id="canvas-area">
-    <div id="canvas-wrap">
-      <canvas id="main-canvas"></canvas>
-      <canvas id="onion-canvas"></canvas>
+<button id="oopsBtn" type="button" data-on="undo" data-on-plain aria-label="Undo the last change">↶ Oops</button>
+<div id="canvas-wrap">
+<canvas id="main-canvas"></canvas>
+<canvas id="reference-canvas"></canvas>
+<canvas id="onion-canvas"></canvas>
       <canvas id="cursor-canvas"></canvas>
       <!-- AUD-CT-02: first-visit draw hint, fades on first stroke -->
       <div id="draw-hint" aria-hidden="true" style="display:none;position:absolute;inset:0;pointer-events:none;align-items:center;justify-content:center;z-index:10;">
@@ -659,6 +692,8 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
       <button class="z-btn" aria-label="Zoom out" data-on="changeZoom" data-on-arg="-1" data-on-num data-on-plain>-</button>
       <button class="z-btn" aria-label="Zoom in" data-on="changeZoom" data-on-arg="1" data-on-num data-on-plain>+</button>
       <button class="z-btn" aria-label="Toggle grid" data-on="toggleGrid" data-on-plain>▦</button>
+      <button class="z-btn" id="bbTileBtn" aria-label="Tile mode" data-on="toggleTileMode" data-on-plain>🧱</button>
+      <button class="z-btn" id="bbRefBtn" aria-label="Reference image" data-on="openModal" data-on-arg="refModal" data-on-plain>📷</button>
     </div>
     <div class="bb-panel" id="bb1">
       <div id="bbFg" style="width:26px;height:26px;border-radius:4px;border:2px solid white;flex-shrink:0;cursor:pointer;" data-click-id="bbPicker"></div>
@@ -695,6 +730,11 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
           <option value="7">Bottom-centre</option>
         </select>
         <span id="exportSizeHintM" style="font-size:.5rem;color:var(--accent2);">PNG 32×32</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap;font-size:.52rem;color:var(--muted);">
+        <label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" id="exportTrimM" data-on="toggleExportTrim" style="accent-color:var(--accent);">Trim</label>
+        <label style="display:flex;align-items:center;gap:3px;">Pad <select id="exportPadM" data-on="setExportPad" data-on-event="change" data-on-args="value" style="padding:1px 3px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.55rem;"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select></label>
+        <label style="display:flex;align-items:center;gap:3px;">Pivot <select id="exportPivotM" data-on="setExportPivot" data-on-event="change" data-on-args="value" style="padding:1px 3px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.55rem;"><option value="0">Top-left</option><option value="4" selected>Centre</option><option value="7">Bottom</option></select></label>
       </div>
       <button class="ab ab-s" id="bb3Save" style="margin:0;padding:4px 8px;font-size:.65rem;" data-on="saveProject" data-on-plain>💾 Save to this computer</button>
       <button class="ab ab-p" style="margin:0;padding:4px 8px;font-size:.65rem;" data-on="exportPNG" data-on-plain>⬇️ Export PNG</button>
@@ -820,6 +860,31 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
     <div class="modal-btns" style="margin-top:12px;">
       <button class="m-cancel" data-on="closeModal" data-on-arg="importSheetModal" data-on-plain>Cancel</button>
       <button class="m-ok" data-on="confirmImportSheet" data-on-plain>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- REFERENCE IMAGE MODAL (A3000) -->
+<div class="modal-overlay" id="refModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>📷 Reference image</h2>
+    <p>Trace or copy a photo. The reference sits above your art, but the brush never paints on it and it is not exported.</p>
+    <div style="font-size:.6rem;color:var(--muted);margin-bottom:6px;" id="refName">No reference</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="lb" data-on="triggerReferenceUpload" data-on-plain style="height:auto;padding:6px 10px;">Choose image</button>
+      <button class="lb" data-on="clearReference" data-on-plain style="height:auto;padding:6px 10px;">Remove</button>
+    </div>
+    <input type="file" id="referenceInput" accept="image/*" style="display:none;" data-on="handleReferenceFile" data-on-event="change" data-on-args="this">
+    <label style="display:flex;align-items:center;gap:6px;font-size:.62rem;color:var(--muted);margin-bottom:6px;">
+      Opacity
+      <input type="range" id="refOpacity" min="5" max="100" value="30" data-on="setReferenceOpacity" data-on-event="input" data-on-args="value" style="flex:1;accent-color:var(--accent);">
+      <span id="refOpacityVal" style="min-width:32px;text-align:right;">30%</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.62rem;color:var(--muted);">
+      <input type="checkbox" id="refLock" data-on="toggleReferenceLock" data-on-event="change" style="accent-color:var(--accent);"> Lock reference (stops accidental changes)
+    </label>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="m-ok" data-on="closeModal" data-on-arg="refModal" data-on-plain>Close</button>
     </div>
   </div>
 </div>
@@ -979,8 +1044,13 @@ let frames=[],currentFrame=0,currentLayer=0;
 let frameMeta=[{clip:'default',hold:1}];
 let layers=[{name:'Layer 1',visible:true,opacity:100}];
 let undoStack=[],redoStack=[],MAX_UNDO=50;
+// A2999: tile mode state (single tile + repeating seam preview).
+var tileMode=false,tileSize=16;
 let mirrorX=false,mirrorY=false,filledRect=false,dirty=false,autosaveT=null,deferredPrompt=null;
 let selection=null; // {x0,y0,x1,y1} or null; used by select tool
+// A3000: reference layer (never painted on, never exported) + selection transforms.
+let referenceCanvas=null;
+var referenceImage=null,referenceOpacity=30,referenceLocked=false;
 let selDragStart=null,selMoving=false,selMoveStart=null,selClipboard=null;
 let isPainting=false,lineStart=null,rectStart=null,ellipseStart=null,lastPaint=null;
 let exportOrigin=4,animLoop=true,rightClickErase=false;
@@ -1013,6 +1083,7 @@ function init(){
   mainCanvas=document.getElementById('main-canvas');
   onionCanvas=document.getElementById('onion-canvas');
   cursorCanvas=document.getElementById('cursor-canvas');
+  referenceCanvas=document.getElementById('reference-canvas');
   mainCtx=mainCanvas.getContext('2d');
   onionCtx=onionCanvas.getContext('2d');
   cursorCtx=cursorCanvas.getContext('2d');
@@ -1025,6 +1096,13 @@ function init(){
   frameMeta=[{clip:'default',hold:1}];
   currentFrame=0; currentLayer=0;
   loadCustomPalette();
+  try{
+    var _refRaw=localStorage.getItem('jvds_pixel_ref');
+    if(_refRaw){
+      var _ref=JSON.parse(_refRaw);
+      if(_ref&&_ref.dataUrl){ referenceOpacity=_ref.opacity||30; referenceLocked=!!_ref.locked; setReferenceImage(_ref.dataUrl,'Saved reference'); }
+    }
+  }catch(e){}
 
   buildUI();
   setCanvasSize(32,32,false);
@@ -1188,7 +1266,7 @@ function applyCustomSize(){
 function resizeCanvases(){
   checkerCache=null;
   const pw=cW*zoomLevel,ph=cH*zoomLevel;
-  [mainCanvas,onionCanvas,cursorCanvas].forEach(c=>{
+  [mainCanvas,onionCanvas,cursorCanvas,referenceCanvas].filter(Boolean).forEach(c=>{
     window.HiDPI ? HiDPI.fit(c,pw,ph) : (c.width=pw, c.height=ph, c.style.width=pw+'px', c.style.height=ph+'px');
   });
   compCanvas.width=cW; compCanvas.height=cH;
@@ -1198,6 +1276,7 @@ function resizeCanvases(){
   onionCanvas.style.top='0'; onionCanvas.style.left='0';
   cursorCanvas.style.position='absolute';
   cursorCanvas.style.top='0'; cursorCanvas.style.left='0';
+  if(referenceCanvas){ referenceCanvas.style.position='absolute'; referenceCanvas.style.top='0'; referenceCanvas.style.left='0'; renderReference(); }
 }
 
 function changeZoom(dir){
@@ -1285,6 +1364,7 @@ function renderAll(opts){
   mainCtx.drawImage(compCanvas,0,0,pw,ph);
 
   if(showGrid&&zoomLevel>=4) drawGrid();
+  if(tileMode) renderTilePreview();
   if(full){ updateLayerThumbs(); updateFrameThumbs(); }
 }
 
@@ -2048,6 +2128,7 @@ function syncFrameMetaUI(){
 function syncExportControls(){
   const eo=document.getElementById('exportOrigin'); if(eo) eo.value=String(exportOrigin);
   const eom=document.getElementById('exportOriginM'); if(eom) eom.value=String(exportOrigin);
+  _syncExportOptions();
   const al=document.getElementById('animLoop'); if(al) al.checked=animLoop;
   const alm=document.getElementById('animLoopM'); if(alm) alm.checked=animLoop;
   updateExportHint();
@@ -2197,6 +2278,159 @@ function drawSelectionOverlay(){
   cursorCtx.strokeRect(lx*zoomLevel+.5,ty*zoomLevel+.5,(rx-lx+1)*zoomLevel-1,(by-ty+1)*zoomLevel-1);
   cursorCtx.setLineDash([]);
 }
+// A3000: reference image + selection transform helpers.
+function _storeReference(){
+  try{
+    if(referenceImage&&referenceImage.dataUrl) localStorage.setItem('jvds_pixel_ref',JSON.stringify({dataUrl:referenceImage.dataUrl,opacity:referenceOpacity,locked:referenceLocked}));
+    else localStorage.removeItem('jvds_pixel_ref');
+  }catch(e){}
+}
+function setReferenceImage(dataUrl,name){
+  return new Promise(function(resolve){
+    var img=new Image();
+    img.onload=function(){
+      referenceImage={img:img,dataUrl:dataUrl,name:name||'Reference'};
+      _storeReference();
+      var el=document.getElementById('refName'); if(el) el.textContent=name||'Reference';
+      renderReference();
+      showToast('Reference image loaded');
+      resolve(true);
+    };
+    img.onerror=function(){ showToast('Could not read that image'); resolve(false); };
+    img.src=dataUrl;
+  });
+}
+function handleReferenceFile(input){
+  var file=input&&input.files&&input.files[0];
+  if(input) input.value='';
+  if(!file) return;
+  if(file.size>2500000){ showToast('That image is large. Try one under 2.5 MB.'); return; }
+  var r=new FileReader();
+  r.onload=function(e){ setReferenceImage(String(e.target.result),file.name); };
+  r.onerror=function(){ showToast('Could not read that image'); };
+  r.readAsDataURL(file);
+}
+function triggerReferenceUpload(){
+  var input=document.getElementById('referenceInput');
+  if(input){ input.value=''; input.click(); }
+}
+function setReferenceOpacity(v){
+  referenceOpacity=Math.max(5,Math.min(100,parseInt(v,10)||30));
+  var el=document.getElementById('refOpacityVal'); if(el) el.textContent=referenceOpacity+'%';
+  _storeReference();
+  renderReference();
+}
+function toggleReferenceLock(){
+  referenceLocked=!referenceLocked;
+  var box=document.getElementById('refLock'); if(box) box.checked=referenceLocked;
+  _storeReference();
+  showToast(referenceLocked?'Reference locked':'Reference unlocked');
+}
+function clearReference(){
+  if(referenceLocked){ showToast('Unlock the reference first'); return false; }
+  referenceImage=null;
+  _storeReference();
+  renderReference();
+  var el=document.getElementById('refName'); if(el) el.textContent='No reference';
+  return true;
+}
+function renderReference(){
+  if(!referenceCanvas){ referenceCanvas=document.getElementById('reference-canvas'); }
+  if(!referenceCanvas) return;
+  var ctx=referenceCanvas.getContext('2d');
+  ctx.clearRect(0,0,referenceCanvas.width,referenceCanvas.height);
+  if(!referenceImage||!referenceImage.img) return;
+  var img=referenceImage.img;
+  var W=referenceCanvas.width,H=referenceCanvas.height;
+  if(!W||!H) return;
+  var s=Math.min(W/img.width,H/img.height);
+  var w=img.width*s,h=img.height*s;
+  ctx.globalAlpha=Math.max(0.05,Math.min(1,referenceOpacity/100));
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+  ctx.globalAlpha=1;
+}
+function _selRect(){
+  if(!selection) return null;
+  var lx=Math.min(selection.x0,selection.x1),rx=Math.max(selection.x0,selection.x1);
+  var ty=Math.min(selection.y0,selection.y1),by=Math.max(selection.y0,selection.y1);
+  return {x:lx,y:ty,w:rx-lx+1,h:by-ty+1};
+}
+function _selRead(id,r){
+  var out=new Uint8ClampedArray(r.w*r.h*4);
+  for(var y=0;y<r.h;y++) for(var x=0;x<r.w;x++){
+    var si=((r.y+y)*cW+(r.x+x))*4, di=(y*r.w+x)*4;
+    out[di]=id.data[si];out[di+1]=id.data[si+1];out[di+2]=id.data[si+2];out[di+3]=id.data[si+3];
+  }
+  return out;
+}
+function _selClear(id,r){
+  for(var y=0;y<r.h;y++) for(var x=0;x<r.w;x++) setPixel(id,r.x+x,r.y+y,0,0,0,0);
+}
+function _selPut(id,r,src,sw,sh){
+  for(var y=0;y<sh;y++) for(var x=0;x<sw;x++){
+    var si=(y*sw+x)*4;
+    if(src[si+3]===0) continue;
+    setPixel(id,r.x+x,r.y+y,src[si],src[si+1],src[si+2],src[si+3]);
+  }
+}
+function flipSelection(axis){
+  var r=_selRect();
+  if(!r){ showToast('Select an area first'); return false; }
+  pushUndo();
+  var id=getID(),src=_selRead(id,r);
+  _selClear(id,r);
+  for(var y=0;y<r.h;y++) for(var x=0;x<r.w;x++){
+    var sx=axis==='y'?x:r.w-1-x, sy=axis==='y'?r.h-1-y:y;
+    var si=(sy*r.w+sx)*4;
+    setPixel(id,r.x+x,r.y+y,src[si],src[si+1],src[si+2],src[si+3]);
+  }
+  renderAll(); drawSelectionOverlay(); markDirty();
+  showToast('Selection flipped '+(axis==='y'?'vertically':'horizontally'));
+  return true;
+}
+function rotateSelection(){
+  var r=_selRect();
+  if(!r){ showToast('Select an area first'); return false; }
+  pushUndo();
+  var id=getID(),src=_selRead(id,r);
+  _selClear(id,r);
+  var nw=r.h,nh=r.w;
+  for(var ny=0;ny<nh;ny++) for(var nx=0;nx<nw;nx++){
+    var sx=ny, sy=r.h-1-nx;
+    var si=(sy*r.w+sx)*4;
+    setPixel(id,r.x+nx,r.y+ny,src[si],src[si+1],src[si+2],src[si+3]);
+  }
+  selection={x0:r.x,y0:r.y,x1:r.x+nw-1,y1:r.y+nh-1};
+  renderAll(); drawSelectionOverlay(); markDirty();
+  showToast('Selection rotated 90 degrees');
+  return true;
+}
+function scaleSelection(factor){
+  var r=_selRect();
+  if(!r){ showToast('Select an area first'); return false; }
+  factor=Number(factor);
+  if(!isFinite(factor)||factor<=0) return false;
+  var nw=Math.max(1,Math.round(r.w*factor)),nh=Math.max(1,Math.round(r.h*factor));
+  pushUndo();
+  var id=getID(),src=_selRead(id,r);
+  _selClear(id,r);
+  for(var y=0;y<nh;y++) for(var x=0;x<nw;x++){
+    var sx=Math.min(r.w-1,Math.floor(x/factor)),sy=Math.min(r.h-1,Math.floor(y/factor));
+    var si=(sy*r.w+sx)*4;
+    setPixel(id,r.x+x,r.y+y,src[si],src[si+1],src[si+2],src[si+3]);
+  }
+  selection={x0:r.x,y0:r.y,x1:r.x+nw-1,y1:r.y+nh-1};
+  renderAll(); drawSelectionOverlay(); markDirty();
+  showToast('Selection scaled '+nw+'x'+nh);
+  return true;
+}
+function cancelSelectionTransform(){
+  if(!undoStack.length){ showToast('Nothing to undo'); return false; }
+  undo(); renderAll(); drawSelectionOverlay();
+  showToast('Selection change undone');
+  return true;
+}
 function copySelection(){
   if(!selection){showToast('Select an area first');return;}
   const{x0,y0,x1,y1}=selection;
@@ -2273,6 +2507,16 @@ function flattenFrame(fi){
   return fc;
 }
 let exportScale=1;
+// A3001: export options shared by desktop and phone controls.
+var exportTrim=false,exportPad=1,exportPivot=4;
+function _syncExportOptions(){
+  ['exportTrim','exportTrimM'].forEach(function(id){var e=document.getElementById(id);if(e)e.checked=exportTrim;});
+  ['exportPad','exportPadM'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=String(exportPad);});
+  ['exportPivot','exportPivotM'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=String(exportPivot);});
+}
+function toggleExportTrim(){ exportTrim=!exportTrim; _syncExportOptions(); updateExportHint(); }
+function setExportPad(v){ exportPad=Math.max(0,Math.min(4,parseInt(v,10)||0)); _syncExportOptions(); updateExportHint(); }
+function setExportPivot(v){ v=parseInt(v,10); exportPivot=[0,4,7].indexOf(v)===-1?4:v; _syncExportOptions(); }
 function updateExportHint(){
   const psc=Math.max(1,exportScale);
   const s=sheetScale();
@@ -2298,51 +2542,80 @@ function pivotForOrigin(o){
   if(o===7) return {x:0.5,y:1};
   return {x:0.5,y:0.5};
 }
-function sheetScale(){
+function sheetScale(maxW,maxH,pad){
   const n=Math.max(1,frames.length);
   const cols=Math.max(1,Math.ceil(Math.sqrt(n))),rows=Math.max(1,Math.ceil(n/cols));
-  const pad=1;
+  const p=pad==null?exportPad:pad;
   let sc=Math.max(1,exportScale);
-  const maxDim=Math.max((cW+pad*2)*cols,(cH+pad*2)*rows);
+  const w=maxW||cW,h=maxH||cH;
+  const maxDim=Math.max((w+p*2)*cols,(h+p*2)*rows);
   if(maxDim*sc>4096) sc=Math.max(1,Math.floor(4096/maxDim));
-  return {sc,cols,rows,pad};
+  return {sc,cols,rows,pad:p};
 }
-// Build one padded sheet, with 1px extrusion so bilinear filtering cannot bleed
-// neighbouring frames. Returns inner frame positions (not the padding).
-function buildSheet(){
-  const {sc,cols,rows,pad}=sheetScale();
-  const fw=cW*sc, fh=cH*sc, cellW=fw+pad*2, cellH=fh+pad*2;
-  const sh=document.createElement('canvas');sh.width=cellW*cols;sh.height=cellH*rows;
+// Build one padded sheet, with extrusion so bilinear filtering cannot bleed
+// neighbouring frames. Trim optionally crops transparent edges. Returns inner
+// frame positions (not the padding) plus the trim offsets for the atlas.
+function buildSheet(opts){
+  opts=opts||{};
+  const trim=opts.trim==null?exportTrim:!!opts.trim;
+  const pad=opts.pad==null?exportPad:opts.pad;
+  let maxW=cW,maxH=cH,boxes=null;
+  if(trim){
+    boxes=frames.map((_,fi)=>{
+      const src=flattenFrame(fi);
+      const d=src.getContext('2d').getImageData(0,0,cW,cH).data;
+      let minX=cW,minY=cH,maxX=-1,maxY=-1;
+      for(let y=0;y<cH;y++)for(let x=0;x<cW;x++){
+        if(d[(y*cW+x)*4+3]===0) continue;
+        if(x<minX)minX=x;if(y<minY)minY=y;if(x>maxX)maxX=x;if(y>maxY)maxY=y;
+      }
+      if(maxX<0) return {x:0,y:0,w:1,h:1};
+      return {x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1};
+    });
+    maxW=Math.max.apply(null,boxes.map(b=>b.w));
+    maxH=Math.max.apply(null,boxes.map(b=>b.h));
+  }
+  const {sc,cols,rows}=sheetScale(maxW,maxH,pad);
+  const fw=maxW*sc, fh=maxH*sc, cellW=fw+pad*2, cellH=fh+pad*2;
+  const sh=document.createElement('canvas');sh.width=Math.max(1,cellW*cols);sh.height=Math.max(1,cellH*rows);
   const sctx=sh.getContext('2d');sctx.imageSmoothingEnabled=false;
   const positions=[];
   frames.forEach((_,fi)=>{
     const c=fi%cols,r=Math.floor(fi/cols);
     const x=c*cellW+pad,y=r*cellH+pad;
-    const fc=document.createElement('canvas');fc.width=fw;fc.height=fh;
+    const box=boxes?boxes[fi]:null;
+    const w=(box?box.w:cW)*sc, h=(box?box.h:cH)*sc;
+    const fc=document.createElement('canvas');fc.width=w;fc.height=h;
     const fx=fc.getContext('2d');fx.imageSmoothingEnabled=false;
-    fx.drawImage(flattenFrame(fi),0,0,fw,fh);
+    if(box) fx.drawImage(flattenFrame(fi),box.x,box.y,box.w,box.h,0,0,w,h);
+    else fx.drawImage(flattenFrame(fi),0,0,w,h);
     sctx.drawImage(fc,x,y);
     if(pad>0){
-      sctx.drawImage(fc,0,0,1,fh,x-pad,y,pad,fh);
-      sctx.drawImage(fc,fw-1,0,1,fh,x+fw,y,pad,fh);
-      sctx.drawImage(fc,0,0,fw,1,x,y-pad,fw,pad);
-      sctx.drawImage(fc,0,fh-1,fw,1,x,y+fh,fw,pad);
+      sctx.drawImage(fc,0,0,1,h,x-pad,y,pad,h);
+      sctx.drawImage(fc,w-1,0,1,h,x+w,y,pad,h);
+      sctx.drawImage(fc,0,0,w,1,x,y-pad,w,pad);
+      sctx.drawImage(fc,0,h-1,w,1,x,y+h,w,pad);
       sctx.drawImage(fc,0,0,1,1,x-pad,y-pad,pad,pad);
-      sctx.drawImage(fc,fw-1,0,1,1,x+fw,y-pad,pad,pad);
-      sctx.drawImage(fc,0,fh-1,1,1,x-pad,y+fh,pad,pad);
-      sctx.drawImage(fc,fw-1,fh-1,1,1,x+fw,y+fh,pad,pad);
+      sctx.drawImage(fc,w-1,0,1,1,x+w,y-pad,pad,pad);
+      sctx.drawImage(fc,0,h-1,1,1,x-pad,y+h,pad,pad);
+      sctx.drawImage(fc,w-1,h-1,1,1,x+w,y+h,pad,pad);
     }
-    positions.push({x,y});
+    positions.push({x,y,w,h,trimmed:!!box,offsetX:box?box.x*sc:0,offsetY:box?box.y*sc:0});
   });
-  return {canvas:sh,positions,cols,rows,sc,fw,fh,pad};
+  return {canvas:sh,positions,cols,rows,sc,fw,fh,pad,trim:!!trim};
+}
+function pivotForMode(o){
+  if(o===0) return {x:0,y:0};
+  if(o===7) return {x:0.5,y:1};
+  return {x:0.5,y:0.5};
 }
 function buildAtlas(){
   const s=buildSheet();
-  const pivot=pivotForOrigin(exportOrigin);
-  const atlas={frames:{},meta:{app:'JVDesignStudio Pixel Studio',version:'1.1',image:'spritesheet.png',format:'RGBA8888',size:{w:s.canvas.width,h:s.canvas.height},scale:1,padding:s.pad,pivot,origin:exportOrigin}};
+  const pivot=pivotForMode(exportPivot);
+  const atlas={frames:{},meta:{app:'JVDesignStudio Pixel Studio',version:'1.1',image:'spritesheet.png',format:'RGBA8888',size:{w:s.canvas.width,h:s.canvas.height},scale:1,padding:s.pad,pivot,origin:exportOrigin,trim:s.trim}};
   frames.forEach((_,fi)=>{
     const p=s.positions[fi],m=frameMeta[fi]||{clip:'default',hold:1};
-    atlas.frames['frame_'+fi]={frame:{x:p.x,y:p.y,w:s.fw,h:s.fh},rotated:false,trimmed:false,sourceSize:{w:s.fw,h:s.fh},spriteSourceSize:{x:0,y:0,w:s.fw,h:s.fh},pivot,clip:m.clip||'default',duration:Math.round((1000/(fps||8))*(m.hold||1))};
+    atlas.frames['frame_'+fi]={frame:{x:p.x,y:p.y,w:p.w,h:p.h},rotated:false,trimmed:!!p.trimmed,sourceSize:{w:cW*s.sc,h:cH*s.sc},spriteSourceSize:{x:p.offsetX||0,y:p.offsetY||0,w:p.w,h:p.h},pivot,clip:m.clip||'default',duration:Math.round((1000/(fps||8))*(m.hold||1))};
   });
   return {atlas,sheet:s};
 }
@@ -2352,6 +2625,71 @@ function _frameIsBlank(cv){
     for(let i=3;i<d.length;i+=4){ if(d[i]!==0) return false; }
     return true;
   }catch(e){ return false; }
+}
+// A2999: tile mode helpers.
+function toggleTileMode(){
+  tileMode=!tileMode;
+  var p=document.getElementById('tilePanel');
+  if(p){ p.hidden=!tileMode; p.style.display=tileMode?'flex':'none'; }
+  var b=document.getElementById('tileModeBtn');
+  if(b){
+    b.setAttribute('aria-selected',tileMode?'true':'false');
+    b.style.background=tileMode?'var(--accent)':'transparent';
+    b.style.color=tileMode?'#fff':'var(--muted)';
+  }
+  if(tileMode){
+    if([8,16,32].indexOf(cW)!==-1&&cW===cH) tileSize=cW;
+    var snap=document.getElementById('tileSnap');
+    if(snap&&snap.checked){ showGrid=true; var g=document.getElementById('gridBtn'); if(g) g.style.color='var(--accent3)'; }
+    renderTilePreview();
+    showToast('Tile mode: draw one tile, check the 3x3 seam preview');
+  }
+  renderAll();
+}
+function setTileSize(n){
+  n=parseInt(n,10)||16;
+  if([8,16,32].indexOf(n)===-1) n=16;
+  tileSize=n;
+  if(cW!==n||cH!==n) setCanvasSize(n,n,true);
+  else { autoZoom(); resizeCanvases(); renderAll(); }
+  renderTilePreview();
+  showToast('Tile size '+n+' x '+n);
+}
+function onTileSnap(on){
+  showGrid=!!on;
+  var g=document.getElementById('gridBtn');
+  if(g) g.style.color=showGrid?'var(--accent3)':'var(--muted)';
+  renderAll();
+}
+function renderTilePreview(){
+  var cv=document.getElementById('tilePreview');
+  if(!cv||!tileMode) return;
+  var ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  var src=flattenFrame(currentFrame);
+  var cell=Math.floor(cv.width/3);
+  for(var y=0;y<3;y++) for(var x=0;x<3;x++) ctx.drawImage(src,x*cell,y*cell,cell,cell);
+  ctx.strokeStyle='rgba(255,120,180,.55)';
+  ctx.lineWidth=1;
+  for(var i=1;i<3;i++){
+    ctx.beginPath();ctx.moveTo(i*cell,0);ctx.lineTo(i*cell,cv.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*cell);ctx.lineTo(cv.width,i*cell);ctx.stroke();
+  }
+}
+function exportTile(){
+  try{
+    var src=flattenFrame(currentFrame);
+    var c=document.createElement('canvas');c.width=cW;c.height=cH;
+    var x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(src,0,0);
+    var ts=new Date().toISOString().slice(0,16).replace('T','-').replace(/:/g,'');
+    var name='jvds-tile-'+cW+'x'+cH+'-'+ts+'.png';
+    if(window.JVDS_DOWNLOAD){ window.JVDS_DOWNLOAD(c,name); }
+    else{ var a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=name;a.click(); }
+    jvdsKeepState('downloaded');
+    showToast('Tile PNG exported ('+cW+'x'+cH+')');
+    return true;
+  }catch(e){ showToast('Could not export the tile');return false; }
 }
 function exportPNG(){
   try{
@@ -2484,7 +2822,7 @@ function _enginePackFiles(o){
 async function exportEnginePack(){
   if(frames.length===0){showToast("No frames");return;}
   showToast("Building engine pack...");
-  const {canvas:sheet,positions,sc,fw,fh,pad}=buildSheet();
+  const {canvas:sheet,positions,sc,fw,fh,pad}=buildSheet({trim:false,pad:1});
   const files=_enginePackFiles({sheetW:sheet.width,sheetH:sheet.height,cW:cW,cH:cH,sc:sc,fps:fps,count:frames.length,positions:positions,name:'sprite',frameMeta:frameMeta,loop:animLoop,origin:exportOrigin,pad:pad});
   const loadJSZip=()=> window.JSZip ? Promise.resolve(window.JSZip) : new Promise((res,rej)=>{const s=document.createElement("script"); s.src="/assets/vendor/jszip/jszip.min.js"; s.onload=()=>res(window.JSZip); s.onerror=()=>rej(new Error("JSZip")); document.head.appendChild(s);});
   try{
