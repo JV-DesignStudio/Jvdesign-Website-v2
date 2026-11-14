@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CBnv2jATTbYaMkbRYromGEILDPI9faYH5EBchlAs7ig=' 'sha256-X2SWNLootA1Gbm+ipmFUbb2X0p/+rm8ipYMlGh0iEcQ=' 'sha256-byy1SvSSWvp33bcwnewnhXC277yr7u8djty/OP6ArzU=' 'sha256-yTkpcasNL44Ch9ejsvbTQSkNt6aDCtH7aREPpOy9v+E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CBnv2jATTbYaMkbRYromGEILDPI9faYH5EBchlAs7ig=' 'sha256-X2SWNLootA1Gbm+ipmFUbb2X0p/+rm8ipYMlGh0iEcQ=' 'sha256-/tBx0J8XQTSvFP2GAUrUIlrn9dJ1qfcAfGYLty2/0MY=' 'sha256-yTkpcasNL44Ch9ejsvbTQSkNt6aDCtH7aREPpOy9v+E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -138,6 +138,7 @@
   <div>
     <strong>Sprite Animator - now also in Pixel Studio</strong>
     <span>Slice sheets, preview & export still work here. New work can stay in one place: Pixel Studio has Simple + Character + Draw + Animate with sheet import & GIF export.</span>
+    <p class="brief-ember" style="margin-top:4px;font-size:.66rem;line-height:1.45;"><img src="/assets/mascots/ember-badge.webp" alt="" width="20" height="20" style="vertical-align:middle;border-radius:50%;margin-right:6px"><strong>Ember says:</strong> tap Play to watch the run, then switch on Draw to fix a frame you do not like.</p>
   </div>
   <div class="classic-actions" style="flex-wrap:wrap">
     <a class="hdr-back" href="/create">← Tools</a>
@@ -560,6 +561,20 @@ function buildStrip(){
     div.onkeydown=e=>{
       if(e.key==='Enter'||e.key===' '){e.preventDefault();div.click();}
     };
+    // Touch taps do not synthesize a click inside this canvas-heavy strip, so
+    // wire touchend to the same action. A finger that moved was a scroll, not a tap.
+    let tStart=null;
+    div.addEventListener('touchstart',e=>{const t=e.changedTouches&&e.changedTouches[0];if(t)tStart={x:t.clientX,y:t.clientY};},{passive:true});
+    div.addEventListener('touchend',e=>{
+      const t=e.changedTouches&&e.changedTouches[0];
+      if(!t||!tStart)return;
+      const moved=Math.abs(t.clientX-tStart.x)+Math.abs(t.clientY-tStart.y);
+      tStart=null;
+      if(moved>12)return;
+      e.preventDefault();
+      const xbtn=e.target&&e.target.closest?e.target.closest('.frame-x'):null;
+      (xbtn||div).click();
+    },{passive:false});
     div.ondragstart=e=>{dragFrameIndex=i;if(e.dataTransfer)e.dataTransfer.effectAllowed='move';};
     div.ondragover=e=>{if(dragFrameIndex!==null)e.preventDefault();};
     div.ondrop=e=>{e.preventDefault();if(dragFrameIndex!==null)moveFrameTo(dragFrameIndex,i);dragFrameIndex=null;};
