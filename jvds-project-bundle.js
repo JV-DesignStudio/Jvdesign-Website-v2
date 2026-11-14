@@ -1,17 +1,25 @@
-/* jvds-project-bundle.js , A1587
-   One downloadable project bundle shared by Pixel Studio, Sprite Animator and
-   the Arcade Game Maker, plus an "Open in..." handoff between them.
+/* jvds-project-bundle.js , A1587, A2296
+   One downloadable .jvds project file shared by Pixel Studio, Sprite Animator
+   and the Arcade Game Maker, plus an "Open in..." handoff between them.
+
+   Format note: PROJECT_FILE_FORMAT.md
 
    Bundle (JSON) envelope:
      {
-       app: 'jvds-tool-bundle', v: 1,
+       app: 'jvds-tool-bundle', v: 2,
        tool: 'pixel-studio' | 'sprite-animator' | 'arcade-game-maker',
        name: string,
        createdAt: ISO string,
-       project: <native project object for that tool>,
+       project: <native project object for that tool,
+                 includes the game data for arcade-game-maker>,
        sprite:  { dataUrl, frameW, frameH, frameCount } | null,
+       sound:   { name, music, buffers, sounds } | null,
+       level:   { map, entities } | null,
        preview: dataUrl | null
      }
+
+   v1 files still open: parse() upgrades them to v2 with sound and level set
+   to null, so an old download never becomes unreadable.
 
    "Open in..." uses the same localStorage convention as tool-handoff.js:
    stash the bundle under jvds_tool_bundle with a jvds_tool_bundle_to marker,
@@ -21,7 +29,9 @@
   'use strict';
 
   var APP = 'jvds-tool-bundle';
-  var VERSION = 1;
+  var VERSION = 2;
+  var SUPPORTED = [1, 2];
+  var EXT = '.jvds';
   var LS_PENDING = 'jvds_tool_bundle';
   var LS_TARGET = 'jvds_tool_bundle_to';
 
@@ -31,7 +41,17 @@
     'arcade-game-maker': 'Game Maker'
   };
 
-  function isBundle(o) { return !!o && o.app === APP && o.v === VERSION; }
+  function isBundle(o) { return !!o && o.app === APP && SUPPORTED.indexOf(o.v) !== -1; }
+
+  function normalise(o) {
+    if (!isBundle(o)) return null;
+    if (o.v === 1) o.v = VERSION;
+    if (!('sound' in o) || o.sound === undefined) o.sound = null;
+    if (!('level' in o) || o.level === undefined) o.level = null;
+    if (!('sprite' in o) || o.sprite === undefined) o.sprite = null;
+    if (!('project' in o) || o.project === undefined) o.project = null;
+    return o;
+  }
 
   function make(opts) {
     opts = opts || {};
@@ -43,6 +63,8 @@
       createdAt: new Date().toISOString(),
       project: opts.project == null ? null : opts.project,
       sprite: opts.sprite || null,
+      sound: opts.sound || null,
+      level: opts.level || null,
       preview: opts.preview || null
     };
   }
@@ -52,7 +74,7 @@
   }
 
   function fileName(bundle) {
-    return slug(bundle.tool) + '-' + slug(bundle.name) + '-jvds-project.json';
+    return slug(bundle.tool) + '-' + slug(bundle.name) + EXT;
   }
 
   function fallbackDownload(blob, name) {
@@ -76,7 +98,7 @@
   function parse(text) {
     try {
       var o = JSON.parse(text);
-      return isBundle(o) ? o : null;
+      return normalise(o);
     } catch (e) { return null; }
   }
 
@@ -111,10 +133,12 @@
   window.JVDSProjectBundle = {
     APP: APP,
     VERSION: VERSION,
+    EXT: EXT,
     TOOLS: ['pixel-studio', 'sprite-animator', 'arcade-game-maker'],
     labels: LABELS,
     label: function (t) { return LABELS[t] || t; },
     isBundle: isBundle,
+    normalise: normalise,
     make: make,
     download: download,
     parse: parse,

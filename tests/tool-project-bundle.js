@@ -89,7 +89,7 @@ function makePage(browser, errors) {
     });
     check('pixel-studio: builds a valid bundle', out.hasBundle && out.tool === 'pixel-studio', JSON.stringify({ tool: out.tool, frameCount: out.frameCount }));
     check('pixel-studio: bundle carries a PNG sprite', out.spriteData);
-    check('pixel-studio: download writes a *-jvds-project.json', /-jvds-project\.json$/.test(out.fileName) && out.parsed, out.fileName);
+    check('pixel-studio: download writes a *.jvds project file', /\.jvds$/.test(out.fileName) && out.parsed, out.fileName);
     check('pixel-studio: Open in... targets Sprite Animator + Game Maker', out.openCalls.join(',') === 'sprite-animator,arcade-game-maker', out.openCalls.join(','));
     check('pixel-studio: 390 no overflow', out.scrollWidth <= out.clientWidth + 2, `${out.scrollWidth}/${out.clientWidth}`);
     check('pixel-studio: zero runtime errors', errors.length === 0, errors.join(' | '));
@@ -133,7 +133,7 @@ function makePage(browser, errors) {
       };
     });
     check('sprite-animator: opens the Pixel Studio bundle', out.cut.framesLoaded >= 1 && out.cut.promptHidden, JSON.stringify(out.cut));
-    check('sprite-animator: downloads its own bundle', out.tool === 'sprite-animator' && /-jvds-project\.json$/.test(out.fileName) && out.parsed, out.fileName);
+    check('sprite-animator: downloads its own bundle', out.tool === 'sprite-animator' && /\.jvds$/.test(out.fileName) && out.parsed, out.fileName);
     check('sprite-animator: Open in... targets Pixel Studio + Game Maker', out.openCalls.join(',') === 'pixel-studio,arcade-game-maker', out.openCalls.join(','));
     check('sprite-animator: 1440 no overflow', out.scrollWidth <= out.clientWidth + 2, `${out.scrollWidth}/${out.clientWidth}`);
     check('sprite-animator: zero runtime errors', errors.length === 0, errors.join(' | '));
@@ -195,7 +195,7 @@ function makePage(browser, errors) {
       };
     });
     check('game-maker: opens the Sprite Animator bundle as art', out.spriteSet);
-    check('game-maker: builds + downloads its own bundle', out.tool === 'arcade-game-maker' && /-jvds-project\.json$/.test(out.fileName), out.fileName);
+    check('game-maker: builds + downloads its own bundle', out.tool === 'arcade-game-maker' && /\.jvds$/.test(out.fileName), out.fileName);
     check('game-maker: opening its own bundle round-trips', out.native);
     check('game-maker: Open in... targets Pixel Studio + Sprite Animator', out.openCalls.join(',') === 'pixel-studio,sprite-animator', out.openCalls.join(','));
     check('game-maker: 390 no overflow', out.scrollWidth <= out.clientWidth + 2, `${out.scrollWidth}/${out.clientWidth}`);

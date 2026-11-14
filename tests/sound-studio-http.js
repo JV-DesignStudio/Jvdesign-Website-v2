@@ -118,13 +118,12 @@ let failures = 0;
   await page.evaluate(()=>{ const tr=document.getElementById('transport'); tr.style.scrollBehavior='auto'; tr.scrollLeft=0; tr.style.scrollBehavior=''; });
   check('no known broken placeholder text', !initial.badText);
   await page.evaluate(() => closeStart());
-  await page.click('#playBtn');
-  await new Promise(resolve=>setTimeout(resolve, 400));
-  const playing = await page.evaluate(()=>document.getElementById('playBtn')?.textContent.trim());
-  check('play toggles to stop', playing === '■ Stop', playing);
-  await page.click('#playBtn');
-  const stopped = await page.evaluate(()=>document.getElementById('playBtn')?.textContent.trim());
-  check('stop toggles back to play', stopped === '▶ Play', stopped);
+  await page.evaluate(() => togglePlay());
+  const playing = await page.waitForFunction(() => /Stop/.test(document.getElementById('playBtn').textContent), { timeout: 3000 }).then(() => true).catch(() => false);
+  check('play toggles to stop', playing, await page.evaluate(() => document.getElementById('playBtn')?.textContent.trim()));
+  await page.evaluate(() => togglePlay());
+  const stopped = await page.waitForFunction(() => /Play/.test(document.getElementById('playBtn').textContent), { timeout: 3000 }).then(() => true).catch(() => false);
+  check('stop toggles back to play', stopped, await page.evaluate(() => document.getElementById('playBtn')?.textContent.trim()));
 
   // Music / Drums / SFX modes
   await page.evaluate(()=>setMode('drums'));

@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-1Zge2h1z4b1qwlFyZjFUy12W6Qm9TojoWL2JNBMZ3D4=' 'sha256-i5BX6vdOL63oxonzdPqo4ZgPbBLooCsvvaqjayfFXiU=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-NpysiABQcxUbisareUcWHzTjDFlilYxO6QDXgcmzda4=' 'sha256-rrnjpaIPzmrmuRqK7mXAAHaTnxgpIUZethy8yVHXGSQ=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -1302,6 +1302,7 @@ body.play-only .ss-modes{display:none!important;}
 </div>
 
 <script src="../assets/js/studio-midi.js"></script>
+<script src="/jvds-asset-bus.js"></script>
 <script>
 // ------------------------------------------
 // AUDIO CONTEXT
@@ -3658,7 +3659,8 @@ function setEnv(k,v){
   tracks[activeTrack].env[k]=v;
   const map={attack:['attVal',v.toFixed(3)+'s'],decay:['decVal',v.toFixed(2)+'s'],sustain:['susVal',v.toFixed(2)],release:['relVal',v.toFixed(2)+'s']};
   if(map[k]){ const el=document.getElementById(map[k][0]); if(el) el.textContent=map[k][1]; }
-  drawEnv();
+  // Redraw at once so the envelope shape matches the slider while it moves.
+  _drawEnvNow();
 }
 let _drawEnvTimer=0;
 function drawEnv(){
@@ -4145,12 +4147,19 @@ function bufferToDataUrl(buf){
   return 'data:audio/wav;base64,'+btoa(binary);
 }
 
+function publishSoundToBus(dataUrl,name,slot){
+  try{
+    if(window.JVDSAssetBus) return window.JVDSAssetBus.publishSound({name:name||'Sound Studio sound',tool:'sound-studio',dataUrl:dataUrl,slot:slot||'music'});
+  }catch(e){}
+  return null;
+}
 function sendToGameMaker(){
   if(!tracks.length){showToast('Add some tracks first!');return;}
   showToast('Rendering for Game Maker');
   renderMixdown().then(buf=>{
     const dataUrl=bufferToDataUrl(buf);
     localStorage.setItem('jvds_music_last',JSON.stringify({dataUrl,bpm,name:'Sound Studio Track'}));
+    publishSoundToBus(dataUrl,'Sound Studio Track','music');
     unlockBadge('usedInGame');
     showToast('Sent to Game Maker. Open Arcade Game Maker > Sounds, then use Import Music.');
   }).catch(e=>{ const c=_renderFailed(e); showToast(c?'Render cancelled':'Render failed', c?'warn':'error'); });
@@ -5541,6 +5550,7 @@ function sendSfxToGameMaker(){
   try{
     sfxAssignedBuf=sfxLastBuf; sfxAssignedName=sfxLastName||'SFX';
     localStorage.setItem('jvds_sfx_last',JSON.stringify({dataUrl:bufferToDataUrl(sfxLastBuf),name:sfxLastName||'SFX'}));
+    publishSoundToBus(bufferToDataUrl(sfxLastBuf),sfxLastName||'SFX','sfx');
     unlockBadge('usedInGame');
     showToast('Sent to Game Maker. Open Arcade Game Maker > Sounds, then Import Last SFX.');
   }catch(e){ showToast('Could not send sound'); }
