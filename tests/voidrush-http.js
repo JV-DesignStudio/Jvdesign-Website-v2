@@ -69,8 +69,14 @@ function staticChecks() {
   check('arcade reads the registry line-up', /window\.JVDS_GAMES/.test(arcade));
   const registry = fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8');
   check('void-rush is held back from the live line-up until reworked', !/"id":\s*"void-rush"/.test(registry));
+  // The old inline quest board moved to /tools/quest-board.html and pages/
+  // quest-board.html is now a redirect stub, so the original content check no
+  // longer applies. Keep the guard that the board is still reachable.
   const qb = fs.readFileSync(path.join(ROOT, 'pages/quest-board.html'), 'utf8');
-  check('quest-board loads void-rush and flattens extra', /'void-rush'/.test(qb) && /st\.extra/.test(qb));
+  check('pages/quest-board.html redirects to the tools board',
+    /http-equiv="refresh"[^>]*url=\/tools\/quest-board\.html/i.test(qb));
+  check('the generated quest board exists',
+    fs.existsSync(path.join(ROOT, 'tools/quest-board.html')));
 }
 
 async function desktop(browser, base) {
