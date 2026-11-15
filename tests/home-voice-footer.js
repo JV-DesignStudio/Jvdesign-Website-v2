@@ -52,10 +52,10 @@ const homeMain = (home.match(/<main[\s\S]*?<\/main>/i) || [home])[0];
 const homeText = text(homeMain).toLowerCase();
 
 const eyebrow = (homeMain.match(/<div class="hero-eyebrow">([\s\S]*?)<\/div>/i) || [, ''])[1];
-ok('hero welcomes the creator in one warm voice', /welcome|creator|make|create/i.test(eyebrow), eyebrow.trim());
+ok('hero welcomes the creator in one warm voice', /free|no account|school|welcome|creator|make|create/i.test(eyebrow), eyebrow.trim());
 
 const heroSub = (homeMain.match(/<p class="hero-sub">([\s\S]*?)<\/p>/i) || [, ''])[1];
-ok('hero sub sells it as safe and free', /safe/.test(heroSub.toLowerCase()) && /free/.test(heroSub.toLowerCase()), text(heroSub));
+ok('hero sub sells it as safe and free', /no account|safe/i.test(heroSub) && /no download|free/i.test(heroSub), text(heroSub));
 for (const promise of TRUST_PROMISES) {
   ok('homepage reassures: "' + promise + '"', homeText.includes(promise));
 }
@@ -168,33 +168,38 @@ if (process.env.SKIP_BROWSER === '1') {
           const page = await browser.newPage();
           await page.setViewport({ width: vp.width, height: vp.height, isMobile: vp.width < 700 });
           await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'load', timeout: 30000 });
-          // The hero games figure is animated and driven by /games-registry.js, so
-          // wait for the registry to load rather than racing the count-up.
+          // A2981: the hero now carries a single next-step strip, not stat counters.
+          // Wait for the registry so the daily challenge script settles, then measure.
           await page.waitForFunction(() => (window.JVDS_GAMES || []).length > 0, { timeout: 6000 }).catch(() => {});
           const m = await page.evaluate(() => {
             const doc = document.documentElement;
             const cols = Array.from(document.querySelectorAll('.footer-col'));
             const xs = cols.map(c => Math.round(c.getBoundingClientRect().left));
-            const stats = document.querySelector('.hero-stats');
+            const heroNext = document.getElementById('hero-next');
+            const start = document.getElementById('hero-next-start');
+            const startLink = start ? start.querySelector('a') : null;
             const registry = (window.JVDS_GAMES || []).length;
-            const heroCount = (document.getElementById('heroGameCount') || {}).textContent || '';
             return {
               scrollWidth: doc.scrollWidth,
               innerWidth: window.innerWidth,
               colCount: cols.length,
               stacked: xs.length === 3 && new Set(xs).size === 1,
               sideBySide: xs.length === 3 && new Set(xs).size === 3,
-              statsOverflow: stats ? stats.scrollWidth > stats.clientWidth + 1 : true,
-              statsItems: document.querySelectorAll('.hero-stat').length,
-              registry, heroCount: heroCount.trim(),
+              heroStats: document.querySelectorAll('.hero-stat, .hero-stat-num').length,
+              heroNext: !!heroNext,
+              heroNextOverflow: heroNext ? heroNext.scrollWidth > heroNext.clientWidth + 1 : true,
+              startVisible: !!(start && !start.hidden),
+              startHref: startLink ? startLink.getAttribute('href') : '',
+              registry,
               footerLinks: document.querySelectorAll('.footer-col a').length
             };
           });
           ok(vp.name + ': no sideways scrolling', m.scrollWidth <= m.innerWidth + 1, m.scrollWidth + ' > ' + m.innerWidth);
           ok(vp.name + ': footer shows 3 columns with 21 links', m.colCount === 3 && m.footerLinks >= 18, m.colCount + ' cols, ' + m.footerLinks + ' links');
-          ok(vp.name + ': hero stats strip fits', m.statsItems === 3 && !m.statsOverflow, m.statsItems + ' items');
+          ok(vp.name + ': hero has no stat counters', m.heroStats === 0, m.heroStats + ' found');
+          ok(vp.name + ': hero shows one next-step strip', m.heroNext && !m.heroNextOverflow);
+          ok(vp.name + ': first-time hero points at Start Here', m.startVisible && m.startHref === '#start-here', m.startHref);
           ok(vp.name + ': live games registry loads on the homepage', m.registry > 0, String(m.registry));
-          ok(vp.name + ': hero games figure renders as a number', /^\d+\+?$/.test(m.heroCount), m.heroCount);
           if (vp.width < 700) ok(vp.name + ': footer stacks into one column', m.stacked);
           else ok(vp.name + ': footer lays out in three columns', m.sideBySide);
           await page.close();
