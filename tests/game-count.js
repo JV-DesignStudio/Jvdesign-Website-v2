@@ -15,13 +15,18 @@ const registry = (ctx.window.JVDS_GAMES || []).length;
 check('games-registry.js loads and lists games', registry > 0, 'registry=' + registry);
 
 const gdir = path.join(root, 'games');
-const indexable = fs.readdirSync(gdir).filter(f => f.endsWith('.html'))
-  .filter(f => !/name="robots"[^>]*noindex/i.test(fs.readFileSync(path.join(gdir, f), 'utf8')));
-check('registry count equals indexable games on disk', registry === indexable.length, 'registry=' + registry + ' disk=' + indexable.length);
+const files = fs.readdirSync(gdir).filter(f => f.endsWith('.html'));
+const noindex = new Set(files.filter(f => /name="robots"[^>]*noindex/i.test(fs.readFileSync(path.join(gdir, f), 'utf8'))));
+const indexable = files.filter(f => !noindex.has(f));
+const registryFiles = (ctx.window.JVDS_GAMES || []).map(g => g.file).filter(Boolean);
+const missing = registryFiles.filter(f => !files.includes(f));
+check('every registry game has a page on disk', missing.length === 0, missing.join(', '));
+const unregistered = indexable.filter(f => !registryFiles.includes(f));
+check('every indexable game page is in the registry', unregistered.length === 0, unregistered.join(', '));
 
 const idx = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const m = idx.match(/id="heroGameCount"[^>]*>(\d+)/);
-check('homepage hero game stat derives from the registry id', !!m && +m[1] === registry, m ? ('fallback ' + m[1]) : 'missing id');
+const m = idx.match(/<div class="stat-num">(\d+)<\/div>\s*<div class="stat-label">Games<\/div>/);
+check('homepage games stat derives from the registry id', !!m && +m[1] === registry, m ? ('about stat ' + m[1]) : 'missing about games stat');
 check('homepage loads games-registry.js', /games-registry\.js/.test(idx));
 
 const statFiles = ['pages/press.html', 'pages/discovery_session.html', 'pages/about.html'];

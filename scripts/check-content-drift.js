@@ -283,10 +283,9 @@ function checkStats() {
   return counts;
 }
 
-// The homepage carries two kinds of count: JSON-LD numberOfItems (exact) and
-// static hero fallbacks (workshops and tools round up to the nearest ten with a
-// plus). Both must agree with the catalogue so a learner never sees a stale
-// total after content changes.
+// The homepage carries the exact JSON-LD numberOfItems and the four rounded
+// figures in the about section (A2981 retired the hero stat counters). Both
+// must agree with the catalogue so a learner never sees a stale total.
 function checkHomepageCounts(counts) {
   console.log('\n--- index.html counts ---');
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -299,18 +298,18 @@ function checkHomepageCounts(counts) {
     warn('homepage', `JSON-LD numberOfItems ${items[1]} != ${counts.workshops} workshops`);
     bad++;
   }
-  const hero = (id, want) => {
-    const re = new RegExp('id="' + id + '"[^>]*>([^<]+)<');
+  const aboutStat = (label, want) => {
+    const re = new RegExp('<div class="stat-num">([^<]+)<\\/div>\\s*<div class="stat-label">' + label + '<\\/div>');
     const m = html.match(re);
-    if (!m) { warn('homepage', `hero stat ${id} not found`); bad++; return; }
+    if (!m) { warn('homepage', `about stat "${label}" not found`); bad++; return; }
     if (m[1].trim() !== want) {
-      warn('homepage', `${id} shows ${m[1].trim()}, expected ${want}`);
+      warn('homepage', `about "${label}" shows ${m[1].trim()}, expected ${want}`);
       bad++;
     }
   };
-  hero('heroWorkshopCount', (Math.floor(counts.workshops / 10) * 10) + '+');
-  hero('heroToolCount', counts.tools + '+');
-  hero('heroGameCount', String(counts.games));
+  aboutStat('Workshops', (Math.floor(counts.workshops / 10) * 10) + '+');
+  aboutStat('Free Tools', counts.tools + '+');
+  aboutStat('Games', String(counts.games));
   if (!bad) ok('homepage', `counts match the catalogues (${counts.workshops} workshops, ${counts.tools} tools, ${counts.games} games)`);
   return bad;
 }

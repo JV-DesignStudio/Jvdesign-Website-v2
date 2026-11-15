@@ -69,7 +69,7 @@ check(
 // Each entry: [file, regex that must NOT match if marketing.games.display is authoritative]
 const mGames = parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10);
 const gameCountPages = [
-  ['index.html',          /heroGameCount[^>]*>(\d+)</],
+  ['index.html',          /class="stat-num">(\d+)<\/div>\s*<div class="stat-label">Games</],
   ['arcade.html',         /(twelve|thirteen|\d+) hand-picked/i],
   ['pages/about.html',    /stat-num[^>]*>(\d+)<[^>]*>[\s\S]*?Browser Games|pillar-sub[^>]*>(\d+) listed games/],
   ['pages/press.html',    /pressGameCount[^>]*>(\d+)</],
@@ -84,10 +84,10 @@ for (const [f] of gameCountPages) {
     check(`${f}: no stale game claim "${bad}"`, !html.includes(bad));
   }
   // Check that any inline number visible before JS runs matches marketing.games.display
-  const numericGamePattern = /(?:heroGameCount|pressGameCount)[^>]*>(\d+)<|>(\d+)<[^<]*(?:Browser Games|listed games)/g;
+  const numericGamePattern = /class="stat-num">(\d+)<\/div>\s*<div class="stat-label">Games<|pressGameCount[^>]*>(\d+)<|>(\d+)<[^<]*(?:Browser Games|listed games)/g;
   let m;
   while ((m = numericGamePattern.exec(html)) !== null) {
-    const found = parseInt(m[1] || m[2], 10);
+    const found = parseInt(m[1] || m[2] || m[3], 10);
     check(
       `${f}: hardcoded game count (${found}) matches marketing.json (${mGames})`,
       found === mGames,
