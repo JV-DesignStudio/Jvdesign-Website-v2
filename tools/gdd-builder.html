@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-cBBltynfs4BF9VgJLmLRKcy2HozmUT7azcGRmAxlKGE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-U5MKt+4aKOpyTmFYjg4/fPZOD+qh5lxXP5OKm719WOU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -908,6 +908,7 @@ function init(){
   renderMechanics();
   updateCover();
   trackProgress();
+  _gddLastSnapshot=gddSnapshot();
   initCounters();
   offerGddRestore();
   gddDirty=false; // opening the page is not an unsaved edit
@@ -2178,18 +2179,35 @@ function setData(d){
 }
 
 // -- UNDO --
-let gddUndoStack=[], gddRedoStack=[];
-function gddPushUndo(){gddUndoStack.push(JSON.stringify(getTextData()));if(gddUndoStack.length>30)gddUndoStack.shift();gddRedoStack=[];}
+let gddUndoStack=[], gddRedoStack=[], _gddHistoryLock=false, _gddLastSnapshot=null;
+function gddSnapshot(){ try{ return JSON.stringify(getTextData()); }catch(e){ return null; } }
+function gddPushUndo(){
+  if(_gddHistoryLock) return;
+  const now=gddSnapshot();
+  if(now===null) return;
+  const prev=_gddLastSnapshot;
+  _gddLastSnapshot=now;
+  if(prev===null||prev===now) return;
+  gddUndoStack.push(prev);
+  if(gddUndoStack.length>30) gddUndoStack.shift();
+  gddRedoStack=[];
+}
 function gddUndo(){
   if(!gddUndoStack.length){showToast('Nothing to undo');return;}
-  gddRedoStack.push(JSON.stringify(getTextData()));
-  setData(JSON.parse(gddUndoStack.pop()));
+  gddRedoStack.push(gddSnapshot());
+  const prev=gddUndoStack.pop();
+  _gddHistoryLock=true;
+  try{ setData(JSON.parse(prev)); }finally{ _gddHistoryLock=false; }
+  _gddLastSnapshot=gddSnapshot();
   showToast('Undo');
 }
 function gddRedo(){
   if(!gddRedoStack.length){showToast('Nothing to redo');return;}
-  gddUndoStack.push(JSON.stringify(getTextData()));
-  setData(JSON.parse(gddRedoStack.pop()));
+  gddUndoStack.push(gddSnapshot());
+  const next=gddRedoStack.pop();
+  _gddHistoryLock=true;
+  try{ setData(JSON.parse(next)); }finally{ _gddHistoryLock=false; }
+  _gddLastSnapshot=gddSnapshot();
   showToast('Redo');
 }
 
