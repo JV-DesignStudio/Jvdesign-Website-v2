@@ -5,6 +5,32 @@ function galleryToast(text){const t=document.createElement('div');t.setAttribute
 function shareCreation(url){if(!url)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>galleryToast('Share link copied'),()=>prompt('Copy this link:',url));}else{prompt('Copy this link:',url);}}catch(e){prompt('Copy this link:',url);}}
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 let filter='all';
+const FILTER_KEY='jvds_gallery_filter';
+const VALID_FILTERS=['all','pixel','audio','world','other'];
+let filterHistory=[];
+function readFilter(){try{const q=new URLSearchParams(location.search).get('filter');if(q&&VALID_FILTERS.includes(q))return q;const s=localStorage.getItem(FILTER_KEY);if(s&&VALID_FILTERS.includes(s))return s;}catch(e){}return 'all';}
+function setFilter(next,opts){
+  opts=opts||{};
+  const f=VALID_FILTERS.includes(next)?next:'all';
+  if(opts.record!==false&&f!==filter)filterHistory.push(filter);
+  filter=f;
+  if(opts.remember!==false){try{localStorage.setItem(FILTER_KEY,f);}catch(e){}}
+  try{const u=new URL(location.href);if(f==='all')u.searchParams.delete('filter');else u.searchParams.set('filter',f);history.replaceState(null,'',u.pathname+u.search+u.hash);}catch(e){}
+  document.querySelectorAll('.chip').forEach(x=>{const on=x.dataset.filter===f;x.classList.toggle('on',on);x.setAttribute('aria-selected',String(on));});
+  const back=$('btnBack');if(back)back.hidden=filterHistory.length===0;
+  render();
+}
+function shareGalleryView(){
+  const u=new URL(location.href);
+  if(filter==='all')u.searchParams.delete('filter');else u.searchParams.set('filter',filter);
+  const url=u.toString();
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>galleryToast('Filter link copied'),()=>prompt('Copy this link:',url));}
+    else prompt('Copy this link:',url);
+  }catch(e){prompt('Copy this link:',url);}
+  return url;
+}
+function goBack(){if(!filterHistory.length)return;const prev=filterHistory.pop();setFilter(prev,{record:false});}
 async function getAll(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);const req=st.getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
 async function add(item){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(item).onsuccess=res;tx.onerror=()=>rej(tx.onerror);tx.oncomplete=()=>db.close();});}
 async function clearAll(){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=res;tx.onerror=()=>rej(tx.onerror);tx.oncomplete=()=>db.close();});}
@@ -26,7 +52,23 @@ async function render(){
   grid.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>shareCreation(b.getAttribute('data-share')));
   grid.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{const u=b.getAttribute('data-open');if(u)window.open(u,'_blank','noopener');});
 }
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-selected','false')});c.classList.add('on');c.setAttribute('aria-selected','true');filter=c.dataset.filter;render();});
+document.querySelectorAll('.chip').forEach((c,i,chips)=>{
+  c.onclick=()=>setFilter(c.dataset.filter);
+  c.onkeydown=e=>{
+    let j=null;
+    if(e.key==='ArrowRight')j=(i+1)%chips.length;
+    else if(e.key==='ArrowLeft')j=(i-1+chips.length)%chips.length;
+    else if(e.key==='Home')j=0;
+    else if(e.key==='End')j=chips.length-1;
+    if(j==null)return;
+    e.preventDefault();
+    chips[j].focus();
+    setFilter(chips[j].dataset.filter);
+  };
+});
+$('btnShareView').onclick=shareGalleryView;
+$('btnBack').onclick=goBack;
+window.shareGalleryView=shareGalleryView;
 $('btnAdd').onclick=()=>$('dlg').showModal();
 $('dlg').addEventListener('close',async()=>{
   if($('dlg').returnValue==='cancel')return;
@@ -86,5 +128,7 @@ async function syncFromTools(){
 }
 $('btnSync').onclick=async()=>{ const n=await syncFromTools(); await render(); const note=$('syncNote'); if(note) note.textContent=n?('Collected '+n+' creation'+(n>1?'s':'')+' from your tools'):'No new creations found in your tools yet.'; };
 
+filter=readFilter();
+setFilter(filter,{remember:false,record:false});
 syncFromTools().then(()=>render()).catch(()=>render());
 document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'gallery',steps:[{target:'#btnAdd',title:'Add creation',text:'Echo saves in this browser - works offline, no account.'},{target:'.filters',title:'Filter',text:'Browse by tool or character.'}]})});
