@@ -36,14 +36,19 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    saveCurrentEffect();
    const saveText=document.getElementById('saveList').innerText;
     sbTab('export');
-    document.getElementById('btnRaw').click();
-    document.getElementById('btnGodot').click();
-    document.getElementById('btnGodot3').click();
-    document.getElementById('btnGeneric').click();
-    document.getElementById('btnPhaser').click();
+    const grab=(id)=>{
+      document.getElementById(id).click();
+      const text=document.getElementById('exportModalCode').textContent;
+      document.getElementById('exportModalDownload').click();
+      return text;
+    };
+    const godot3Tres=grab('btnGodot3');
+    const generic=grab('btnGeneric');
+    const phaser=grab('btnPhaser');
+    grab('btnRaw');
+    grab('btnGodot');
     await new Promise(r=>setTimeout(r,420));
     window.download=oldDownload;
-    const byName=(n)=>{const d=downloads.find(x=>x.name===n);return d?d.text:null;};
     return {
      title:document.title,
      canvasSize:canvas.width+'x'+canvas.height,
@@ -56,9 +61,9 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      rateChanged:window.P ? window.P.rate===75 : true,
      saveEscaped:saveText.includes('<b>spark</b>') && !document.querySelector('#saveList b'),
      downloads:downloads.map(d=>d.name),
-     godot3Tres:byName('godot3_particles_material.tres'),
-     generic:byName('particle_effect.json'),
-     phaser:byName('particle_effect_phaser.json'),
+     godot3Tres:godot3Tres,
+     generic:generic,
+     phaser:phaser,
      cleanText:!/â|Ã|ï|�|\?\?/.test(document.body.innerText),
      scrollWidth:document.documentElement.scrollWidth,
      clientWidth:document.documentElement.clientWidth
