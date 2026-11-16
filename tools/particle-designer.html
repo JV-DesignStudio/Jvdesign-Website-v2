@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-XgFofXuPv3GnPmz9qpwdCgzMv2UylmmqCrUWqYDPuZs=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-prhOOoIq2m/XeQaHMMydGA3vN6J27L29dguB4aQ67Ls=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -611,6 +611,7 @@ function refreshTexChips(){
 
 // -- Particle pool --
 let particles=[];
+document.addEventListener('jvds:lowpower',e=>{ if(e.detail&&e.detail.on&&particles.length>120) particles=particles.slice(0,120); });
 let lastTime=0,emitAccum=0;
 let frameCount=0,fpsTime=0,fps=60;
 
@@ -631,8 +632,10 @@ function getEmitPos(){
   }
 }
 
+function lowPower(){ return document.documentElement.classList.contains('jvds-low-power'); }
 function spawnParticle(){
-  if(particles.length>=P.maxParticles)return;
+  const cap = lowPower() ? Math.min(P.maxParticles, 120) : P.maxParticles;
+  if(particles.length>=cap)return;
   const angleRad=(P.angle+rand(-P.spread/2,P.spread/2))*Math.PI/180;
   const speed=Math.max(0,P.speed+rand(-P.speedVar,P.speedVar));
   const life=Math.max(.05,P.lifetime*(1+rand(-P.lifetimeVar,P.lifetimeVar)));
@@ -673,8 +676,12 @@ function drawSpark(x,y,vx,vy,sz){
 }
 
 let bgColor='#000000';
+let lowLast=0;
 function loop(ts){
   requestAnimationFrame(loop);
+  // A2308: low-power mode caps the preview at about 16fps.
+  if(lowPower() && ts-lowLast < 60) return;
+  lowLast=ts;
   const dt=Math.min((ts-lastTime)/1000,.05);
   lastTime=ts;
 
@@ -694,7 +701,7 @@ function loop(ts){
   }
 
   if(P.loop||particles.length===0){
-    emitAccum+=P.rate*dt;
+    emitAccum+=P.rate*(lowPower()?0.45:1)*dt;
     while(emitAccum>=1){spawnParticle();emitAccum--;}
   }
 

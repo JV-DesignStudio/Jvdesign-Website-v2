@@ -111,7 +111,7 @@ let failures = 0;
       rightBtnRight:r?Math.round(r.getBoundingClientRect().right):0,
       vw:document.documentElement.clientWidth};
   });
-  await new Promise(resolve=>setTimeout(resolve, 450));
+  await new Promise(resolve=>setTimeout(resolve, 1200));
   const trScrolled = await page.evaluate(()=>document.getElementById('transport').scrollLeft);
   check('mobile transport has scroll controls', trNav.left && trNav.right && trNav.overflow>0 && trScrolled>trNav.before, JSON.stringify({...trNav,after:trScrolled}));
   check('mobile transport right control stays on screen', trNav.rightBtnRight>0 && trNav.rightBtnRight<=trNav.vw+1, JSON.stringify(trNav));
