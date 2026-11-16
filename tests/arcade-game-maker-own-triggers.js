@@ -23,7 +23,7 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 let failures = 0;
 function check(name, ok, detail) { console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' , ' + detail : '')); if (!ok) failures++; }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SCENE_KEYS = { BREAKER:'BreakerScene', PONG:'PongScene', SNAKE:'SnakeScene', RACING:'RacingScene', HOPPER:'HopperScene', BEAT:'BeatScene', PUZZLE:'PuzzleScene', RHYTHM:'RhythmScene', DEFENSE:'TDScene', PINBALL:'PinballScene', PAPERTOSS:'PaperTossScene' };
+const SCENE_KEYS = { WAVESURVIVAL:'WaveSurvivalScene', BREAKER:'BreakerScene', PONG:'PongScene', SNAKE:'SnakeScene', RACING:'RacingScene', HOPPER:'HopperScene', BEAT:'BeatScene', PUZZLE:'PuzzleScene', RHYTHM:'RhythmScene', DEFENSE:'TDScene', PINBALL:'PinballScene', PAPERTOSS:'PaperTossScene' };
 
 const TRIGGERS = {
   BREAKER: {
@@ -89,6 +89,18 @@ const TRIGGERS = {
       const sc = window._phaserGame.scene.getScene('PaperTossScene');
       sc.score = (liveConfig.winTarget || 500) + 10;
       sc._tickBase(sc.score);
+    },
+  },
+  WAVESURVIVAL: {
+    win: () => {
+      const sc = window._phaserGame.scene.getScene('WaveSurvivalScene');
+      const st = sc._wsState;
+      liveConfig.wsSurviveWaves = 1;
+      st.setWave(1);
+      st.setWaveClear(false);
+      st.setBetween(false);
+      const es = sc._wsEnemies();
+      if (es) es.length = 0;
     },
   },
   PINBALL: {
