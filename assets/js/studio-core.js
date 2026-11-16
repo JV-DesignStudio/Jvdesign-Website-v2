@@ -1350,6 +1350,14 @@
     tips = h('div', { class: 'jvs-tips' }, tips);
 
     var revisionsHost = h('div');
+    var snapshotName = h('input', {
+      id: 'jvsSnapshotName',
+      type: 'text',
+      maxlength: '32',
+      'aria-label': 'Snapshot name',
+      placeholder: 'Name this snapshot',
+      style: { width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid rgba(240,234,214,.22)', background: 'transparent', color: 'inherit', font: 'inherit', marginBottom: '8px' }
+    });
     var children = [
       h('div', { class: 'jvs-actions' }, [
         h('button', { type: 'button', class: 'jvs-btn-primary', text: 'Switch Studio menu light / dark', onclick: function () {
@@ -1359,10 +1367,14 @@
       ]),
       quotaBlock(),
       section('Keep your work', [
+        snapshotName,
+        h('p', { class: 'jvs-hint', text: 'Name it, save, then restore any time. Restoring asks first.' }),
         h('div', { class: 'jvs-actions' }, [
-          h('button', { type: 'button', class: 'jvs-btn-primary', text: 'Save a snapshot', onclick: function () {
-            autosaveNow('Manual snapshot').then(function (snap) {
+          h('button', { type: 'button', id: 'jvsSnapshotSave', class: 'jvs-btn-primary', text: 'Save a snapshot', onclick: function () {
+            var name = String(snapshotName.value || '').trim().slice(0, 32) || 'Snapshot';
+            autosaveNow(name).then(function (snap) {
               if (!snap) { S.toast('Nothing to snapshot yet. Make something first.', { tone: 'warn' }); return; }
+              snapshotName.value = '';
               S.toast('Snapshot saved in this browser.', { tone: 'ok' });
               revisionList(revisionsHost);
             }).catch(friendlyError);
