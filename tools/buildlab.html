@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-kfZtDzll2kah8iCpeggs/z/rR2Al45tZB2KS+4GzNIE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-b4xs+2imBAKqHKXOrf0w6PGUHF1q0rX1qGpCVVb13tU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -743,6 +743,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
             <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.08);color:var(--accent);border:1px solid rgba(91,192,248,.2);font-size:.8rem;" data-on="exportPreviewOBJMTL" data-on-plain>&#x1F5A5;&#xFE0F; Export OBJ+MTL</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportPreviewOBJ" data-on-plain>&#x1F4C4; Export OBJ Only</button>
             <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);font-size:.8rem;" data-on="exportBundle" data-on-plain title="Download one zip: model + README + preview photo">&#x1F4E6; Asset bundle (.zip)</button>
+            <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.14);color:#8ad4ff;border:1px solid rgba(91,192,248,.35);font-size:.8rem;" data-on="exportGodotStarter" data-on-plain title="Download a runnable Godot 4 project with your model">&#x1F3AE; Godot starter (.zip)</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportManifest" data-on-plain title="Parts, names, bounds, materials and triangle counts for a pipeline">&#x1F4CB; Manifest (.json)</button>
             <button class="action-btn btn-secondary" style="background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);font-size:.8rem;" data-on="exportBuildLabGrid" data-on-plain title="Project the top-down block layout into a grid for World Builder">&#x1F5FA;&#xFE0F; Export grid</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportCollisionProxy" data-on-plain title="One collision box per part, same units as the model">&#x1F6E1;&#xFE0F; Collision proxy (.obj)</button>
@@ -11798,6 +11799,59 @@ async function buildBundleZip() {
   const blob = await zip.generateAsync({ type: 'blob' });
   return { blob, files: [modelName, collisionName, 'README.txt', 'preview.png', 'manifest.json'] };
 }
+// A2302: a runnable Godot 4 starter project with the learner's model.
+function buildGodotGLB() {
+  return new Promise((resolve, reject) => {
+    const group = new THREE.Group();
+    group.name = buildName || 'BuildLab';
+    blocks.filter(b => !b.userData.hidden && b.visible !== false && b.parent).forEach((b, i) => {
+      b.updateMatrixWorld(true);
+      const clone = new THREE.Mesh(b.geometry, b.material);
+      clone.position.setFromMatrixPosition(b.matrixWorld);
+      clone.quaternion.setFromRotationMatrix(b.matrixWorld);
+      clone.scale.setFromMatrixScale(b.matrixWorld);
+      clone.name = 'Part_' + (i + 1);
+      group.add(clone);
+    });
+    new GLTFExporter().parse(group, result => resolve(result), reject, { binary: true });
+  });
+}
+
+async function buildGodotStarterZip() {
+  if (!blocks.some(b => !b.userData.hidden)) return null;
+  const [JSZipCtor, glb] = await Promise.all([loadJSZip(), buildGodotGLB()]);
+  const name = (buildName || 'My Build').replace(/[^A-Za-z0-9_-]+/g, '_') || 'My_Build';
+  const zip = new JSZipCtor();
+  zip.file('project.godot', '; Engine configuration file.\nconfig_version=5\n\n[application]\n\nconfig/name="' + name + '"\nrun/main_scene="res://main.tscn"\n');
+  zip.file('main.tscn', '[gd_scene load_steps=3 format=3]\n\n[ext_resource type="Script" path="res://main.gd" id="1"]\n[ext_resource type="PackedScene" path="res://assets/model.glb" id="2"]\n\n[node name="Main" type="Node3D"]\nscript = ExtResource("1")\n\n[node name="Model" parent="." instance=ExtResource("2")]\n\n[node name="Camera3D" type="Camera3D" parent="."]\ntransform = Transform3D(1, 0, 0, 0, 0.8, 0.6, 0, -0.6, 0.8, 0, 3.5, 6)\n\n[node name="Sun" type="DirectionalLight3D" parent="."]\ntransform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)\n');
+  zip.file('main.gd', 'extends Node3D\n\nfunc _process(delta: float) -> void:\n\t$Model.rotate_y(delta * 0.5)\n');
+  zip.file('assets/model.glb', glb);
+  zip.file('README.txt', 'Godot 4 starter made in BuildLab.\n\n1. Open Godot 4 and choose Import.\n2. Pick project.godot in this folder.\n3. Press Play. The model turns slowly; edit main.gd or main.tscn to make it yours.\n\nThe model is in assets/model.glb. All paths inside this project are relative.\n');
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return { blob, name, files: ['project.godot', 'main.tscn', 'main.gd', 'assets/model.glb', 'README.txt'] };
+}
+
+async function exportGodotStarter() {
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return null; }
+  toast('Packing Godot starter...');
+  try {
+    const pack = await buildGodotStarterZip();
+    if (!pack) return null;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(pack.blob);
+    a.download = pack.name + '_godot_starter.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast('Godot starter downloaded. Open project.godot in Godot 4.');
+    return pack;
+  } catch (e) {
+    toast('Godot starter failed: ' + (e && e.message ? e.message : e));
+    return null;
+  }
+}
+
+try { window.JVDSBuildLabStarter = { build: buildGodotStarterZip, export: exportGodotStarter }; } catch (e) {}
+
 async function exportBundle() {
   if (!blocks.length) { toast('Nothing to export!'); return null; }
   toast('Packing asset bundle…');
