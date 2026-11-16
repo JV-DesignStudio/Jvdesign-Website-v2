@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-IFXpaf9xHIFBx9Cdxp4qImyWmMyEwWEwUbX1/tO90nw=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-ln2FEnrSh/r0/WkQP8uyq6c9pWm/zzeL+hB6HyVUWeM=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -244,6 +244,7 @@
       <input aria-label="Level name" id="levelName" class="lvl-input" placeholder="My Level" maxlength="40" autocomplete="off">
       <div class="ab-grid">
         <button class="ab ab-s" data-click-id="importJsonInput" title="Open a .json level file">Import<input type="file" id="importJsonInput" accept=".json" style="display:none" data-on="importJSON" data-on-event="change" data-on-args="this"></button>
+        <button class="ab ab-s" data-click-id="importTmxInput" title="Open a Tiled .tmx map">Tiled .tmx<input type="file" id="importTmxInput" accept=".tmx,.xml" style="display:none" data-on="importTMX" data-on-event="change" data-on-args="this"></button>
         <button class="ab ab-r" data-on="confirmClear" data-on-plain title="Start over with an empty level">New Level</button>
       </div>
       <div class="pdiv" style="margin:6px 0;"></div>
@@ -550,10 +551,11 @@
         <span class="tpl-desc">Gaps that get wider, to practise difficulty ramps.</span>
       </button>
       <button class="tpl" data-on="applyTemplate" data-on-arg="cave" data-on-plain>
-        <span class="tpl-ico">⛰️</span><span class="tpl-name">Hazard cave</span>
+        <span class="tpl-ico">�>���?</span><span class="tpl-name">Hazard cave</span>
         <span class="tpl-desc">Lava and spikes, to practise risk and reward.</span>
       </button>
     </div>
+    <a class="ab ab-s" href="asset-packs.html#starter-library" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">More starters in the library</a>
 
     <div class="start-sec">How it works</div>
     <ul class="steps">
@@ -2016,6 +2018,59 @@ function importJSON(input){
   reader.readAsText(file);input.value='';
 }
 
+function importTMX(input){
+  const file=input.files&&input.files[0];
+  if(input) input.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const doc=new DOMParser().parseFromString(String(reader.result||''),'application/xml');
+      const map=doc&&doc.documentElement;
+      if(!map||map.tagName.toLowerCase()!=='map') throw new Error('Not a Tiled map');
+      const w=parseInt(map.getAttribute('width'),10), h=parseInt(map.getAttribute('height'),10);
+      if(!(w>0&&h>0)||w>256||h>256) throw new Error('Map size is out of range');
+      const layer=Array.from(map.querySelectorAll('layer')).find(l=>l.querySelector('data'));
+      if(!layer) throw new Error('No tile layer');
+      const dataEl=layer.querySelector('data');
+      const enc=(dataEl.getAttribute('encoding')||'').toLowerCase();
+      const comp=(dataEl.getAttribute('compression')||'').toLowerCase();
+      if(comp) throw new Error('Compressed TMX is not supported. Re-save without compression.');
+      let gids=[];
+      if(enc==='csv'){
+        gids=String(dataEl.textContent||'').split(',').map(s=>parseInt(s.trim(),10)||0);
+      }else if(enc==='base64'){
+        const raw=atob(String(dataEl.textContent||'').trim());
+        for(let i=0;i+3<raw.length;i+=4){
+          const v=raw.charCodeAt(i)|(raw.charCodeAt(i+1)<<8)|(raw.charCodeAt(i+2)<<16)|(raw.charCodeAt(i+3)<<24);
+          gids.push(v>>>0);
+        }
+      }else{
+        throw new Error('Only CSV or base64 TMX layers are supported');
+      }
+      if(gids.length<w*h) gids=gids.concat(new Array(w*h-gids.length).fill(0));
+      const maxId=Math.max.apply(null,TILES.map(t=>t.id));
+      const mapped=gids.slice(0,w*h).map(g=>{const id=(g&0x1fffffff);return id>0?Math.min(id,maxId):0;});
+      gridW=w; gridH=h;
+      layers=[
+        {name:layer.getAttribute('name')||'Terrain',visible:true,locked:false,data:mapped},
+        {name:'Objects',visible:true,locked:false,data:new Array(w*h).fill(0)},
+        {name:'Enemies',visible:true,locked:false,data:new Array(w*h).fill(0)},
+        {name:'Background',visible:true,locked:false,data:new Array(w*h).fill(0)}
+      ];
+      collisionData=new Int8Array(w*h);
+      enemyPaths={}; tileProps={};
+      setLevelName(file.name.replace(/\.(tmx|xml)$/i,'')||'Imported Tiled Map');
+      currentTheme=BG_THEMES[0]; currentLayer=0; undoStack=[]; redoStack=[];
+      buildThemeGrid(); autoZoom(); resizeCanvases(); renderLayerList(); renderAll();
+      updateStats(); updateUndoRedoBtns(); renderUndoHistory(); updateCollisionStats();
+      showToast('Tiled .tmx imported');
+    }catch(e){ showToast('Import failed: '+e.message); }
+  };
+  reader.onerror=()=>showToast('Could not read that file');
+  reader.readAsText(file);
+}
+
 function openShare(){
   const data=getLevelData();const json=JSON.stringify(data);
   const b64=btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g,(_,p1)=>String.fromCharCode('0x'+p1)));
@@ -2102,7 +2157,9 @@ function getTileTypeAt(wx,wy){
   }
   return null;
 }
-function playLoop(){if(!playState)return;updatePlay();drawPlay();playAF=requestAnimationFrame(playLoop);}
+function lowPower(){return document.documentElement.classList.contains('jvds-low-power');}
+let lowTick=0;
+function playLoop(){if(!playState)return;updatePlay();if(!(lowPower()&&(++lowTick%2)))drawPlay();playAF=requestAnimationFrame(playLoop);}
 function updatePlay(){
   const s=playState;if(s.dead||s.won)return;s.frameCount++;
   if(s.keys.left)s.pvx=-SPEED;else if(s.keys.right)s.pvx=SPEED;else s.pvx*=0.72;
