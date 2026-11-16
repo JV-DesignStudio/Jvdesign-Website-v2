@@ -30,20 +30,28 @@ window.JVDS.announce = (function(){
     get: function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
     set: function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
   };
-  // Theme
-  if (store.get('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  // Theme: light -> dark -> high contrast -> light (A2565)
+  var savedTheme = store.get('jvds-theme');
+  if (savedTheme === 'dark' || savedTheme === 'contrast') document.documentElement.setAttribute('data-theme', savedTheme);
   var b = document.getElementById('themeToggle');
   if (b) {
-    function paint(){ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾'; }
+    var THEME_ORDER = ['light', 'dark', 'contrast'];
+    var THEME_LABEL = { light: 'Light', dark: 'Dark', contrast: 'High contrast' };
+    function nowTheme(){
+      var t = document.documentElement.getAttribute('data-theme');
+      return t === 'dark' || t === 'contrast' ? t : 'light';
+    }
+    function paint(){
+      var t = nowTheme();
+      b.textContent = t === 'contrast' ? '\u25D0' : t === 'dark' ? '\u263E' : '\u2600';
+      b.title = 'Theme: ' + THEME_LABEL[t] + ' (click for ' + THEME_LABEL[THEME_ORDER[(THEME_ORDER.indexOf(t) + 1) % 3]] + ')';
+      b.setAttribute('aria-label', b.title);
+    }
     b.addEventListener('click', function(){
-      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      if (dark) {
-        document.documentElement.removeAttribute('data-theme');
-        store.set('jvds-theme', 'light');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        store.set('jvds-theme', 'dark');
-      }
+      var next = THEME_ORDER[(THEME_ORDER.indexOf(nowTheme()) + 1) % 3];
+      if (next === 'light') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', next);
+      store.set('jvds-theme', next);
       paint();
     });
     paint();

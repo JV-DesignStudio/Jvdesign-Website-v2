@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="/assets/js/theme-init.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quest Card: Printable Quick Reference | JVDesignStudio</title>
+<meta name="description" content="A printable one-page quest reference with a code snippet, a coordinate grid and a node diagram. Works offline.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/quest-card.html">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zf8xt2dBKXw4fOXws5w1owAXOIK4HdEDROEUMILbZg0='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="../style-shared.css?v=17">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--charcoal);font:16px/1.6 Inter,system-ui,sans-serif}
+.qc-wrap{max-width:1100px;margin:0 auto;padding:18px}
+.qc-top{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 0 16px;border-bottom:1.5px solid var(--border);margin-bottom:18px}
+.qc-top a{color:var(--teal-dk);font-weight:700;text-decoration:none}
+.qc-top h1{font:800 1.35rem/1.2 Fredoka,system-ui,sans-serif;margin:0;flex:1}
+.qc-actions{display:flex;gap:8px;flex-wrap:wrap}
+.qc-btn{border:none;border-radius:8px;padding:10px 16px;background:var(--teal-dk);color:#fff;font:inherit;font-weight:800;cursor:pointer}
+.qc-picker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.qc-pick{border:1.5px solid var(--border);border-radius:999px;padding:8px 12px;background:var(--card);color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.qc-pick.on{background:var(--teal-lt);border-color:var(--teal);color:var(--teal-dk)}
+.qc-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.qc-card h2{font:800 1.2rem/1.2 Fredoka,system-ui,sans-serif;margin:0 0 4px}
+.qc-card p{margin:0 0 14px;color:var(--charcoal-lt)}
+.qc-grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+.qc-sec h3{font:800 .78rem/1.2 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-dk);margin:0 0 8px}
+pre{margin:0;background:#1a1208;color:#f5efe0;border-radius:10px;padding:14px;overflow:auto;font:13px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap}
+.qc-grid{width:100%;max-width:340px;height:auto;display:block;border:1.5px solid var(--border);border-radius:10px;background:#fff}
+.qc-nodes{width:100%;height:auto;display:block;border:1.5px solid var(--border);border-radius:10px;background:#fff}
+.qc-note{font-size:.8rem;color:var(--charcoal-lt);margin-top:10px}
+@media (max-width:760px){.qc-grid2{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  body{background:#fff;color:#000;font-size:12pt}
+  .screen-only{display:none!important}
+  .qc-wrap{max-width:none;padding:0}
+  .qc-card{border:1px solid #999;box-shadow:none;padding:0}
+  .qc-grid2{grid-template-columns:1fr 1fr;gap:10mm}
+  pre{background:#fff;color:#000;border:1px solid #999;font-size:8pt}
+  .qc-grid,.qc-nodes{border:1px solid #999}
+  a{color:#000;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="qc-wrap">
+  <header class="qc-top screen-only">
+    <a href="/create">Create</a>
+    <a href="quest-board.html">Game Planner</a>
+    <h1>Quest Card</h1>
+    <div class="qc-actions">
+      <button type="button" class="qc-btn" id="qcPrint">Print / Save as PDF</button>
+    </div>
+  </header>
+
+  <div class="qc-picker screen-only" id="qcPicker" role="group" aria-label="Choose a quest"></div>
+
+  <main class="qc-card" id="qcCard" aria-live="polite">
+    <h2 id="qcTitle">Jump arc</h2>
+    <p id="qcDesc">A clear jump feels good. Tune the lift and gravity, then test it.</p>
+    <div class="qc-grid2">
+      <section class="qc-sec">
+        <h3>Code snippet</h3>
+        <pre id="qcCode"></pre>
+      </section>
+      <section class="qc-sec">
+        <h3>Coordinate grid</h3>
+        <svg id="qcGrid" class="qc-grid" viewBox="0 0 320 320" role="img" aria-label="Coordinate grid"></svg>
+      </section>
+    </div>
+    <section class="qc-sec" style="margin-top:18px">
+      <h3>Node hierarchy</h3>
+      <svg id="qcNodes" class="qc-nodes" viewBox="0 0 640 150" role="img" aria-label="Node hierarchy"></svg>
+    </section>
+    <p class="qc-note">Print this page to keep it beside the computer. Everything is on this page, so it works offline.</p>
+  </main>
+</div>
+<script>
+var QUESTS = [
+  { id:'jump', title:'Jump arc', desc:'A clear jump feels good. Tune the lift and gravity, then test it.',
+    code:'player.body.setVelocityY(-420);\ngravity: 900,\njumpPower: 420',
+    points:[[1,8,'start'],[3,4,'peak'],[5,2,'peak'],[7,5,'fall'],[9,8,'land']],
+    nodes:['Input','Jump','Gravity','Land'] },
+  { id:'coin', title:'Coin pickup', desc:'Coins should vanish once, play a sound and add one point.',
+    code:'this.physics.add.overlap(player, coins, (p, c) => {\n  c.disableBody(true, true);\n  score += 1;\n  GameAudio.play("score");\n});',
+    points:[[2,5,'coin'],[4,5,'coin'],[6,5,'coin']],
+    nodes:['Player','Overlap','Coin','Score'] },
+  { id:'patrol', title:'Enemy patrol', desc:'Move an enemy between two points, then reverse at the ends.',
+    code:'enemy.x += speed * dir;\nif (enemy.x < left || enemy.x > right) dir *= -1;',
+    points:[[2,6,'left'],[5,6,'middle'],[8,6,'right']],
+    nodes:['Enemy','Move','Edge','Reverse'] },
+  { id:'room', title:'Room layout', desc:'Plan a small room: floor, walls, a door and one hazard.',
+    code:'map = [\n  1,1,1,1,1,\n  1,0,0,0,1,\n  1,0,2,0,1,\n  1,1,1,1,1\n];',
+    points:[[1,1,'wall'],[3,2,'hazard'],[4,4,'door']],
+    nodes:['Map','Floor','Wall','Hazard','Door'] },
+  { id:'checkpoint', title:'Checkpoint', desc:'Save the respawn point so a fall does not send the player back to the start.',
+    code:'if (player.x > 640) checkpoint = { x: 640, y: 320 };',
+    points:[[2,7,'start'],[6,4,'checkpoint'],[9,2,'finish']],
+    nodes:['Player','Trigger','Checkpoint','Respawn'] },
+  { id:'boss', title:'Boss pattern', desc:'Telegraph the attack, give the player a gap, then repeat.',
+    code:'if (timer > 2) { boss.fire(); timer = 0; }\ntimer += delta;',
+    points:[[3,2,'boss'],[5,6,'safe gap'],[7,4,'player']],
+    nodes:['Boss','Telegraph','Attack','Gap','Repeat'] }
+];
+var active = 0;
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function drawGrid(points){
+  var svg = document.getElementById('qcGrid');
+  var out = '<rect width="320" height="320" fill="#ffffff"/>';
+  for (var i = 0; i <= 10; i++) {
+    var p = i * 32;
+    out += '<line x1="' + p + '" y1="0" x2="' + p + '" y2="320" stroke="#e5ded0" stroke-width="1"/>';
+    out += '<line x1="0" y1="' + p + '" x2="320" y2="' + p + '" stroke="#e5ded0" stroke-width="1"/>';
+    out += '<text x="' + (p + 2) + '" y="12" fill="#8a7f6f" font-size="9">' + i + '</text>';
+    out += '<text x="2" y="' + (p + 12) + '" fill="#8a7f6f" font-size="9">' + i + '</text>';
+  }
+  points.forEach(function(pt){
+    var x = pt[0] * 32, y = pt[1] * 32;
+    out += '<circle cx="' + x + '" cy="' + y + '" r="7" fill="#70a3a7" stroke="#1a1208" stroke-width="2"/>';
+    out += '<text x="' + (x + 10) + '" y="' + (y - 8) + '" fill="#1a1208" font-size="10" font-weight="700">' + esc(pt[2] || '') + '</text>';
+  });
+  svg.innerHTML = out;
+}
+function drawNodes(nodes){
+  var svg = document.getElementById('qcNodes');
+  var out = '<rect width="640" height="150" fill="#ffffff"/>';
+  var step = 640 / nodes.length;
+  nodes.forEach(function(n, i){
+    var x = i * step + 8, y = 46, w = step - 18, h = 52;
+    out += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" fill="#e8f2f3" stroke="#70a3a7" stroke-width="2"/>';
+    out += '<text x="' + (x + w / 2) + '" y="' + (y + 31) + '" text-anchor="middle" fill="#1a1208" font-size="13" font-weight="700">' + esc(n) + '</text>';
+    if (i < nodes.length - 1) {
+      var ax = x + w + 2, ay = y + h / 2;
+      out += '<line x1="' + ax + '" y1="' + ay + '" x2="' + (ax + 14) + '" y2="' + ay + '" stroke="#1a1208" stroke-width="2"/>';
+      out += '<polygon points="' + (ax + 14) + ',' + ay + ' ' + (ax + 8) + ',' + (ay - 5) + ' ' + (ax + 8) + ',' + (ay + 5) + '" fill="#1a1208"/>';
+    }
+  });
+  svg.innerHTML = out;
+}
+function render(){
+  var q = QUESTS[active];
+  document.getElementById('qcTitle').textContent = q.title;
+  document.getElementById('qcDesc').textContent = q.desc;
+  document.getElementById('qcCode').textContent = q.code;
+  drawGrid(q.points);
+  drawNodes(q.nodes);
+  var picker = document.getElementById('qcPicker');
+  Array.prototype.forEach.call(picker.children, function(b, i){ b.classList.toggle('on', i === active); });
+}
+function buildPicker(){
+  var picker = document.getElementById('qcPicker');
+  QUESTS.forEach(function(q, i){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'qc-pick' + (i === 0 ? ' on' : '');
+    b.textContent = q.title;
+    b.onclick = function(){ active = i; render(); };
+    picker.appendChild(b);
+  });
+}
+document.getElementById('qcPrint').addEventListener('click', function(){ window.print(); });
+buildPicker();
+render();
+</script>
+</body>
+</html>

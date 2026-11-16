@@ -311,12 +311,20 @@
   }
 
   function applyTheme(pref, persist) {
+    var navTheme = null;
+    try { navTheme = W.localStorage.getItem('jvds-theme'); } catch (e) {}
     var mode = pref || allSettings().theme || 'system';
+    if ((!pref || pref === 'system') && navTheme === 'contrast') {
+      D.documentElement.setAttribute('data-theme', 'contrast');
+      var cmeta = D.querySelector('meta[name="theme-color"]');
+      if (cmeta) cmeta.setAttribute('content', '#000000');
+      return;
+    }
     var resolved = mode === 'system' ? systemTheme() : mode;
-    if (resolved === 'dark') D.documentElement.setAttribute('data-theme', 'dark');
+    if (resolved === 'dark' || resolved === 'contrast') D.documentElement.setAttribute('data-theme', resolved);
     else D.documentElement.setAttribute('data-theme', 'light');
     var meta = D.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#0a0b10' : '#fbf8f2');
+    if (meta) meta.setAttribute('content', resolved === 'contrast' ? '#000000' : resolved === 'dark' ? '#0a0b10' : '#fbf8f2');
     if (persist !== false) {
       S.settings.set('theme', mode);
       // Share the choice with theme-init.js and nav.js so the next page paints
