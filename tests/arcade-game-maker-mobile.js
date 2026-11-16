@@ -262,15 +262,19 @@ async function waitStable(page) {
     const beatBlock = await page.evaluate(async () => {
       const sc = window._phaserGame.scene.getScene('BeatScene');
       if (!sc) return { err: 'no scene' };
-      // Stop the CPU so the player is not mid-hit when we test the block button.
+      // Stop the CPU so the player is not mid-hit, and wait for the floor so
+      // the block (on-ground only) can register deterministically.
       if (sc._p2) { sc._p2.state = 'ko'; sc._p2.hp = 0; }
       if (sc._p1) sc._p1.state = 'idle';
-      await new Promise(r => setTimeout(r, 120));
+      for (let i = 0; i < 40; i++) {
+        if (sc._p1 && sc._p1.body && sc._p1.body.blocked.down) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       touchInput.down = true;
       await new Promise(r => setTimeout(r, 200));
       const blocking = !!(sc._p1 && sc._p1.blocking);
       touchInput.down = false;
-      return { blocking };
+      return { blocking, grounded: !!(sc._p1 && sc._p1.body && sc._p1.body.blocked.down) };
     });
     check('BEAT block button makes the player block', beatBlock.blocking === true, JSON.stringify(beatBlock));
 
