@@ -20,7 +20,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5CRCkOgUFRX7e36bdeE9mKZCEKtaZCdJghmkxuAZmJU=' 'sha256-shj5wZ93ky+gRvxGLhttsxZWN0UeeHQSnJoH6nVV0VU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5CRCkOgUFRX7e36bdeE9mKZCEKtaZCdJghmkxuAZmJU=' 'sha256-SfM+A9oeK0i3AsMFb3c0kDDdXGPU8Hc87G9kFCB+AXs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -199,6 +199,18 @@
     <div class="stat"><div class="stat-icon">🎮</div><strong id="sGames">0</strong><span>Games Played</span></div>
     <div class="stat"><div class="stat-icon">🎓</div><strong id="sWorkshops">0</strong><span>Workshops Done</span></div>
     <div class="stat"><div class="stat-icon">🏅</div><strong id="sAchievements">0</strong><span>Achievements</span></div>
+  </div>
+
+  <div id="badgeCardSection" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;margin:16px 0;">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:10px;">
+      <strong style="font-size:1rem;color:white;">Your badge card</strong>
+      <span class="muted" style="font-size:.8rem;">Download it or print it. No account, no network.</span>
+    </div>
+    <div id="badgePreview" aria-live="polite" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button type="button" class="tab keep-primary" data-on="downloadBadge" data-on-plain>Download badge (SVG)</button>
+      <button type="button" class="tab" data-on="printBadge" data-on-plain>Print badge</button>
+    </div>
   </div>
 
   <div class="tabs" role="tablist">
@@ -742,6 +754,67 @@
   }
 
   /* ═══ RENDER ALL ═══ */
+  /* A2566: downloadable, printable badge card */
+  function badgeQuestCount(){
+    try{ if(window.questSystem&&window.playerProfile) return questSystem.getCompletedQuests(playerProfile).length; }catch(e){}
+    return 0;
+  }
+  function buildBadgeSVG(s){
+    var name=(localStorage.getItem('jvds-player-name')||'JVDS Creator').trim().slice(0,28)||'JVDS Creator';
+    var date=new Date().toLocaleDateString('en-GB');
+    var stats=[
+      ['LEVEL', s.level],
+      ['TOTAL XP', s.totalXP],
+      ['DAY STREAK', s.dailyStreak],
+      ['WORKSHOPS', s.workshopsCompleted],
+      ['GAMES', countGames()],
+      ['ACHIEVEMENTS', s.achievementsUnlocked]
+    ];
+    var cells='';
+    stats.forEach(function(pair,i){
+      var x=40+(i%3)*200, y=210+Math.floor(i/3)*80;
+      cells+='<text x="'+x+'" y="'+y+'" fill="#70a3a7" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="700" letter-spacing="2">'+pair[0]+'</text>'
+           +'<text x="'+x+'" y="'+(y+30)+'" fill="#f5efe0" font-family="Inter,system-ui,sans-serif" font-size="28" font-weight="800">'+esc(String(pair[1]))+'</text>';
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="JVDS badge card for '+esc(name)+'">'
+      +'<rect width="640" height="400" rx="24" fill="#1a1208"/>'
+      +'<rect width="640" height="10" rx="5" fill="#70a3a7"/>'
+      +'<text x="40" y="56" fill="#f5c842" font-family="Inter,system-ui,sans-serif" font-size="14" font-weight="800" letter-spacing="3">JVDS CREATOR BADGE</text>'
+      +'<text x="40" y="104" fill="#fbf8f2" font-family="Inter,system-ui,sans-serif" font-size="32" font-weight="800">'+esc(name)+'</text>'
+      +'<text x="40" y="130" fill="#b9ae9a" font-family="Inter,system-ui,sans-serif" font-size="13">jvdesignstudio.co.uk</text>'
+      +'<polygon points="570,46 578,72 606,72 584,88 592,114 570,98 548,114 556,88 534,72 562,72" fill="#f5c842"/>'
+      +cells
+      +'<text x="40" y="368" fill="#b9ae9a" font-family="Inter,system-ui,sans-serif" font-size="12">Earned '+esc(date)+' &#183; Badges '+esc(String(badgeQuestCount()))+' &#183; Made in JVDesignStudio</text>'
+      +'</svg>';
+  }
+  function renderBadgePreview(s){
+    var host=document.getElementById('badgePreview');
+    if(!host) return;
+    host.innerHTML=buildBadgeSVG(s||getStats());
+    var svg=host.querySelector('svg');
+    if(svg){ svg.style.width='100%'; svg.style.height='auto'; svg.style.display='block'; }
+  }
+  window.downloadBadge=function(){
+    var name=(localStorage.getItem('jvds-player-name')||'jvds').trim().replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase()||'jvds';
+    var svg=buildBadgeSVG(getStats());
+    var blob=new Blob([svg],{type:'image/svg+xml'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name+'-jvds-badge.svg';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },4000);
+    try{JVDS.announce('Badge card downloaded');}catch(e){}
+  };
+  window.printBadge=function(){
+    var svg=buildBadgeSVG(getStats());
+    var w=window.open('','_blank');
+    if(!w){ try{JVDS.announce('Allow pop-ups to print the badge');}catch(e){} return; }
+    w.document.open();
+    w.document.write('<!doctype html><html><head><title>JVDS badge</title><style>@page{size:A4 landscape;margin:12mm}body{margin:0;display:grid;place-items:center;min-height:90vh;background:#fff}svg{width:100%;max-width:640px;height:auto}</style></head><body>'+svg+'</body></html>');
+    w.document.close(); w.focus();
+    setTimeout(function(){ try{w.print();}catch(e){} },300);
+  };
+
   function render(){
     var s=getStats();
     var xp=s.xpProgress||{current:0,max:100,percentage:0,level:1,totalXP:0};
@@ -751,6 +824,7 @@
     // Hero ring
     setRing(xp);
     setStats(s);
+    renderBadgePreview(s);
 
     // Player name
     var pname=localStorage.getItem('jvds-player-name')||'';
