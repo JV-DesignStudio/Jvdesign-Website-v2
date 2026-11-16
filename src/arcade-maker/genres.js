@@ -90,7 +90,7 @@ const GENRE_HOOKS = {
   PLATFORMER:   'Gravity, jumping and a scrolling platform world',
   DODGE:        'Weave through falling hazards and collect stars',
   BREAKER:      'Angle a bouncing ball to clear a wall of bricks',
-  RUNNER:       'Auto-run and jump a single gap-timed lane',
+  RUNNER:       'Three-lane auto-run: jump lows, slide under highs, switch lanes for walls',
   FLAPPY:       'One-tap flapping through narrowing gaps',
   INVADERS:     'Hold the line as a descending formation advances',
   PONG:         'Rally a ball with a paddle against the CPU',

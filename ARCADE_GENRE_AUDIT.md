@@ -30,7 +30,7 @@ rule that defines the loop, listed below.
 | PLATFORMER | Distinct | Gravity, jumping and a scrolling platform world |
 | DODGE | Variation of RUNNER | Weave through falling hazards and collect stars |
 | BREAKER | Distinct | Angle a bouncing ball to clear a wall of bricks |
-| RUNNER | Distinct | Auto-run and jump a single gap-timed lane |
+| RUNNER | Distinct | Three-lane auto-run: jump low barriers, slide under high ones, switch lanes for walls |
 | FLAPPY | Distinct | One-tap flapping through narrowing gaps |
 | INVADERS | Distinct | Hold the line as a descending formation advances |
 | PONG | Distinct | Rally a ball with a paddle against the CPU |

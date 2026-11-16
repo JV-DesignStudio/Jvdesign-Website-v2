@@ -220,6 +220,60 @@ async function waitStable(page) {
     check('dragging the joystick steers the game', joy.left === true && joy.active === true, JSON.stringify(joy));
     check('releasing the joystick recentres it', joyEnd.left === false && joyEnd.active === false, JSON.stringify(joyEnd));
 
+    // ── BEAT: the phone must reach block, heavy and special too ────────────
+    await page.evaluate(() => {
+      document.getElementById('genreMode').value = 'BEAT';
+      if (typeof onGenreChange === 'function') onGenreChange();
+      if (typeof compileAndBootEngine === 'function') compileAndBootEngine();
+    });
+    await new Promise(r => setTimeout(r, 1200));
+    await page.evaluate(() => {
+      const ov = document.getElementById('introOverlay');
+      if (ov && ov.classList.contains('show')) { if (typeof closeIntro === 'function') closeIntro(); else ov.classList.remove('show'); }
+      const w = document.getElementById('welcome-overlay'); if (w) w.classList.remove('show');
+      document.body.classList.remove('overlay-active');
+    });
+    await page.waitForFunction(() => {
+      const g = window._phaserGame;
+      const sc = g && g.scene && g.scene.getScene && g.scene.getScene('BeatScene');
+      return !!(sc && sc.sys && sc.sys.isActive());
+    }, { timeout: 20000 }).catch(() => {});
+    const beatBtns = await page.evaluate(() => {
+      const vis = id => { const el = document.getElementById(id); return el ? getComputedStyle(el).display !== 'none' : false; };
+      return { jump: vis('tc-up'), light: vis('tc-fire'), heavy: vis('tc-heavy'), special: vis('tc-special'), block: vis('tc-down') };
+    });
+    check('BEAT touch shows jump, light, heavy, special and block',
+      beatBtns.jump && beatBtns.light && beatBtns.heavy && beatBtns.special && beatBtns.block, JSON.stringify(beatBtns));
+
+    const beatWired = await page.evaluate(() => {
+      const press = (id, key) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }));
+        const on = touchInput[key] === true;
+        el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }));
+        return on;
+      };
+      return { light: press('tc-fire', 'fire'), heavy: press('tc-heavy', 'heavy'), special: press('tc-special', 'special'), block: press('tc-down', 'down') };
+    });
+    check('BEAT touch buttons set light/heavy/special/block inputs',
+      beatWired.light && beatWired.heavy && beatWired.special && beatWired.block, JSON.stringify(beatWired));
+
+    const beatBlock = await page.evaluate(async () => {
+      const sc = window._phaserGame.scene.getScene('BeatScene');
+      if (!sc) return { err: 'no scene' };
+      // Stop the CPU so the player is not mid-hit when we test the block button.
+      if (sc._p2) { sc._p2.state = 'ko'; sc._p2.hp = 0; }
+      if (sc._p1) sc._p1.state = 'idle';
+      await new Promise(r => setTimeout(r, 120));
+      touchInput.down = true;
+      await new Promise(r => setTimeout(r, 200));
+      const blocking = !!(sc._p1 && sc._p1.blocking);
+      touchInput.down = false;
+      return { blocking };
+    });
+    check('BEAT block button makes the player block', beatBlock.blocking === true, JSON.stringify(beatBlock));
+
     check('no uncaught JS errors on mobile', errors.length === 0, errors.slice(0, 2).join(' | '));
   } finally {
     await browser.close();
