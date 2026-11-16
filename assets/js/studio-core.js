@@ -131,7 +131,8 @@
     wrapper: 'none',
     seenWalkthrough: false,
     tips: true,
-    lowPower: false
+    lowPower: false,
+    conceptHelp: false
   };
 
   function allSettings() {
@@ -177,6 +178,11 @@
       D.documentElement.dataset.lowPower = s.lowPower ? '1' : '0';
       D.dispatchEvent(new CustomEvent('jvds:lowpower', { detail: { on: !!s.lowPower } }));
     } catch (e) {}
+    try {
+      D.documentElement.classList.toggle('jvds-concept-help', !!s.conceptHelp);
+      if (s.conceptHelp) { installConceptMarkers(); scheduleConceptMarkers(); }
+      else clearConceptMarkers();
+    } catch (e) {}
     applyTheme(s.theme, false);
   }
 
@@ -185,6 +191,114 @@
     enabled: function () { return !!allSettings().lowPower; },
     set: function (on) { return saveSettings({ lowPower: !!on }); },
     toggle: function () { return S.lowPower.set(!S.lowPower.get()); }
+  };
+
+  /* A2318: optional Lumo concept help and glossary */
+  var CONCEPTS = {
+    layer:    { label: 'Layer',    text: 'A layer is one sheet of your drawing. Keep the background on one layer and the character on another.', example: 'Hide the Guide layer to see your art on its own.', aliases: ['layer', 'layers'] },
+    frame:    { label: 'Frame',    text: 'A frame is one picture in an animation. Several frames played quickly make movement.', example: 'Draw a ball low, then high, then low again to make it bounce.', aliases: ['frame', 'frames'] },
+    tile:     { label: 'Tile',     text: 'A tile is a small square that repeats to build a level or a pattern.', example: 'Place the same grass tile in a row to make a floor.', aliases: ['tile', 'tiles'] },
+    tilemap:  { label: 'Tilemap',  text: 'A tilemap is a grid of tiles. The game reads the grid to know where the ground and hazards are.', example: 'Paint one row of ground and press Play to stand on it.', aliases: ['tilemap', 'tile map'] },
+    sprite:   { label: 'Sprite',   text: 'A sprite is the picture a game draws for a character, item or effect.', example: 'Export a 16x16 sprite and drop it into your game.', aliases: ['sprite', 'sprites'] },
+    palette:  { label: 'Palette',  text: 'A palette is the set of colours you use. A small palette keeps your art looking consistent.', example: 'Pick four colours and use only those for one character.', aliases: ['palette', 'colours'] },
+    fps:      { label: 'Frame rate', text: 'Frame rate is how many pictures the tool draws each second. Lower is easier on a slow computer.', example: 'Set 8 fps for a chunky animation and 24 fps for smooth movement.', aliases: ['fps', 'frame rate'] },
+    bpm:      { label: 'BPM',      text: 'BPM means beats per minute. A higher BPM makes the music faster.', example: 'Try 90 BPM for a calm loop and 140 BPM for an arcade tune.', aliases: ['bpm', 'tempo'] },
+    export:   { label: 'Export',   text: 'Export makes a file you can keep or use in another tool. It is the copy that leaves this browser.', example: 'Export a PNG before you close the tab on a school computer.', aliases: ['export', 'download'] },
+    opacity:  { label: 'Opacity',  text: 'Opacity is how see-through something is. Zero is invisible and one is solid.', example: 'Lower the guide opacity so you can draw over it.', aliases: ['opacity', 'alpha'] },
+    undo:     { label: 'Undo',     text: 'Undo takes back your last change. Redo puts it back.', example: 'Paint a wrong pixel, press Ctrl+Z, and try again.', aliases: ['undo', 'redo'] },
+    board:    { label: 'Board',    text: 'The board is the play area. Tiles make the terrain and pieces sit on top.', example: 'Paint a track, then place a pawn on the start tile.', aliases: ['board', 'tiles'] },
+    scene:    { label: 'Scene',    text: 'A scene is one moment in a story or level. Choices connect one scene to the next.', example: 'Make two choices that lead to different endings.', aliases: ['scene', 'passage', 'node'] },
+    seed:     { label: 'Seed',     text: 'A seed is a number that makes a random effect repeatable. The same seed gives the same result.', example: 'Keep the seed to compare two particle effects fairly.', aliases: ['seed'] }
+  };
+  var conceptTimer = null, conceptTip = null;
+  function conceptKeyFor(text) {
+    var t = String(text || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!t || t.length > 48) return null;
+    var keys = Object.keys(CONCEPTS);
+    for (var i = 0; i < keys.length; i++) {
+      var c = CONCEPTS[keys[i]];
+      for (var j = 0; j < c.aliases.length; j++) {
+        var a = c.aliases[j];
+        if (t === a || t.indexOf(a + ' ') === 0 || t.indexOf(' ' + a) !== -1) return keys[i];
+      }
+    }
+    return null;
+  }
+  function clearConceptMarkers() {
+    Array.prototype.forEach.call(D.querySelectorAll('.jvs-concept'), function (b) { b.parentNode && b.parentNode.removeChild(b); });
+    Array.prototype.forEach.call(D.querySelectorAll('.jvs-concept-note'), function (n) { n.parentNode && n.parentNode.removeChild(n); });
+    if (conceptTip) { conceptTip.hidden = true; }
+  }
+  function scheduleConceptMarkers() {
+    if (!allSettings().conceptHelp) return;
+    clearTimeout(conceptTimer);
+    conceptTimer = setTimeout(installConceptMarkers, 500);
+  }
+  function installConceptMarkers() {
+    if (!allSettings().conceptHelp) return;
+    var targets = D.querySelectorAll('h2, h3, .pt, .sec-label, .ss-sec, .jvs-field > span, .tt-label, label');
+    Array.prototype.forEach.call(targets, function (el) {
+      if (el.dataset.concept || el.querySelector('.jvs-concept')) return;
+      if (el.closest('.site-header, .site-footer, nav, .jvs-sheet, .jvs-concept-note, button, .modal-overlay, .ss-overlay, #cookie-banner, .jvs-fab')) return;
+      var direct = Array.prototype.map.call(el.childNodes, function (n) { return n.nodeType === 3 ? n.textContent : ''; }).join(' ').trim();
+      var key = conceptKeyFor(direct || el.textContent);
+      if (!key) return;
+      el.dataset.concept = key;
+      var btn = h('button', { type: 'button', class: 'jvs-concept', 'aria-label': 'What is ' + CONCEPTS[key].label + '?', title: 'Lumo explains ' + CONCEPTS[key].label, text: '?' });
+      btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); showConcept(key, btn); });
+      el.appendChild(btn);
+    });
+  }
+  function showConcept(key, anchor) {
+    var c = CONCEPTS[key];
+    if (!c) return;
+    if (!conceptTip) {
+      conceptTip = h('div', { id: 'jvsConceptTip', class: 'jvs-concept-tip', role: 'tooltip', hidden: true });
+      D.body.appendChild(conceptTip);
+      D.addEventListener('click', function (e) { if (conceptTip && !conceptTip.hidden && !conceptTip.contains(e.target) && !e.target.classList.contains('jvs-concept')) conceptTip.hidden = true; });
+      D.addEventListener('keydown', function (e) { if (e.key === 'Escape' && conceptTip) conceptTip.hidden = true; });
+    }
+    var mobile = W.matchMedia && W.matchMedia('(max-width: 700px)').matches;
+    conceptTip.innerHTML = '';
+    conceptTip.appendChild(h('strong', { text: 'Lumo says: ' + c.label }));
+    conceptTip.appendChild(h('p', { text: c.text }));
+    conceptTip.appendChild(h('small', { text: 'Try: ' + c.example }));
+    conceptTip.appendChild(h('button', { type: 'button', class: 'jvs-concept-close', 'aria-label': 'Close tip', text: '\u00d7', onclick: function () { conceptTip.hidden = true; } }));
+    conceptTip.classList.toggle('jvs-concept-tip--mobile', !!mobile);
+    conceptTip.hidden = false;
+    if (mobile) {
+      conceptTip.style.left = '8px';
+      conceptTip.style.right = '8px';
+      conceptTip.style.top = '8px';
+      conceptTip.style.width = 'auto';
+      conceptTip.style.maxHeight = '30vh';
+      conceptTip.style.overflow = 'auto';
+    } else {
+      var r = anchor.getBoundingClientRect();
+      conceptTip.style.left = Math.max(8, Math.min(W.innerWidth - 300, r.left - 16)) + 'px';
+      conceptTip.style.top = Math.min(W.innerHeight - 140, r.bottom + 8) + 'px';
+      conceptTip.style.right = 'auto';
+      conceptTip.style.width = '280px';
+      conceptTip.style.maxHeight = '';
+      conceptTip.style.overflow = '';
+    }
+  }
+  S.conceptHelp = {
+    get: function () { return !!allSettings().conceptHelp; },
+    set: function (on) { return saveSettings({ conceptHelp: !!on }); },
+    toggle: function () { return S.conceptHelp.set(!S.conceptHelp.get()); },
+    schedule: scheduleConceptMarkers,
+    glossary: function () {
+      var rows = Object.keys(CONCEPTS).map(function (k) {
+        var c = CONCEPTS[k];
+        return h('div', { class: 'jvs-concept-entry' }, [
+          h('strong', { text: c.label }),
+          h('p', { text: c.text }),
+          h('small', { text: 'Example: ' + c.example })
+        ]);
+      });
+      return S.drawer({ title: 'Lumo glossary', content: h('div', {}, rows) });
+    }
   };
 
   /* ---------------------------------------------------------------- */
@@ -1496,6 +1610,14 @@
         h('button', { type: 'button', class: 'jvs-btn-primary', text: 'Copy styled code', onclick: function () { S.code.copy(); } })
       ]),
       section('Character tips', [tips]),
+      section('Learn the words', [
+        h('label', { class: 'jvs-row' }, [
+          h('span', { text: 'Lumo concept tips' }),
+          h('input', { id: 'jvsConceptHelp', type: 'checkbox', onchange: function () { S.conceptHelp.set(this.checked); S.toast(this.checked ? 'Concept tips on. Tap a ? to learn a word.' : 'Concept tips off.', { tone: 'ok', timeout: 2200 }); } })
+        ]),
+        h('p', { class: 'jvs-hint', text: 'Adds a small ? next to key controls and a glossary of tool words. Off by default.' }),
+        h('button', { type: 'button', id: 'jvsGlossaryBtn', text: 'Open glossary', onclick: function () { S.conceptHelp.glossary(); } })
+      ]),
       section('This device', [
         h('p', { class: 'jvs-hint', text: 'Saves stay in this browser. Clearing browser data deletes them. On a school computer, export before you log off.' }),
         h('div', { class: 'jvs-actions' }, [
@@ -1528,6 +1650,8 @@
     if (check) check.checked = !!s.watermark;
     var lowCheck = wrap.querySelector('#jvsLowPower');
     if (lowCheck) lowCheck.checked = !!s.lowPower;
+    var conceptCheck = wrap.querySelector('#jvsConceptHelp');
+    if (conceptCheck) conceptCheck.checked = !!s.conceptHelp;
 
     revisionList(revisionsHost);
     return wrap;
