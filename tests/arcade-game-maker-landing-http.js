@@ -42,6 +42,10 @@ function check(name, ok, detail) { console.log((ok ? 'PASS ' : 'FAIL ') + name +
   check('landing gallery uses starter previews', previews.length >= 8, previews.length + ' previews');
   const missingPreviews = previews.filter(f => !fs.existsSync(path.join(ROOT, 'assets', 'arcade-previews', f)));
   check('every landing preview file exists', missingPreviews.length === 0, missingPreviews.join(','));
+  const templateLinks = [...html.matchAll(/arcade-game-maker\.html\?template=([a-z0-9_]+)/g)].map(m => m[1]);
+  check('gallery opens the live starter via ?template=', templateLinks.length >= 16, templateLinks.length + ' links');
+  check('gallery no longer uses stale share codes', !/\?game=|\?remix=/.test(html));
+  check('gallery template keys match the previews', templateLinks.every(k => previews.includes(k + '.webp')), templateLinks.join(','));
 
   const maker = await fetch(base + '/tools/arcade-game-maker.html');
   const makerHtml = await maker.text();

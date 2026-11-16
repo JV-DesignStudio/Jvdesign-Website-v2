@@ -122,7 +122,10 @@ function tplHash(t) {
       if (!ok) throw new Error('scene did not boot for ' + t.genre);
       // Let the scene animate into a representative frame. Snake moves fast,
       // so capture it early while the first apple is still on screen.
-      const delay = ({ glow_serpent: 350, snake_b: 350, snake_c: 350 })[t.key] || 1600;
+      const delay = ({
+        glow_serpent: 350, snake_b: 350, snake_c: 350,
+        ocean_shooter: 2400, shooter_b: 2400, shooter_c: 2400,
+      })[t.key] || 1600;
       await sleep(delay);
       await page.evaluate(() => {
         ['goOverlay', 'rewindOverlay'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('show'); });

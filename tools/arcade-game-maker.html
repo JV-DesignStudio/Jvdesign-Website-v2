@@ -90,7 +90,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-x9SjZ7h0NoQVxgUN1h2bZd/0ylZDK+0R7uItceSr+4U=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-KoC/SmzpY/4bW7/8gtg8Ey+hDuJk1G8FdyyTrAmGpr0=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -5401,6 +5401,11 @@ function _loadTemplate(key) {
   if (typeof _trackEvent === 'function') _trackEvent('template_pick', { key: key, genre: tpl.genre || '' });
   // Apply all config values to liveConfig
   Object.assign(liveConfig, tpl);
+  // Runner templates set `speed`; the runner road uses obstacleSpeed. Map it
+  // so Candy Dash, Dino Dash and the themed runners actually feel different.
+  if (tpl.genre === 'RUNNER' && tpl.obstacleSpeed == null && tpl.speed != null) {
+    liveConfig.obstacleSpeed = tpl.speed;
+  }
   // Set genre
   const sel = document.getElementById('genreMode');
   if (sel) { sel.value = tpl.genre; onGenreChange(); }
@@ -5491,18 +5496,24 @@ function _starterFor(genre) {
 // stays first; two themed variants follow so the preview carousel has real
 // choice without inventing new mechanics.
 const _EXTRA_STARTER_PLAN = {
-  SHOOTER:      [['Neon Assault', 'cyber'],  ['Ocean Fury', 'ocean']],
-  PLATFORMER:   [['Castle Run', 'castle'],   ['Candy Leap', 'candy']],
+  SHOOTER:      [['Neon Assault', 'cyber',  { enemyAI:'zigzag', bossEnabled:true,  enemySpeed:180, spawnDelay:900, bgStyle:'neon' }],
+                 ['Ocean Fury', 'ocean',   { enemyAI:'chaser', bossEnabled:false, enemySpeed:230, spawnDelay:650, weatherEffect:'rain', bgStyle:'dark' }]],
+  PLATFORMER:   [['Castle Run', 'castle',   { doubleJump:true,  platformerEnemyCount:6, gravity:700, jumpForce:500, bgStyle:'dark' }],
+                 ['Candy Leap', 'candy',    { doubleJump:false, platformerEnemyCount:2, gravity:500, jumpForce:420, bgStyle:'sunset' }]],
   DODGE:        [['Star Storm', 'space'],    ['Neon Weave', 'neon']],
-  BREAKER:      [['Neon Bricks', 'neon'],    ['Candy Smash', 'candy']],
-  RUNNER:       [['Neon Dash', 'neon'],      ['Jungle Rush', 'forest']],
+  BREAKER:      [['Neon Bricks', 'neon',    { brickRows:6, paddleW:70,  lives:2, powerUpFreq:6000,  bgStyle:'neon' }],
+                 ['Candy Smash', 'candy',   { brickRows:3, paddleW:120, lives:5, powerUpFreq:14000, bgStyle:'sunset' }]],
+  RUNNER:       [['Neon Dash', 'neon',      { runnerObstacleMix:'overhead', runnerCoinFreq:0.12, spawnDelay:750,  lives:2, obstacleSpeed:320, speed:320, bgStyle:'neon' }],
+                 ['Jungle Rush', 'forest',  { runnerObstacleMix:'standard', runnerCoinFreq:0.35, spawnDelay:1100, lives:3, obstacleSpeed:260, speed:260, weatherEffect:'leaves', bgStyle:'dark' }]],
   FLAPPY:       [['Castle Flap', 'castle'],  ['Candy Flap', 'candy']],
   INVADERS:     [['Ocean Invaders', 'ocean'],['Neon Invaders', 'neon']],
   PONG:         [['Neon Rally', 'neon'],     ['Ocean Rally', 'ocean']],
-  SNAKE:        [['Neon Serpent', 'neon'],   ['Candy Serpent', 'candy']],
+  SNAKE:        [['Neon Serpent', 'neon',   { snakeSpeed:110, snakeStartLen:4, snakeWallWrap:true,  snakePoisonFood:false, snakeGoldenFood:true,  bgStyle:'neon' }],
+                 ['Candy Serpent', 'candy', { snakeSpeed:200, snakeStartLen:2, snakeWallWrap:false, snakePoisonFood:true,  snakeGoldenFood:false, bgStyle:'sunset' }]],
   ASTEROIDS:    [['Deep Field', 'ocean'],    ['Neon Field', 'neon']],
   ROGUELIKE:    [['Neon Crypt', 'neon'],     ['Candy Crypt', 'candy']],
-  RACING:       [['Candy Circuit', 'candy'], ['Cyber Circuit', 'cyber']],
+  RACING:       [['Candy Circuit', 'candy', { raceCarSpeed:220, raceGrip:1.0, raceLaps:1, raceCPU:1, raceWeather:'dry', bgStyle:'sunset' }],
+                 ['Cyber Circuit', 'cyber', { raceCarSpeed:580, raceGrip:0.3, raceLaps:5, raceCPU:3, raceWeather:'ice', bgStyle:'neon' }]],
   HOPPER:       [['Candy Hop', 'candy'],     ['Cyber Hop', 'cyber']],
   BEAT:         [['Neon Dojo', 'neon'],      ['Ocean Dojo', 'ocean']],
   PUZZLE:       [['Candy Crates', 'candy'],  ['Cyber Crates', 'cyber']],
@@ -5520,7 +5531,7 @@ const _EXTRA_STARTER_PLAN = {
     const baseKey = _STARTERS[g];
     const base = baseKey && _TEMPLATES[baseKey];
     if (!base) continue;
-    _EXTRA_STARTER_PLAN[g].forEach(([title, theme], i) => {
+    _EXTRA_STARTER_PLAN[g].forEach(([title, theme, overrides], i) => {
       const key = g.toLowerCase() + '_' + (i === 0 ? 'b' : 'c');
       if (_TEMPLATES[key]) return;
       const label = (typeof GENRE_LABELS !== 'undefined' && GENRE_LABELS[g]) ? GENRE_LABELS[g] : g;
@@ -5529,7 +5540,7 @@ const _EXTRA_STARTER_PLAN = {
         theme: theme,
         speed: base.speed ? Math.max(80, Math.round(base.speed * (i === 0 ? 1.12 : 0.9))) : base.speed,
         storyIntro: base.storyIntro || ('A ' + theme + ' take on ' + label + '. Tweak anything.'),
-      });
+      }, overrides || {});
     });
   }
 })();
