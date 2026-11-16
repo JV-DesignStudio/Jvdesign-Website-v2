@@ -13,8 +13,13 @@ const port = 8990;
 const TOOLS = [
   'pixel-studio', 'sound-studio', 'level-designer', 'trading-card-designer',
   'colour-palette', 'particle-designer', 'bitmap-font-maker', 'sprite-animator',
-  'icon-generator', 'gdd-builder', 'story-editor', 'code-snippet-generator', 'buildlab'
+  'icon-generator', 'gdd-builder', 'story-editor', 'code-snippet-generator', 'buildlab',
+  'minecraft-skin-editor', 'quest-board', 'store-page-builder', 'game-logo-maker',
+  'screenshot-generator'
 ];
+// A3061: the Game Planner keeps its styles inline with the shared sheet, so it
+// has no style-tool-<slug>.css file to check.
+const NO_TOOL_CSS = new Set(['quest-board']);
 // A1691: core entry and hub pages that must open offline, plus a page-specific
 // stylesheet each one needs. The clean nav URLs are checked through their aliases.
 const HUBS = [
@@ -124,11 +129,13 @@ function safePath(urlPath) {
       if (!html.ok || !html.body.includes('/tools/' + tool + '.html')) {
         failures.push(`${tool}: offline HTML not served from cache (status ${html.status})`);
       }
-      const css = await page.evaluate(async p => {
-        const r = await fetch(p);
-        return { ok: r.ok, status: r.status };
-      }, `/style-tool-${tool}.css`);
-      if (!css.ok) failures.push(`${tool}: offline CSS not served from cache (status ${css.status})`);
+      if (!NO_TOOL_CSS.has(tool)) {
+        const css = await page.evaluate(async p => {
+          const r = await fetch(p);
+          return { ok: r.ok, status: r.status };
+        }, `/style-tool-${tool}.css`);
+        if (!css.ok) failures.push(`${tool}: offline CSS not served from cache (status ${css.status})`);
+      }
     }
     if (!failures.length) console.log(`PASS: ${TOOLS.length} create tools + CSS served offline from cache`);
 

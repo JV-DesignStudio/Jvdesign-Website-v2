@@ -55,7 +55,10 @@
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
 // v61: ship the rebuilt Pip's Cozy Cove arcade page (new HTML/CSS with the canvas game).
-const CACHE='jvds-v62';
+// v63 - A3061: precache the remaining learner makers (Minecraft Skin Editor, Game
+// Planner, Launch Studio, Game Logo Maker, Screenshot Mode) so the toolbox opens
+// offline on a school network after one online visit.
+const CACHE='jvds-v63';
 const CORE=[
   '/',
   '/offline.html',
@@ -161,6 +164,17 @@ const CORE=[
   '/assets/vendor/gifenc/gifenc.esm.js',
   '/tools/buildlab.html',
   '/style-tool-buildlab.css',
+  // A3061: the rest of the learner-facing makers, so the toolbox works offline.
+  '/tools/minecraft-skin-editor.html',
+  '/style-tool-minecraft-skin-editor.css',
+  '/assets/js/inline/tools-minecraft-skin-editor-1.js',
+  '/tools/quest-board.html',
+  '/tools/store-page-builder.html',
+  '/style-tool-store-page-builder.css',
+  '/tools/game-logo-maker.html',
+  '/style-tool-game-logo-maker.css',
+  '/tools/screenshot-generator.html',
+  '/style-tool-screenshot-generator.css',
   // Shared widget scripts those tools load, so they work on a first offline visit.
   '/creation-share.js',
   '/creation-keepsake.js',
