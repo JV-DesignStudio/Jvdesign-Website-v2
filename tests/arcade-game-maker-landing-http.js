@@ -46,6 +46,10 @@ function check(name, ok, detail) { console.log((ok ? 'PASS ' : 'FAIL ') + name +
   check('gallery opens the live starter via ?template=', templateLinks.length >= 16, templateLinks.length + ' links');
   check('gallery no longer uses stale share codes', !/\?game=|\?remix=/.test(html));
   check('gallery template keys match the previews', templateLinks.every(k => previews.includes(k + '.webp')), templateLinks.join(','));
+  const hrefs = [...html.matchAll(/href="(arcade-game-maker\.html\?[^"]*)"/g)].map(m => m[1]);
+  check('gallery links are well formed', hrefs.length >= 16 && hrefs.every(h => !/&#|\s/.test(h)), hrefs.filter(h => /&#|\s/.test(h)).join(' | '));
+  check('Play now boots the starter', hrefs.filter(h => /play=1/.test(h)).length >= 8, hrefs.filter(h => /play=1/.test(h)).length + ' play links');
+  check('Remix opens the editor', hrefs.filter(h => /remix=1/.test(h)).length >= 8, hrefs.filter(h => /remix=1/.test(h)).length + ' remix links');
 
   const maker = await fetch(base + '/tools/arcade-game-maker.html');
   const makerHtml = await maker.text();
