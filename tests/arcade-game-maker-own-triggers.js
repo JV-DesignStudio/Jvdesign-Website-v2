@@ -85,6 +85,11 @@ const TRIGGERS = {
     },
   },
   PAPERTOSS: {
+    lose: () => {
+      const sc = window._phaserGame.scene.getScene('PaperTossScene');
+      sc._misses = Math.max(0, (sc._maxMisses || 3) - 1);
+      sc._throwBall(0, 1, 200);
+    },
     win: () => {
       const sc = window._phaserGame.scene.getScene('PaperTossScene');
       sc.score = (liveConfig.winTarget || 500) + 10;
@@ -92,6 +97,14 @@ const TRIGGERS = {
     },
   },
   WAVESURVIVAL: {
+    lose: () => {
+      const sc = window._phaserGame.scene.getScene('WaveSurvivalScene');
+      const st = sc._wsState;
+      st.setHp(1);
+      sc._wsSpawnWave(1);
+      const es = sc._wsEnemies();
+      if (es) es.forEach(e => { e.y = (typeof GH === 'number' ? GH : 400) + 60; });
+    },
     win: () => {
       const sc = window._phaserGame.scene.getScene('WaveSurvivalScene');
       const st = sc._wsState;
