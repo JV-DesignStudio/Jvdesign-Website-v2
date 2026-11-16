@@ -29,7 +29,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-sIACHY6XNQ201cLywZIpNaQt9IkNV46BBBekIcWBW+Y=' 'sha256-DMmwGRefgjRRO+x98Cp0UU8t+cFQw5Jd1neBF1+zorU=' 'sha256-EX1BGNHpuMWSWExMn/c21E3Zz3ZKWUkgYsB0Km5s0z4=' 'sha256-XiHgDEYcLYZRRGcyKIvjK4HubpiFOuJHA8QuZOS01tA=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-sIACHY6XNQ201cLywZIpNaQt9IkNV46BBBekIcWBW+Y=' 'sha256-DMmwGRefgjRRO+x98Cp0UU8t+cFQw5Jd1neBF1+zorU=' 'sha256-bKwiaYB39xAGFjtLbCMWdQ/La9/v3Cuc39aPYQAT5qU=' 'sha256-XiHgDEYcLYZRRGcyKIvjK4HubpiFOuJHA8QuZOS01tA=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -189,6 +189,7 @@
  <button class="ab" style="flex:1;margin-bottom:0;background:#1a1a1a;color:white;box-shadow:0 2px 0 #000;" data-on="exportInk" data-on-plain title="Download an Ink (.ink) script for inkle's Ink">Ink</button>
  <button class="ab" style="flex:1;margin-bottom:0;background:#5b8cff;color:white;box-shadow:0 2px 0 #3f6fd6;" data-on="exportYarn" data-on-plain title="Download a Yarn Spinner (.yarn) script">Yarn</button>
  </div>
+ <button class="ab" style="background:#0ea5e9;color:#fff;box-shadow:0 2px 0 #0369a1;" data-on="exportPlayable" data-on-plain title="Download one HTML file that plays this story offline">Download playable story</button>
  <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" data-on="sendToGameMaker" data-on-plain>Send to Game Maker</button>
  <div data-keep-state="dirty" role="status" aria-live="polite" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:6px;font-size:.5rem;line-height:1.35;">
  <span data-keep-pill style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--muted);font-weight:700;white-space:nowrap;">Not saved yet</span>
@@ -1503,6 +1504,100 @@ function exportJSON() {
   downloadFile(JSON.stringify(exportPayload(),null,2), fileBaseName()+'.json', 'application/json');
   jvdsKeepState('downloaded');
   showToast('JSON exported!');
+}
+
+// A3063: one self-contained HTML file that plays the story offline, so a
+// learner can keep or hand in the finished thing on a school computer.
+function buildPlayableHTML() {
+  const data = exportPayload();
+  const safeJson = JSON.stringify(data).replace(/</g, '\\u003c');
+  const title = esc(data.meta.name || 'My Story');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#1e1c18;color:#f5efe0;font:17px/1.65 Inter,system-ui,sans-serif;display:grid;place-items:center;padding:16px}
+#app{width:100%;max-width:720px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font:600 1.5rem/1.2 Fredoka,system-ui,sans-serif;margin:0}
+#restart{border:1.5px solid rgba(240,234,214,.22);background:transparent;color:inherit;border-radius:8px;padding:8px 12px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
+.card{background:#28241e;border:1.5px solid rgba(240,234,214,.14);border-radius:14px;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.speaker{margin:0 0 6px;color:#f5c842;font-weight:800;font-size:.85rem;letter-spacing:.04em;text-transform:uppercase}
+.text{margin:0 0 16px;font-size:1.12rem}
+.choices{display:grid;gap:8px}
+.choice{display:block;width:100%;text-align:left;border:1.5px solid rgba(112,163,167,.55);background:#264044;color:#f5efe0;border-radius:10px;padding:12px 14px;font:inherit;font-weight:700;cursor:pointer}
+.choice:hover,.choice:focus-visible{background:#2f5257;outline:none}
+.end{color:#f5c842;font-weight:800;margin:14px 0}
+footer{margin-top:14px;color:#b9ae9a;font-size:.78rem;text-align:center}
+@media (max-width:420px){body{padding:12px}.card{padding:15px}header{gap:8px}h1{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<main id="app">
+<header><h1 id="title">My Story</h1><button id="restart" type="button">Restart</button></header>
+<section id="scene" class="card" aria-live="polite"></section>
+<footer>Made in JVDesignStudio Story Editor</footer>
+</main>
+<script>
+var STORY=${safeJson};
+var nodes=STORY.nodes||[];
+var vars={};
+(STORY.variables||[]).forEach(function(v){if(v&&v.name)vars[v.name]=v.start;});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function byId(id){for(var i=0;i<nodes.length;i++){if(nodes[i].id===id)return nodes[i];}return null;}
+function cond(c){if(!c||!c.v)return true;var v=vars[c.v]||0;var n=Number(c.val||0);switch(c.op){case 'true':return !!v;case 'false':return !v;case '==':return v==n;case '!=':return v!=n;case '>=':return v>=n;case '<=':return v<=n;case '>':return v>n;case '<':return v<n;default:return !!v;}}
+function fx(list){(list||[]).forEach(function(f){if(!f||!f.v)return;var n=Number(f.val||0);if(f.op==='add')vars[f.v]=(Number(vars[f.v])||0)+n;else vars[f.v]=n;});}
+function reset(){vars={};(STORY.variables||[]).forEach(function(v){if(v&&v.name)vars[v.name]=v.start;});}
+function start(){var s=nodes.filter(function(n){return n.type==='start';})[0]||nodes[0]||null;cur=s?byId(s.id):null;draw();}
+var cur=null;
+function go(id){cur=byId(id);draw();}
+function draw(){
+  var scene=document.getElementById('scene');
+  if(!cur){scene.innerHTML='<p class="text">This story has no passages yet.</p>';return;}
+  var h='';
+  if(cur.char&&cur.char!=='Narrator')h+='<p class="speaker">'+esc(cur.char)+'</p>';
+  if(cur.text)h+='<p class="text">'+esc(cur.text).replace(/\\n/g,'<br>')+'</p>';
+  var choices=(cur.choices||[]).filter(function(c){return cond(c.cond);});
+  if(cur.type==='choice'&&choices.length){
+    h+='<div class="choices">';
+    choices.forEach(function(c,i){h+='<button type="button" class="choice" data-i="'+i+'">'+esc(c.text||'Continue')+'</button>';});
+    h+='</div>';
+  } else if(cur.type==='end'||!cur.to||cur.type==='choice'){
+    h+='<p class="end">The End</p><button type="button" class="choice" data-restart="1">Play again</button>';
+  } else {
+    h+='<button type="button" class="choice" data-go="'+esc(cur.to)+'">Continue</button>';
+  }
+  scene.innerHTML=h;
+}
+document.addEventListener('click',function(e){
+  var t=e.target;var b=t&&t.closest?t.closest('.choice'):null;if(!b)return;
+  if(b.getAttribute('data-restart')){reset();start();return;}
+  var jump=b.getAttribute('data-go');
+  if(jump){go(jump);return;}
+  var i=Number(b.getAttribute('data-i'));
+  var choices=(cur.choices||[]).filter(function(c){return cond(c.cond);});
+  var c=choices[i];if(!c)return;
+  fx(c.fx);
+  if(c.to)go(c.to);else{cur={type:'end',text:'',choices:[]};draw();}
+});
+document.getElementById('restart').addEventListener('click',function(){reset();start();});
+document.getElementById('title').textContent=STORY.meta&&STORY.meta.name?STORY.meta.name:'My Story';
+start();
+<\/script>
+</body>
+</html>`;
+}
+
+function exportPlayable() {
+  if (!nodes.length) { showToast('Add some story nodes first!'); return; }
+  downloadFile(buildPlayableHTML(), fileBaseName()+'-playable.html', 'text/html');
+  jvdsKeepState('downloaded');
+  showToast('Playable story downloaded!');
 }
 
 // -- Ink + Yarn Spinner export (A1594) --

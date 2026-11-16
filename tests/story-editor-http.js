@@ -108,6 +108,48 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('save state is visible and updates', data.keepState==='Kept on this device' && /browser/i.test(data.keepNote), data.keepState);
  check('saved slot name escaped', data.escapedSlot);
  check('mobile does not overflow viewport', data.scrollWidth<=data.clientWidth+2, `${data.scrollWidth}/${data.clientWidth}`);
+ // A3063: standalone playable HTML export
+ const playable = await page.evaluate(async () => {
+   nodes = [
+     {id:'s1',type:'choice',char:'Ember',text:'Start here.',tag:'',to:'',fx:[],choices:[{text:'Go to the end',to:'e1',cond:null,fx:[]}]},
+     {id:'e1',type:'end',char:'Narrator',text:'All done.',tag:'',to:'',fx:[],choices:[]}
+   ];
+   storyName = 'Playable Test';
+   const orig = HTMLAnchorElement.prototype.click;
+   let anchor = null;
+   HTMLAnchorElement.prototype.click = function(){ anchor = this; };
+   exportPlayable();
+   HTMLAnchorElement.prototype.click = orig;
+   if (!anchor) return {ok:false};
+   const res = await fetch(anchor.href);
+   return {ok:true, name:anchor.download, text:await res.text()};
+ });
+ check('playable story exports one HTML file', playable.ok && /-playable\.html$/.test(playable.name||''), playable.name);
+ check('playable story is self-contained', !/(?:src|href)\s*=\s*"(?:https?:|\/)/i.test(playable.text||''));
+ const playPage = await browser.newPage();
+ const playErrors = [];
+ playPage.on('pageerror', e => playErrors.push(e.message));
+ for (const [width, height] of [[390,844],[1440,900]]) {
+   await playPage.setViewport({width,height,isMobile:width===390,hasTouch:width===390});
+   await playPage.setContent(playable.text,{waitUntil:'domcontentloaded'});
+   const startInfo = await playPage.evaluate(() => ({
+     title: document.title,
+     text: document.body.innerText,
+     overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 2,
+     choices: document.querySelectorAll('.choice').length
+   }));
+   check('playable opens at '+width, /Playable Test/.test(startInfo.title) && /Start here/.test(startInfo.text) && startInfo.overflow && startInfo.choices>=1, JSON.stringify(startInfo));
+   const btn = await playPage.$('.choice');
+   if (btn) await btn.click();
+   const after = await playPage.evaluate(() => document.body.innerText);
+   check('playable reaches an ending at '+width, /The End/.test(after), after.slice(0,80));
+   const again = await playPage.$('[data-restart]');
+   if (again) await again.click();
+   const restarted = await playPage.evaluate(() => document.body.innerText);
+   check('playable restarts at '+width, /Start here/.test(restarted));
+ }
+ check('playable has no runtime errors', playErrors.length===0, playErrors.join(' | '));
+ await playPage.close();
  check('zero runtime errors', errors.length===0, errors.join(' | '));
  await browser.close(); server.close();
  if(failures){console.log(`\n${failures} FAILURE(S)`);process.exit(1);} console.log('\nALL STORY EDITOR CHECKS PASSED');
