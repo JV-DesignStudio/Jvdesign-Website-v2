@@ -130,7 +130,8 @@
     indent: '2',
     wrapper: 'none',
     seenWalkthrough: false,
-    tips: true
+    tips: true,
+    lowPower: false
   };
 
   function allSettings() {
@@ -150,6 +151,7 @@
     if (store) {
       try { store.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { quotaWarn(); }
     }
+    try { applySettings(); } catch (e) {}
     try { D.dispatchEvent(new CustomEvent('jvds:settings', { detail: next })); } catch (e) {}
     return next;
   }
@@ -170,8 +172,20 @@
   function applySettings() {
     var s = allSettings();
     D.body && D.body.classList.toggle('jvs-compact', s.density === 'compact');
+    try {
+      D.documentElement.classList.toggle('jvds-low-power', !!s.lowPower);
+      D.documentElement.dataset.lowPower = s.lowPower ? '1' : '0';
+      D.dispatchEvent(new CustomEvent('jvds:lowpower', { detail: { on: !!s.lowPower } }));
+    } catch (e) {}
     applyTheme(s.theme, false);
   }
+
+  S.lowPower = {
+    get: function () { return !!allSettings().lowPower; },
+    enabled: function () { return !!allSettings().lowPower; },
+    set: function (on) { return saveSettings({ lowPower: !!on }); },
+    toggle: function () { return S.lowPower.set(!S.lowPower.get()); }
+  };
 
   /* ---------------------------------------------------------------- */
   /* Theme                                                             */
@@ -1454,6 +1468,10 @@
         h('label', { class: 'jvs-row' }, [
           h('span', { text: 'Add studio watermark to image exports' }),
           h('input', { type: 'checkbox', onchange: function () { S.settings.set('watermark', this.checked); } })
+        ]),
+        h('label', { class: 'jvs-row' }, [
+          h('span', { text: 'Low-power mode (slower school computers)' }),
+          h('input', { id: 'jvsLowPower', type: 'checkbox', onchange: function () { S.lowPower.set(this.checked); S.toast(this.checked ? 'Low-power mode on. Fewer frames and effects.' : 'Low-power mode off.', { tone: 'ok', timeout: 2200 }); } })
         ])
       ]),
       section('Code style', [
@@ -1508,6 +1526,8 @@
     if (licence) licence.value = s.license || '';
     var check = wrap.querySelector('input[type="checkbox"]');
     if (check) check.checked = !!s.watermark;
+    var lowCheck = wrap.querySelector('#jvsLowPower');
+    if (lowCheck) lowCheck.checked = !!s.lowPower;
 
     revisionList(revisionsHost);
     return wrap;
