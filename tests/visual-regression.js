@@ -34,16 +34,42 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
   '.png':'image/png', '.webp':'image/webp', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.svg':'image/svg+xml',
   '.ico':'image/x-icon', '.woff2':'font/woff2', '.woff':'font/woff', '.xml':'application/xml', '.txt':'text/plain' };
 
-// Four hubs + a documented long-tail sample (one tool, one workshop).
-const PAGES = [
+// A2327: the hubs plus every real tool page, so a layout break on any single
+// tool is caught. Redirect shims and tiny landing stubs are skipped.
+const BASE_PAGES = [
   'index.html',
   'pages/workshop.html',
   'pages/dev-tools.html',
   'arcade.html',
   'pages/books.html',
-  'tools/pixel-studio.html',
   'workshops/my-first-scratch-game.html'
 ];
+const SKIP_PAGE = /<(?:meta[^>]+http-equiv=["']refresh|script[^>]*location\.replace)/i;
+// Utility and player pages whose content is live data or timed effects, not a
+// layout to protect. Their links are covered by validate-links.
+const SKIP_VISUAL = new Set([
+  'tools/gallery.html',
+  'tools/story-player.html',
+  'tools/storage-migrate.html',
+  'tools/backup-restore.html',
+  'tools/certificate.html'
+]);
+function toolPages() {
+  const dir = path.join(ROOT, 'tools');
+  const out = [];
+  for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.html')).sort()) {
+    const rel = 'tools/' + file;
+    const abs = path.join(ROOT, rel);
+    let src = '';
+    try { src = fs.readFileSync(abs, 'utf8'); } catch (e) { continue; }
+    if (src.length < 4000) continue;
+    if (SKIP_PAGE.test(src)) continue;
+    if (SKIP_VISUAL.has(rel)) continue;
+    out.push(rel);
+  }
+  return out;
+}
+const PAGES = [...new Set([...BASE_PAGES, ...toolPages()])];
 const VIEWPORTS = [{ w: 1440, h: 900, label: 'desktop' }, { w: 390, h: 844, label: 'mobile' }];
 
 // Pages whose main content is rendered by script after DOMContentLoaded need an
@@ -57,6 +83,12 @@ html{scroll-behavior:auto!important}
 #galleryGrid,.home-gallery,.gallery-strip,[data-gallery-strip],
 #cookie-banner,.jvds-daily-toast,.jvds-weekly-toast{visibility:hidden!important}
 .reveal,[class*="reveal"]{opacity:1!important;transform:none!important}
+/* A2327: canvases animate on their own clock. Keep their layout box but hide
+   the pixels, so the suite catches layout breaks without frame-timing flakes. */
+canvas{visibility:hidden!important}
+/* The profile chip shows level and streak from local storage, which changes
+   as other pages in the same run write progress. Keep its space, hide the text. */
+#navProfileChip{visibility:hidden!important}
 `;
 
 const slug = (rel, w) => rel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') + '-' + w + '.png';
@@ -109,71 +141,94 @@ const server = http.createServer((req, res) => {
   await new Promise(r => server.once('listening', r));
   const base = 'http://127.0.0.1:' + server.address().port;
 
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
+  const browser = await puppeteer.launch({ headless: 'new', protocolTimeout: 120000, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
   try {
-    for (const rel of PAGES) {
-      for (const vp of VIEWPORTS) {
-        const page = await browser.newPage();
-        await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-        await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-        // Deterministic first-visit state: suppress the auto-opening guide quiz
-        // and the coach bubble before any page script runs.
-        await page.evaluateOnNewDocument(() => {
-          // Deterministic random so character quote bubbles and any other
-          // randomised pick render the same value every run.
-          let s = 123456789;
-          Math.random = function(){ s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
-          try {
-            localStorage.setItem('jvds_guide', 'lumo');
-            localStorage.setItem('jvds_mascot_coach_dismissed', '1');
-            localStorage.setItem('jvds-cookie-consent', 'accepted');
-          } catch (e) {}
-        });
-        await page.goto(base + '/' + rel, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await page.addStyleTag({ content: NEUTRALIZE_CSS });
-        // Deferred scripts render some grids after DOMContentLoaded, so wait for
-        // the per-page ready selector before capturing.
-        const readySel = READY[rel];
-        if (readySel) await page.waitForSelector(readySel, { timeout: 15000 }).catch(() => {});
-        await page.evaluate(() => (document.fonts && document.fonts.ready) ? document.fonts.ready : null).catch(() => {});
-        // Wait for every image inside the fold to settle, so a lazy image that
-        // pops in on a warm run does not read as a pixel change. Bounded so a
-        // never-loading image cannot hang the run. Generous under load.
-        await Promise.race([
-          page.evaluate(() => Promise.all(
-            Array.from(document.images)
-              .filter(img => img.getBoundingClientRect().top < window.innerHeight)
-              .map(img => img.complete ? null : new Promise(r => { img.addEventListener('load', r); img.addEventListener('error', r); }))
-          )).catch(() => {}),
-          new Promise(r => setTimeout(r, 10000))
-        ]);
-        await new Promise(r => setTimeout(r, 1000));
+    const jobs = [];
+    for (const rel of PAGES) for (const vp of VIEWPORTS) jobs.push({ rel, vp });
+    let nextJob = 0;
+    async function capture() {
+      while (nextJob < jobs.length) {
+        const { rel, vp } = jobs[nextJob++];
+        // A2327: isolate each capture's local storage so profile, theme and
+        // autosave writes from other pages cannot change this screenshot.
+        const context = browser.createBrowserContext
+          ? await browser.createBrowserContext()
+          : await browser.createIncognitoBrowserContext();
+        const page = await context.newPage();
+        page.on('dialog', d => d.dismiss().catch(() => {}));
+        try {
+          await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+          await page.emulateMediaFeatures([
+            { name: 'prefers-reduced-motion', value: 'reduce' },
+            { name: 'prefers-color-scheme', value: 'light' }
+          ]);
+          // Deterministic first-visit state: suppress the auto-opening guide quiz
+          // and the coach bubble before any page script runs.
+          await page.evaluateOnNewDocument(() => {
+            // Deterministic random so character quote bubbles and any other
+            // randomised pick render the same value every run.
+            let s = 123456789;
+            Math.random = function(){ s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+            try {
+              localStorage.setItem('jvds_guide', 'lumo');
+              localStorage.setItem('jvds_mascot_coach_dismissed', '1');
+              localStorage.setItem('jvds-cookie-consent', 'accepted');
+            } catch (e) {}
+          });
+          await page.goto(base + '/' + rel, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await page.addStyleTag({ content: NEUTRALIZE_CSS });
+          await page.evaluate(() => { try { document.documentElement.removeAttribute('data-theme'); } catch (e) {} });
+          // Deferred scripts render some grids after DOMContentLoaded, so wait for
+          // the per-page ready selector before capturing.
+          const readySel = READY[rel];
+          if (readySel) await page.waitForSelector(readySel, { timeout: 15000 }).catch(() => {});
+          await page.evaluate(() => (document.fonts && document.fonts.ready) ? document.fonts.ready : null).catch(() => {});
+          // Wait for every image inside the fold to settle, so a lazy image that
+          // pops in on a warm run does not read as a pixel change. Bounded so a
+          // never-loading image cannot hang the run.
+          await Promise.race([
+            page.evaluate(() => Promise.all(
+              Array.from(document.images)
+                .filter(img => img.getBoundingClientRect().top < window.innerHeight)
+                .map(img => img.complete ? null : new Promise(r => { img.addEventListener('load', r); img.addEventListener('error', r); }))
+            )).catch(() => {}),
+            new Promise(r => setTimeout(r, 1500))
+          ]);
+          await new Promise(r => setTimeout(r, 200));
 
-        let buf = await page.screenshot({ type: 'png', fullPage: false });
-        const name = slug(rel, vp.w);
-        const file = path.join(BASELINE_DIR, name);
+          // Top 600px only: catches header/workspace layout without the rotating
+          // footer quotes and live storage counters further down the page.
+          const clip = { x: 0, y: 0, width: vp.w, height: Math.min(vp.h, 600) };
+          let buf = await page.screenshot({ type: 'png', clip });
+          const name = slug(rel, vp.w);
+          const file = path.join(BASELINE_DIR, name);
 
-        if (UPDATE || !fs.existsSync(file)) {
-          fs.writeFileSync(file, buf);
-          console.log((UPDATE ? 'UPDATED ' : 'SEEDED  ') + name + ' (' + vp.label + ' ' + rel + ')');
-        } else {
-          let res = await compare(file, buf);
-          if (!res.ok) {
-            // One retry absorbs transient render timing under load before this
-            // is called a regression.
-            await new Promise(r => setTimeout(r, 1200));
-            buf = await page.screenshot({ type: 'png', fullPage: false });
-            res = await compare(file, buf);
+          if (UPDATE || !fs.existsSync(file)) {
+            fs.writeFileSync(file, buf);
+            console.log((UPDATE ? 'UPDATED ' : 'SEEDED  ') + name + ' (' + vp.label + ' ' + rel + ')');
+          } else {
+            let res = await compare(file, buf);
+            if (!res.ok) {
+              // One retry absorbs transient render timing under load before this
+              // is called a regression.
+              await new Promise(r => setTimeout(r, 600));
+              buf = await page.screenshot({ type: 'png', clip });
+              res = await compare(file, buf);
+            }
+            if (!res.ok) {
+              fs.mkdirSync(ACTUAL_DIR, { recursive: true });
+              fs.writeFileSync(path.join(ACTUAL_DIR, name), buf);
+            }
+            log(`visual ${vp.label} ${rel}`, res.ok, res.ok ? '' : res.detail + '; actual saved');
           }
-          if (!res.ok) {
-            fs.mkdirSync(ACTUAL_DIR, { recursive: true });
-            fs.writeFileSync(path.join(ACTUAL_DIR, name), buf);
-          }
-          log(`visual ${vp.label} ${rel}`, res.ok, res.ok ? '' : res.detail + '; actual saved');
+        } catch (e) {
+          log(`visual ${vp.label} ${rel}`, false, 'capture error: ' + String(e && e.message || e).slice(0, 160));
+        } finally {
+          await context.close().catch(() => {});
         }
-        await page.close();
       }
     }
+    await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, capture));
   } finally {
     await browser.close().catch(() => {});
     await new Promise(r => server.close(r));
