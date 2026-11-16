@@ -88,7 +88,7 @@ const GENRE_QUALITY_LABELS = {
 const GENRE_HOOKS = {
   SHOOTER:      'Free rotation and thrust with momentum and bullets',
   PLATFORMER:   'Gravity, jumping and a scrolling platform world',
-  DODGE:        'Weave through falling hazards and collect stars',
+  DODGE:        'Dodge falling hazards, chain star combos and grab shield, slow-mo and x2 drops',
   BREAKER:      'Angle a bouncing ball to clear a wall of bricks',
   RUNNER:       'Three-lane auto-run: jump lows, slide under highs, switch lanes for walls',
   FLAPPY:       'One-tap flapping through narrowing gaps',
@@ -104,11 +104,11 @@ const GENRE_HOOKS = {
   RHYTHM:       'Hit lanes on the beat to build combos',
   DEFENSE:      'Place towers to stop ten waves',
   PINBALL:      'Flippers, bumpers and jackpot targets',
-  CLICKER:      'Tap, buy upgrades and snowball your income',
-  MEMORY:       'Flip cards and match pairs against a timer',
-  WAVESURVIVAL: 'Survive escalating waves and boss rounds',
-  PAPERTOSS:    'Flick shots with wind and physics',
-  CUSTOM:       'Blank arena with your own star target and chasing enemies',
+  CLICKER:      'Tap for income, buy auto-clickers and hit milestone bonuses to snowball',
+  MEMORY:       'Flip cards against a timer, with grid-size and card-set modes and match streaks',
+  WAVESURVIVAL: 'Survive escalating waves, clear a boss every 5th wave and bank wave-clear bonuses',
+  PAPERTOSS:    'Flick shots through wind with a miss limit; bin width sets the difficulty',
+  CUSTOM:       'Blank arena with top-down, autorun or platformer loops, chasers and custom rules',
 };
 const GENRE_VARIANT_OF = {
   WAVESURVIVAL: 'SHOOTER',  // wave-based take on the top-down shooter

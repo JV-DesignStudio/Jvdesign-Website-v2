@@ -28,7 +28,7 @@ rule that defines the loop, listed below.
 |---|---|---|
 | SHOOTER | Distinct | Free rotation and thrust with momentum and bullets |
 | PLATFORMER | Distinct | Gravity, jumping and a scrolling platform world |
-| DODGE | Variation of RUNNER | Weave through falling hazards and collect stars |
+| DODGE | Variation of RUNNER | Dodge hazards, chain star combos and grab shield, slow-mo and x2 drops |
 | BREAKER | Distinct | Angle a bouncing ball to clear a wall of bricks |
 | RUNNER | Distinct | Three-lane auto-run: jump low barriers, slide under high ones, switch lanes for walls |
 | FLAPPY | Distinct | One-tap flapping through narrowing gaps |
@@ -44,11 +44,25 @@ rule that defines the loop, listed below.
 | RHYTHM | Distinct | Hit lanes on the beat to build combos |
 | DEFENSE | Distinct | Place towers to stop ten waves |
 | PINBALL | Distinct | Flippers, bumpers and jackpot targets |
-| CLICKER | Distinct | Tap, buy upgrades and snowball your income |
-| MEMORY | Distinct | Flip cards and match pairs against a timer |
-| WAVESURVIVAL | Variation of SHOOTER | Survive escalating waves and boss rounds |
-| PAPERTOSS | Distinct | Flick shots with wind and physics |
-| CUSTOM | Distinct | Blank arena: collect a star target while chasers follow |
+| CLICKER | Distinct | Tap for income, buy auto-clickers and hit milestone bonuses |
+| MEMORY | Distinct | Flip cards against a timer with grid-size and card-set modes |
+| WAVESURVIVAL | Variation of SHOOTER | Survive escalating waves, a boss every 5th wave and wave-clear bonuses |
+| PAPERTOSS | Distinct | Flick shots through wind with a miss limit and bin-width difficulty |
+| CUSTOM | Distinct | Blank arena with top-down, autorun or platformer loops and custom rules |
+
+## Modes and twists (phase 2)
+
+Each BETA or EXPERIMENT genre now has at least one mode or twist that changes
+how it plays, not just its numbers.
+
+| Genre | Signature mechanic | Mode or twist |
+|---|---|---|
+| DODGE | Combo scoring and temporary power drops | Shield, slow-mo and x2 score drops; wave patterns every 8 spawns |
+| MEMORY | Match streaks and a live timer | 3x2 / 4x3 / 6x4 grids and animals, food, space or sports card sets |
+| CLICKER | Auto-clicker economy | Milestone bonuses and configurable auto-clicker cost |
+| WAVESURVIVAL | Boss cadence | Boss every 5th wave, scaling per wave, wave-clear bonus and survive-to-win waves |
+| PAPERTOSS | Wind physics under pressure | Miss limit and bin width set the difficulty; wind changes each shot |
+| CUSTOM | Sandbox loops | Top-down, autorun or platformer core loop, chasers, stars, variables and rules |
 
 ## Verdicts
 
@@ -56,7 +70,8 @@ rule that defines the loop, listed below.
   does not overlap another well enough to confuse a learner.
 - **Variation (2):** WAVESURVIVAL is the wave-based take on SHOOTER, and DODGE
   is the avoidance loop without the auto-run of RUNNER. Both are labelled in the
-  picker so nobody expects a brand-new mechanic.
+  picker, and both now carry their own signature twist (boss cadence and power
+  drops) so the variation label is about the shared base, not a missing idea.
 
 ## What to do next
 
