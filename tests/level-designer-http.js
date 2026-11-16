@@ -235,6 +235,63 @@ const server = http.createServer((req, res) => {
 
   console.log('checks:', JSON.stringify(checks));
   results.forEach(l => console.log(l));
+
+  // A3064: one-file playable level export, opened offline at 390 and 1440.
+  let playablePass = false;
+  try {
+    const playable = await page.evaluate(async () => {
+      const orig = HTMLAnchorElement.prototype.click;
+      let anchor = null;
+      HTMLAnchorElement.prototype.click = function () { anchor = this; };
+      exportPlayableHTML();
+      HTMLAnchorElement.prototype.click = orig;
+      if (!anchor) return { ok: false };
+      const res = await fetch(anchor.href);
+      return { ok: true, name: anchor.download, text: await res.text() };
+    });
+    const playPage = await browser.newPage();
+    const playErrors = [];
+    playPage.on('pageerror', e => playErrors.push(e.message));
+    let allOk = playable.ok && /-playable\.html$/.test(playable.name || '') && !/(?:src|href)\s*=\s*"(?:https?:|\/)/i.test(playable.text || '');
+    for (const [width, height] of [[390, 844], [1440, 900]]) {
+      await playPage.setViewport({ width, height, isMobile: width === 390, hasTouch: width === 390 });
+      await playPage.setContent(playable.text, { waitUntil: 'domcontentloaded' });
+      await new Promise(r => setTimeout(r, 350));
+      const state = await playPage.evaluate(async () => {
+        const before = player.x;
+        set('right', true);
+        await new Promise(r => setTimeout(r, 150));
+        const vx = player.vx;
+        set('right', false);
+        player.onGround = true;
+        player.vy = 0;
+        set('jump', true);
+        const jumped = player.vy < 0;
+        const btn = document.querySelector('#pad [data-k="right"]');
+        btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        const touch = keys.right === true;
+        btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+        return {
+          overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 2,
+          canvas: !!document.getElementById('game'),
+          pad: document.querySelectorAll('#pad button').length,
+          moves: vx > 0,
+          jumped,
+          touch,
+          finite: isFinite(player.x) && isFinite(player.y),
+          before
+        };
+      });
+      console.log('playable @' + width + ':', JSON.stringify(state));
+      const ok = state.overflow && state.canvas && state.pad === 3 && state.moves && state.jumped && state.touch && state.finite;
+      if (!ok) allOk = false;
+    }
+    playablePass = allOk && playErrors.length === 0;
+    if (!playablePass) console.log('PLAYABLE FAIL', playErrors.join(' | '));
+    await playPage.close();
+  } catch (e) {
+    console.log('PLAYABLE FAIL', e.message);
+  }
   console.log('hamburger opens:', navOpened, '| closes:', navClosed);
   if (errors.length) {
     console.log('ERRORS (' + errors.length + '):');
@@ -244,7 +301,7 @@ const server = http.createServer((req, res) => {
   }
   const fails = results.filter(l => l.startsWith('FAIL')).length;
   const pass = fails === 0 && checks.manifestIsDedicated && checks.levelNameFieldPresent &&
-               checks.canvasReady && navOpened && navClosed && restorePass && errors.length === 0;
+               checks.canvasReady && navOpened && navClosed && restorePass && playablePass && errors.length === 0;
   console.log(pass ? 'HTTP RUNTIME CHECKS PASSED' : 'FAILURES PRESENT');
   await browser.close();
   server.close();

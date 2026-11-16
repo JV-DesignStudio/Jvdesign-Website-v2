@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-SAiP1s3OZO/DMywYy71NeEMp/hhotNCNKBHqXaoFOuA=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-IFXpaf9xHIFBx9Cdxp4qImyWmMyEwWEwUbX1/tO90nw=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -261,8 +261,9 @@
     </div>
     <!-- Always-visible primary actions: never scrolls out of reach -->
     <div id="left-sticky">
-      <button class="ab ab-p" data-on="exportPNG" data-on-plain title="Download the level as an image">Export PNG</button>
-      <button class="ab ab-g" data-on="exportJSON" data-on-plain title="Download an editable .json level file">Export JSON</button>
+<button class="ab ab-p" data-on="exportPNG" data-on-plain title="Download the level as an image">Export PNG</button>
+<button class="ab ab-g" data-on="exportJSON" data-on-plain title="Download an editable .json level file">Export JSON</button>
+<button class="ab ab-p" data-on="exportPlayableHTML" data-on-plain title="Download one HTML file that plays this level offline">Playable HTML</button>
       <button class="ab ab-g" data-on="exportGodot" data-on-plain title="Export as Godot 4 TileMap JSON" style="background:#478cbf;color:white;box-shadow:0 2px 0 #2a8cbf;">Godot</button>
       <button class="ab ab-g" data-on="exportGDScript" data-on-plain title="Export as GDScript level array" style="background:#478cbf;color:white;box-shadow:0 2px 0 #2a8cbf;">GDScript</button>
     </div>
@@ -1665,6 +1666,113 @@ function sendToGameMaker(){
   } catch(e) { showToast('Export failed, level may be too large'); }
 }
 function getLevelData(){return{schemaVersion:'1.1',meta:{schemaVersion:'1.1',name:getLevelName(),width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),collision:Array.from(collisionData),enemyPaths,tileProps};}
+
+// A3064: one self-contained HTML file that plays the level offline, so a learner
+// can keep or hand in a playable level on a school computer.
+function buildPlayableHTML(){
+  const data=getLevelData();
+  const safeJson=JSON.stringify(data).replace(/</g,'\\u003c');
+  const title=String(data.meta.name||'My Level').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0f1117;color:#f0f0f0;font:16px/1.6 Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px}
+header{width:100%;max-width:900px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+h1{font-size:1.15rem;margin:0}
+#stats{font-size:.85rem;color:#f5c842;font-weight:700}
+canvas{display:block;width:100%;max-width:900px;height:auto;image-rendering:pixelated;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#111}
+#msg{min-height:1.4em;margin:8px 0;color:#f5c842;font-weight:700;text-align:center}
+#pad{display:flex;gap:10px;margin-top:6px}
+#pad button{min-width:64px;min-height:48px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:#1d2230;color:#fff;font:700 1rem Inter,system-ui,sans-serif;cursor:pointer;touch-action:none}
+#pad button:active{background:#2b3348}
+footer{margin-top:10px;color:#9aa3b5;font-size:.75rem}
+@media (max-width:420px){body{padding:8px}h1{font-size:1rem}#pad button{min-width:58px}}
+</style>
+</head>
+<body>
+<header><h1 id="title">My Level</h1><div id="stats">Coins: 0 | Lives: 3</div></header>
+<canvas id="game" width="480" height="360"></canvas>
+<div id="msg" role="status" aria-live="polite"></div>
+<div id="pad"><button type="button" data-k="left" aria-label="Move left">Left</button><button type="button" data-k="jump" aria-label="Jump">Jump</button><button type="button" data-k="right" aria-label="Move right">Right</button></div>
+<footer>Made in JVDesignStudio World Builder</footer>
+<script>
+var LEVEL=${safeJson};
+var W=LEVEL.meta.width,H=LEVEL.meta.height,TS=24;
+var GRAV=0.55,JUMP=-10,SPEED=3.2;
+var defs={};(LEVEL.tileDefs||[]).forEach(function(t){defs[t.id]=t;});
+var collision=LEVEL.collision||[];
+var layers=(LEVEL.layers||[]).filter(function(l){return l.visible!==false;});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function solidAt(wx,wy){var tx=Math.floor(wx/TS),ty=Math.floor(wy/TS);if(ty>=H)return true;if(tx<0||ty<0||tx>=W)return false;var c=collision[ty*W+tx];if(c===1)return true;if(c===-1||c===2)return false;for(var i=0;i<layers.length;i++){var d=defs[layers[i].data[ty*W+tx]];if(d&&d.solid&&(d.type==='terrain'||d.type==='object'||d.type==='decor'))return true;}return false;}
+function hazardAt(wx,wy){var tx=Math.floor(wx/TS),ty=Math.floor(wy/TS);if(tx<0||ty<0||tx>=W||ty>=H)return false;if(collision[ty*W+tx]===2)return true;for(var i=0;i<layers.length;i++){var d=defs[layers[i].data[ty*W+tx]];if(d&&d.type==='hazard')return true;}return false;}
+function findTile(id){for(var li=0;li<layers.length;li++){var d=layers[li].data;for(var i=0;i<d.length;i++){if(d[i]===id)return {x:i%W,y:Math.floor(i/W)};}}return null;}
+var spawn=findTile(21)||{x:2,y:Math.max(0,H-4)};
+var player={x:spawn.x*TS,y:(spawn.y-1)*TS,vx:0,vy:0,onGround:false,coins:0,lives:3,dead:false,won:false,checkpoint:{x:spawn.x*TS,y:(spawn.y-1)*TS}};
+var pickups=[];var enemies=[];
+layers.forEach(function(l,li){for(var i=0;i<l.data.length;i++){var v=l.data[i];if(v===12||v===13)pickups.push({x:(i%W)*TS,y:Math.floor(i/W)*TS,got:false});if(v===18||v===19||v===20)enemies.push({x:(i%W)*TS,y:Math.floor(i/W)*TS,alive:true,vx:0.8});}});
+var keys={left:false,right:false};
+var canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+var viewW=Math.min(W,20);var scale=Math.max(1,Math.min(3,Math.floor(900/(viewW*TS))));
+canvas.width=viewW*TS;canvas.height=H*TS;canvas.style.maxWidth=(viewW*TS*scale)+'px';
+document.getElementById('title').textContent=LEVEL.meta.name||'My Level';
+function stats(){document.getElementById('stats').textContent='Coins: '+player.coins+' | Lives: '+player.lives;}
+function msg(t){var el=document.getElementById('msg');el.textContent=t;setTimeout(function(){if(el.textContent===t)el.textContent='';},1800);}
+function kill(){if(player.dead)return;player.dead=true;player.lives--;stats();if(player.lives<=0){msg('Game over');setTimeout(function(){location.reload();},1600);}else{msg('-1 life');setTimeout(function(){player.dead=false;player.x=player.checkpoint.x;player.y=player.checkpoint.y;player.vx=0;player.vy=0;},900);}}
+function win(){if(player.won)return;player.won=true;msg('You reached the goal! Coins: '+player.coins);}
+function update(){
+  if(player.dead||player.won)return;
+  if(keys.left)player.vx=-SPEED;else if(keys.right)player.vx=SPEED;else player.vx*=0.72;
+  player.vy=Math.min(player.vy+GRAV,16);
+  var pw=TS*0.7,ph=TS*0.88;
+  player.x+=player.vx;
+  if(player.vx>0&&solidAt(player.x+pw,player.y+4)&&solidAt(player.x+pw,player.y+ph-4)){player.x=Math.floor((player.x+pw)/TS)*TS-pw;player.vx=0;}
+  if(player.vx<0&&solidAt(player.x,player.y+4)&&solidAt(player.x,player.y+ph-4)){player.x=Math.ceil(player.x/TS)*TS;player.vx=0;}
+  player.x=Math.max(0,Math.min(W*TS-pw,player.x));
+  player.onGround=false;player.y+=player.vy;
+  if(player.vy>0&&(solidAt(player.x+2,player.y+ph)||solidAt(player.x+pw-2,player.y+ph))){player.y=Math.floor((player.y+ph)/TS)*TS-ph;player.vy=0;player.onGround=true;}
+  else if(player.vy<0&&(solidAt(player.x+2,player.y)||solidAt(player.x+pw-2,player.y))){player.y=Math.ceil(player.y/TS)*TS;player.vy=0;}
+  if(hazardAt(player.x+pw/2,player.y+ph/2)||player.y>H*TS+50)kill();
+  pickups.forEach(function(c){if(!c.got&&Math.abs(player.x+pw/2-c.x-TS/2)<TS*0.8&&Math.abs(player.y+ph/2-c.y-TS/2)<TS*0.8){c.got=true;player.coins++;stats();}});
+  var cp=findTile(23);if(cp&&Math.abs(player.x-cp.x*TS)<TS&&Math.abs(player.y-cp.y*TS)<TS)player.checkpoint={x:cp.x*TS,y:(cp.y-1)*TS};
+  var goal=findTile(22);if(goal&&Math.abs(player.x-goal.x*TS)<TS&&Math.abs(player.y-goal.y*TS)<TS)win();
+  enemies.forEach(function(en){if(!en.alive)return;en.x+=en.vx;if(en.x<0||en.x>W*TS-TS)en.vx*=-1;if(Math.abs(player.x-en.x)<TS*0.75&&Math.abs(player.y-en.y)<TS*0.75){if(player.vy>0&&player.y+ph<en.y+TS*0.55){en.alive=false;player.vy=JUMP*0.6;player.coins+=5;stats();msg('+5!');}else kill();}});
+}
+function draw(){
+  var camX=Math.max(0,Math.min(W*TS-viewW*TS,player.x-viewW*TS/2+TS/2));
+  ctx.fillStyle='#0f1117';ctx.fillRect(0,0,canvas.width,canvas.height);
+  var x0=Math.floor(camX/TS);
+  layers.forEach(function(l){for(var y=0;y<H;y++)for(var tx=x0;tx<x0+viewW+2;tx++){if(tx<0||tx>=W)continue;var d=defs[l.data[y*W+tx]];if(!d)continue;var px=tx*TS-camX,py=y*TS;if(d.color&&d.color!=='transparent'){ctx.fillStyle=d.color;ctx.fillRect(px,py,TS,TS);}if(d.type==='hazard'){ctx.fillStyle='rgba(239,68,68,.35)';ctx.fillRect(px,py,TS,TS);}}});
+  pickups.forEach(function(c){if(c.got)return;ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(c.x-camX+TS/2,c.y+TS/2,TS*0.25,0,Math.PI*2);ctx.fill();});
+  enemies.forEach(function(en){if(!en.alive)return;ctx.fillStyle='#ef4444';ctx.fillRect(en.x-camX+TS*0.12,en.y+TS*0.12,TS*0.76,TS*0.76);});
+  var goal=findTile(22);if(goal){ctx.fillStyle='#22c55e';ctx.fillRect(goal.x*TS-camX+TS*0.3,goal.y*TS,TS*0.14,TS);ctx.fillRect(goal.x*TS-camX+TS*0.3,goal.y*TS,TS*0.6,TS*0.3);}
+  ctx.fillStyle='#4169e1';ctx.fillRect(player.x-camX,player.y,TS*0.7,TS*0.88);
+  ctx.fillStyle='#ffd700';ctx.fillRect(player.x-camX+TS*0.12,player.y+TS*0.08,TS*0.46,TS*0.34);
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+function set(k,v){if(k==='left')keys.left=v;if(k==='right')keys.right=v;if(k==='jump'&&v&&player.onGround)player.vy=JUMP;}
+document.addEventListener('keydown',function(e){if(['ArrowLeft','ArrowRight','ArrowUp','Space'].indexOf(e.code)>=0)e.preventDefault();if(e.code==='ArrowLeft'||e.code==='KeyA')set('left',true);if(e.code==='ArrowRight'||e.code==='KeyD')set('right',true);if(e.code==='ArrowUp'||e.code==='KeyW'||e.code==='Space')set('jump',true);});
+document.addEventListener('keyup',function(e){if(e.code==='ArrowLeft'||e.code==='KeyA')set('left',false);if(e.code==='ArrowRight'||e.code==='KeyD')set('right',false);});
+document.querySelectorAll('#pad button').forEach(function(b){var k=b.getAttribute('data-k');b.addEventListener('pointerdown',function(e){e.preventDefault();set(k,true);});b.addEventListener('pointerup',function(e){e.preventDefault();set(k,false);});b.addEventListener('pointercancel',function(){set(k,false);});});
+stats();loop();
+<\/script>
+</body>
+</html>`;
+}
+function exportPlayableHTML(){
+  const data=getLevelData();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([buildPlayableHTML()],{type:'text/html'}));
+  a.download=slugName(data.meta.name)+'-playable.html';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  showToast('Playable level downloaded!');
+}
 function exportJSON(){const data=getLevelData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.meta.name.replace(/\s+/g,'_')||'level')+'.json';a.click();showToast('JSON exported!');}
 function exportGodot(){
   const data=getLevelData();
