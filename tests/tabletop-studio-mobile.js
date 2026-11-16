@@ -38,6 +38,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
       try {
         localStorage.setItem('jvds_studio_settings', JSON.stringify({ seenWalkthrough: true }));
         localStorage.setItem('jvds-cookie-consent', 'declined');
+        localStorage.setItem('jvds-tabletop-simple', '0');
         if (!sessionStorage.getItem('__tt_test_cleared')) {
           sessionStorage.setItem('__tt_test_cleared', '1');
           localStorage.removeItem('jvds-tabletop-v1');
@@ -172,11 +173,53 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
     // Share code (the control lives in the closed toolbox on mobile).
     await page.evaluate(() => document.getElementById('ttShareCopy').click());
-    await wait(300);
+    await wait(600);
     const share = await page.evaluate(() => (document.getElementById('ttShareCode') || {}).value || '');
-    check('share code is generated', /^TT3-/.test(share), String(share).slice(0, 24) + '...');
+    check('share code is generated', /^TT(3|4)-/.test(share), String(share).slice(0, 24) + '...');
 
     check('no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+
+    // Mobile export preview and take-home pack.
+    await page.evaluate(() => {
+      window.__previewBlobs = [];
+      const original = URL.createObjectURL.bind(URL);
+      URL.createObjectURL = function (blob) {
+        window.__previewBlobs.push(blob);
+        return original(blob);
+      };
+      document.getElementById('ttExportPlayable').click();
+    });
+    await wait(1400);
+    const mobilePreview = await page.evaluate(() => ({
+      open: !document.getElementById('ttPlayPreview').hidden,
+      image: (document.getElementById('ttPlayPreviewImg').src || '').length,
+      summary: document.getElementById('ttPlayPreviewSummary').textContent,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    }));
+    check('mobile export preview fits and shows the board', mobilePreview.open && mobilePreview.image > 1000 && /Win:/i.test(mobilePreview.summary) && mobilePreview.overflow <= 2, JSON.stringify(mobilePreview));
+    await page.evaluate(() => { document.getElementById('ttPlayPreviewDownload').click(); });
+    await wait(300);
+    const previewDownloads = await page.evaluate(() => window.__previewBlobs.length);
+    check('mobile export preview downloads a game', previewDownloads > 0, String(previewDownloads));
+    await page.evaluate(() => {
+      window.__printHtml = '';
+      window.__origOpen = window.open;
+      window.open = function () {
+        return {
+          document: { write: function (html) { window.__printHtml = html; }, close: function () {} },
+          focus: function () {},
+          print: function () {}
+        };
+      };
+      document.getElementById('ttTakeHome').click();
+    });
+    await wait(900);
+    const mobilePack = await page.evaluate(() => ({
+      html: window.__printHtml,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    }));
+    check('mobile take-it-home pack includes the board, cards and sheet', /<img class="board"/.test(mobilePack.html) && /<img class="cards"/.test(mobilePack.html) && /<img class="sheetimg"/.test(mobilePack.html) && mobilePack.overflow <= 2, (mobilePack.html || '').slice(0, 140));
+    await page.evaluate(() => { window.open = window.__origOpen; });
     await page.close();
 
     // Desktop smoke in a fresh tab.

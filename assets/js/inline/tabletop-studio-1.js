@@ -12,7 +12,7 @@
   var IDB_NAME = 'jvds-tabletop';
   var IDB_STORE = 'library';
   var IDB_KEY = 'boards';
-  var MAX_BOARDS = 12;
+  var MAX_BOARDS = 24;
   var CELL = 80;
   var SVG_MM_PER_CELL = 20;
   var MAX_DICE = 6;
@@ -131,8 +131,10 @@
   var simpleToggle = document.getElementById('ttSimpleToggle');
   var simpleNext = document.getElementById('ttSimpleNext');
   var simpleNextBtn = document.getElementById('ttSimpleNextBtn');
+  var focusBoardBtn = document.getElementById('ttFocusBoard');
   var SIMPLE_KEY = 'jvds-tabletop-simple';
   var simpleMode = true;
+  var focusBoard = false;
   var simpleProgress = { started: false, painted: false, pieced: false, played: false };
   var bootAt = Date.now();
   var milestones = {};
@@ -251,9 +253,19 @@
   var declareWinEl = document.getElementById('ttDeclareWin');
   var echoImproveBtn = document.getElementById('ttEchoImprove');
   var playAidsSec = document.getElementById('ttPlayAidsSec');
+  var moneyLeaderEl = document.getElementById('ttMoneyLeader');
   var viewHintEl = document.getElementById('ttViewHint');
   var storageWarnEl = document.getElementById('ttStorageWarn');
   var storageMeterEl = document.getElementById('ttStorageMeter');
+  var storageBtn = document.getElementById('ttStorageBtn');
+  var storageEl = document.getElementById('ttStorage');
+  var storageBackdrop = document.getElementById('ttStorageBackdrop');
+  var storageClose = document.getElementById('ttStorageClose');
+  var storageSummary = document.getElementById('ttStorageSummary');
+  var storagePersist = document.getElementById('ttStoragePersist');
+  var storagePersistBtn = document.getElementById('ttStoragePersistBtn');
+  var storagePruneBtn = document.getElementById('ttStoragePruneBtn');
+  var storageBoardsBody = document.getElementById('ttStorageBoards');
   var exportPlayableNote = document.getElementById('ttExportPlayableNote');
   var winText = document.getElementById('ttWinText');
   var winTitle = document.getElementById('ttWinTitle');
@@ -4281,17 +4293,125 @@
     return total;
   }
 
+  function libraryBytes() {
+    try {
+      return JSON.stringify(library).length * 2;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  function libraryVersionCount() {
+    return (library.boards || []).reduce(function (total, board) {
+      return total + (Array.isArray(board.versions) ? board.versions.length : 0);
+    }, 0);
+  }
+
   function updateStorageMeter() {
     if (!storageMeterEl) return;
     if (storageBlocked) {
       storageMeterEl.textContent = 'This browser is blocking saves. Download a backup before you close the page.';
       return;
     }
-    var kb = Math.round(storageBytes() / 1024);
+    var kb = Math.round(libraryBytes() / 1024);
     var base = idbReady
       ? 'Saved in this browser\'s board database, with a local mirror.'
       : 'Saved in this browser.';
-    storageMeterEl.textContent = base + ' Local mirror: about ' + kb + ' KB. Backup all keeps a copy you can restore later.';
+    storageMeterEl.textContent = base + ' Library: about ' + kb + ' KB · ' + (library.boards || []).length + ' of ' + MAX_BOARDS + ' boards · ' + libraryVersionCount() + ' saved versions. Backup all keeps a copy you can restore later.';
+  }
+
+  function renderStorage() {
+    if (!storageSummary || !storageBoardsBody) return;
+    storageSummary.textContent = 'Board library: about ' + Math.round(libraryBytes() / 1024) + ' KB · ' + (library.boards || []).length + ' of ' + MAX_BOARDS + ' boards · ' + libraryVersionCount() + ' saved versions.';
+    if (storagePersist) {
+      if (navigator.storage && navigator.storage.persisted) {
+        navigator.storage.persisted().then(function (kept) {
+          storagePersist.textContent = kept
+            ? 'This browser is keeping the library on this device.'
+            : 'This browser may clear the library if space runs low. Keep it on this device to ask for safer storage.';
+        }).catch(function () {
+          storagePersist.textContent = 'This browser does not report storage protection.';
+        });
+      } else {
+        storagePersist.textContent = 'This browser does not report storage protection.';
+      }
+    }
+    storageBoardsBody.textContent = '';
+    (library.boards || []).forEach(function (board) {
+      var row = document.createElement('tr');
+      var nameCell = document.createElement('td');
+      nameCell.textContent = board.name || 'My board';
+      row.appendChild(nameCell);
+      var sizeCell = document.createElement('td');
+      sizeCell.textContent = Math.round((JSON.stringify(board).length * 2) / 1024) + ' KB';
+      row.appendChild(sizeCell);
+      var versionsCell = document.createElement('td');
+      versionsCell.textContent = String(Array.isArray(board.versions) ? board.versions.length : 0);
+      row.appendChild(versionsCell);
+      var actionCell = document.createElement('td');
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'tt-btn tt-btn--quiet';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.setAttribute('data-storage-delete', board.id);
+      actionCell.appendChild(deleteBtn);
+      row.appendChild(actionCell);
+      storageBoardsBody.appendChild(row);
+    });
+  }
+
+  function openStorage() {
+    if (!storageEl) return;
+    renderStorage();
+    storageEl.hidden = false;
+    document.body.classList.add('tt-modal-open');
+    try { storageClose.focus({ preventScroll: true }); } catch (err) { storageClose.focus(); }
+    announce('Storage settings opened.');
+  }
+
+  function closeStorage() {
+    if (!storageEl || storageEl.hidden) return;
+    storageEl.hidden = true;
+    document.body.classList.remove('tt-modal-open');
+    if (storageBtn) {
+      try { storageBtn.focus({ preventScroll: true }); } catch (err) { storageBtn.focus(); }
+    }
+  }
+
+  function requestPersistentStorage() {
+    if (!navigator.storage || !navigator.storage.persist) {
+      toast('This browser cannot keep storage permanently.');
+      return;
+    }
+    navigator.storage.persist().then(function (granted) {
+      toast(granted ? 'The browser will try to keep your boards on this device.' : 'The browser did not grant protected storage.');
+      renderStorage();
+      updateStorageMeter();
+    }).catch(function () {
+      toast('The browser could not protect storage.');
+    });
+  }
+
+  function pruneOldVersions() {
+    var before = libraryBytes();
+    var removed = 0;
+    (library.boards || []).forEach(function (board) {
+      if (Array.isArray(board.versions) && board.versions.length > 2) {
+        removed += board.versions.length - 2;
+        board.versions = board.versions.slice(-2);
+      }
+    });
+    if (!removed) {
+      toast('There are no old versions to prune.');
+      return;
+    }
+    writeLibrary();
+    updateStorageMeter();
+    renderStorage();
+    renderLibrary();
+    var freed = Math.max(0, before - libraryBytes());
+    toast('Pruned ' + removed + ' old versions and freed about ' + Math.round(freed / 1024) + ' KB.');
+    announce('Old versions pruned.');
   }
 
   function saveBoard(quiet) {
@@ -5450,6 +5570,18 @@
         : 'Go back to the short path.';
     }
     updateSimpleProgress();
+  }
+
+  function applyFocusMode() {
+    if (appEl) appEl.classList.toggle('tt-focus', focusBoard);
+    if (focusBoardBtn) {
+      focusBoardBtn.setAttribute('aria-pressed', focusBoard ? 'true' : 'false');
+      focusBoardBtn.textContent = focusBoard ? 'Exit focus' : 'Focus board';
+    }
+    if (focusBoard && sidebar && sidebar.classList.contains('open')) closeSidebar();
+    window.setTimeout(function () {
+      if (autoFit) fitBoardView();
+    }, 60);
   }
 
   function setMode(mode) {
@@ -6835,6 +6967,7 @@
       row.appendChild(upBtn);
       container.appendChild(row);
     });
+    updateMoneyLeader();
   }
 
   function formatClock(seconds) {
@@ -6945,6 +7078,26 @@
       try { section.scrollIntoView({ block: 'nearest' }); } catch (err) { /* scroll is optional */ }
       try { byId('ttRules').focus({ preventScroll: true }); } catch (err) { byId('ttRules').focus(); }
     }
+  }
+
+  function updateMoneyLeader() {
+    if (!moneyLeaderEl) return;
+    var mode = S.settings && S.settings.winMode;
+    if (mode !== 'mostMoney' || !Array.isArray(S.players) || !S.players.length) {
+      moneyLeaderEl.hidden = true;
+      return;
+    }
+    var top = -Infinity;
+    S.players.forEach(function (player) {
+      top = Math.max(top, Number(player.money) || 0);
+    });
+    var leaders = S.players.filter(function (player) { return (Number(player.money) || 0) === top; }).map(function (player, index) {
+      return player.name && player.name.trim() ? player.name.trim() : 'Player ' + (index + 1);
+    });
+    moneyLeaderEl.hidden = false;
+    moneyLeaderEl.textContent = leaders.length > 1
+      ? 'Tied at £' + top + ': ' + leaders.join(', ') + '.'
+      : 'Current leader: ' + leaders[0] + ' with £' + top + '.';
   }
 
   function updatePlayAids() {
@@ -8216,7 +8369,7 @@
   }
 
   function openModalElement() {
-    var ids = ['ttPlayPreview', 'ttTableEditor', 'ttBoardList', 'ttVersions', 'ttHelp', 'ttTilePanel', 'ttWin', 'ttChoice'];
+    var ids = ['ttPlayPreview', 'ttStorage', 'ttTableEditor', 'ttBoardList', 'ttVersions', 'ttHelp', 'ttTilePanel', 'ttWin', 'ttChoice'];
     for (var i = 0; i < ids.length; i++) {
       var element = document.getElementById(ids[i]);
       if (element && !element.hidden) return element;
@@ -8232,6 +8385,7 @@
     if (id === 'ttBoardList') return closeBoardList();
     if (id === 'ttVersions') return closeVersions();
     if (id === 'ttTableEditor') return closeTableEditor();
+    if (id === 'ttStorage') return closeStorage();
     if (id === 'ttPlayPreview') {
       if (advancedApi && advancedApi.closePlayPreview) return advancedApi.closePlayPreview();
       var modal = document.getElementById('ttPlayPreview');
@@ -8291,6 +8445,12 @@
       });
     }
     if (simpleNextBtn) simpleNextBtn.addEventListener('click', improveAfterGame);
+    if (focusBoardBtn) focusBoardBtn.addEventListener('click', function () {
+      focusBoard = !focusBoard;
+      applyFocusMode();
+      toast(focusBoard ? 'Focus mode. The tools are hidden.' : 'Focus mode off. The tools are back.');
+      announce(focusBoard ? 'Focus mode on.' : 'Focus mode off.');
+    });
 
     byId('ttTerrain').addEventListener('click', onTerrainClick);
     document.querySelectorAll('[data-brush]').forEach(function (btn) {
@@ -8620,6 +8780,18 @@
     if (tableEditorClose) tableEditorClose.addEventListener('click', closeTableEditor);
     if (tableEditorBackdrop) tableEditorBackdrop.addEventListener('click', closeTableEditor);
     if (tableEditorBody) tableEditorBody.addEventListener('change', onTableEditorChange);
+    if (storageBtn) storageBtn.addEventListener('click', openStorage);
+    if (storageClose) storageClose.addEventListener('click', closeStorage);
+    if (storageBackdrop) storageBackdrop.addEventListener('click', closeStorage);
+    if (storagePersistBtn) storagePersistBtn.addEventListener('click', requestPersistentStorage);
+    if (storagePruneBtn) storagePruneBtn.addEventListener('click', pruneOldVersions);
+    if (storageBoardsBody) storageBoardsBody.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-storage-delete]');
+      if (btn) {
+        deleteBoard(btn.getAttribute('data-storage-delete'));
+        renderStorage();
+      }
+    });
     if (boardListClose) boardListClose.addEventListener('click', closeBoardList);
     if (boardListBackdrop) boardListBackdrop.addEventListener('click', closeBoardList);
     if (versionBtn) versionBtn.addEventListener('click', openVersions);
