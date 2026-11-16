@@ -28,8 +28,10 @@ function registryAliases() {
       if (!card) continue;
       const aliases = [].concat(card.aliases || [], card.mergedFrom || []).filter(Boolean);
       if (!aliases.length) continue;
-      const key = String(tool.url || '').replace(/^\//, '');
-      if (key) map.set(key, Array.from(new Set(aliases)));
+      // A2279: preset builders share one page (3d-builder.html?preset=...), so
+      // key on the page path and collect every preset's aliases onto it.
+      const key = String(tool.url || '').replace(/^\//, '').split('?')[0].split('#')[0];
+      if (key) map.set(key, Array.from(new Set([...(map.get(key) || []), ...aliases])));
     }
   } catch (e) { /* registry aliases are optional, never block the index */ }
   return map;

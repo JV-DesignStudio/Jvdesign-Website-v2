@@ -29,7 +29,8 @@ for (const [id, card] of Object.entries(hub.cards || {})) {
   if (!tool) continue;
   const aliases = [].concat(card.aliases || [], card.mergedFrom || []).filter(Boolean);
   if (!aliases.length) continue;
-  const rel = String(tool.url).replace(/^\//, '');
+  // A2279: preset builders point at one page (?preset=...), so compare page paths.
+  const rel = String(tool.url).replace(/^\//, '').split('?')[0].split('#')[0];
   const pageAliases = (aliasPages.get(rel) || []).map(a => a.toLowerCase());
   const catalogEntry = (content.tools || []).find(t => t.id === id);
   for (const alias of aliases) {
