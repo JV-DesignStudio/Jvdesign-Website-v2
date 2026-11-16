@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-4l0T6TQ007LIda99ZnJGFzutrs59wkp7N//dsYb5G8E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-kfZtDzll2kah8iCpeggs/z/rR2Al45tZB2KS+4GzNIE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -744,6 +744,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportPreviewOBJ" data-on-plain>&#x1F4C4; Export OBJ Only</button>
             <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);font-size:.8rem;" data-on="exportBundle" data-on-plain title="Download one zip: model + README + preview photo">&#x1F4E6; Asset bundle (.zip)</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportManifest" data-on-plain title="Parts, names, bounds, materials and triangle counts for a pipeline">&#x1F4CB; Manifest (.json)</button>
+            <button class="action-btn btn-secondary" style="background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3);font-size:.8rem;" data-on="exportBuildLabGrid" data-on-plain title="Project the top-down block layout into a grid for World Builder">&#x1F5FA;&#xFE0F; Export grid</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportCollisionProxy" data-on-plain title="One collision box per part, same units as the model">&#x1F6E1;&#xFE0F; Collision proxy (.obj)</button>
             <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.1);color:var(--accent2);border:1px solid rgba(245,166,35,.25);font-size:.8rem;" data-on="exportSTL" data-on-plain title="Sits the model on the print bed, starts at 0 and centres X/Z. 1 block = your block scale in millimetres.">&#x1F5A8;&#xFE0F; 3D print (.stl)</button>
           </div>
@@ -1979,6 +1980,15 @@ async function init() {
   buildColourPalette();
   restoreKidMode();
   applyFastMode(fastMode, true);
+  // A2308: the shared low-power setting forces fast mode on slower machines.
+  let lowForced = false;
+  function syncLowPower() {
+    const on = !!(window.JVDSStudio && JVDSStudio.lowPower && JVDSStudio.lowPower.enabled());
+    if (on && !lowForced) { lowForced = true; applyFastMode(true, true); }
+    else if (!on && lowForced) { lowForced = false; applyFastMode(false, true); }
+  }
+  syncLowPower();
+  document.addEventListener('jvds:lowpower', syncLowPower);
   renderSaveSlots();
   initLighting();
   requestRender(600); // draw the opening frames while the scene settles
@@ -3063,6 +3073,55 @@ function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentSha
   requestRender();
   return mesh;
 }
+
+// A2558: project the top-down block layout into a grid World Builder can paste.
+function buildLabGridData() {
+  const cell = Math.max(0.5, Number(GRID) || 1);
+  const list = blocks.filter(b => !b.userData.hidden && b.visible !== false && b.parent);
+  if (!list.length) return { app: 'jvds-buildlab-grid', version: 1, cell, cols: 1, rows: 1, cells: [null] };
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  list.forEach(b => {
+    const p = b.position, u = b.userData;
+    const w = Number(u.w) || 1, d = Number(u.d) || 1;
+    minX = Math.min(minX, p.x - w / 2); maxX = Math.max(maxX, p.x + w / 2);
+    minZ = Math.min(minZ, p.z - d / 2); maxZ = Math.max(maxZ, p.z + d / 2);
+  });
+  const cols = Math.max(1, Math.ceil((maxX - minX) / cell));
+  const rows = Math.max(1, Math.ceil((maxZ - minZ) / cell));
+  const cells = new Array(cols * rows).fill(null);
+  list.forEach(b => {
+    const p = b.position, u = b.userData;
+    const w = Number(u.w) || 1, d = Number(u.d) || 1, h = Number(u.h) || 1;
+    const top = p.y + h / 2;
+    const x0 = Math.floor((p.x - w / 2 - minX) / cell);
+    const x1 = Math.ceil((p.x + w / 2 - minX) / cell);
+    const z0 = Math.floor((p.z - d / 2 - minZ) / cell);
+    const z1 = Math.ceil((p.z + d / 2 - minZ) / cell);
+    for (let z = z0; z < z1; z++) for (let x = x0; x < x1; x++) {
+      if (x < 0 || z < 0 || x >= cols || z >= rows) continue;
+      const i = z * cols + x;
+      if (!cells[i] || cells[i].h < top) cells[i] = { h: Math.round(top * 100) / 100, color: u.colour || '#888888', shape: u.shape || 'box' };
+    }
+  });
+  return { app: 'jvds-buildlab-grid', version: 1, cell, cols, rows, cells };
+}
+
+function exportBuildLabGrid() {
+  const data = buildLabGridData();
+  const text = JSON.stringify(data);
+  try { localStorage.setItem('jvds_buildlab_grid', text); } catch (e) {}
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => toast('Grid copied. Open World Builder and paste it.'),
+      () => toast('Grid saved. Open World Builder and use BuildLab grid.')
+    );
+  } else {
+    toast('Grid saved. Open World Builder and use BuildLab grid.');
+  }
+  return data;
+}
+
+try { window.JVDSBuildLabGrid = { data: buildLabGridData, export: exportBuildLabGrid }; } catch (e) {}
 
 function deleteBlock(mesh) {
   if (!mesh) return;

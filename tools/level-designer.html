@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-ln2FEnrSh/r0/WkQP8uyq6c9pWm/zzeL+hB6HyVUWeM=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-U4rETMJm35Jl9PLgz0KLq4okGfybmIcyRULx66ZBm8A=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -245,6 +245,7 @@
       <div class="ab-grid">
         <button class="ab ab-s" data-click-id="importJsonInput" title="Open a .json level file">Import<input type="file" id="importJsonInput" accept=".json" style="display:none" data-on="importJSON" data-on-event="change" data-on-args="this"></button>
         <button class="ab ab-s" data-click-id="importTmxInput" title="Open a Tiled .tmx map">Tiled .tmx<input type="file" id="importTmxInput" accept=".tmx,.xml" style="display:none" data-on="importTMX" data-on-event="change" data-on-args="this"></button>
+        <button class="ab ab-s" data-on="openBuildLabGrid" data-on-plain title="Paste a grid exported from BuildLab">BuildLab grid</button>
         <button class="ab ab-r" data-on="confirmClear" data-on-plain title="Start over with an empty level">New Level</button>
       </div>
       <div class="pdiv" style="margin:6px 0;"></div>
@@ -2069,6 +2070,61 @@ function importTMX(input){
   };
   reader.onerror=()=>showToast('Could not read that file');
   reader.readAsText(file);
+}
+
+// A2558: paste a grid exported from BuildLab and get the same layout here.
+function importBuildLabGridText(text){
+  let d;
+  try { d=JSON.parse(String(text||'').trim()); } catch(e) { throw new Error('That is not a BuildLab grid'); }
+  if(!d || d.app!=='jvds-buildlab-grid' || !Array.isArray(d.cells) || !d.cols || !d.rows) throw new Error('That is not a BuildLab grid');
+  const w=Math.max(1,Math.min(256,d.cols|0)), h=Math.max(1,Math.min(256,d.rows|0));
+  const cells=d.cells.slice(0,w*h);
+  const terrain=[];
+  for(let i=0;i<w*h;i++) terrain.push(cells[i]?1:0);
+  gridW=w; gridH=h;
+  layers=[
+    {name:'Terrain',visible:true,locked:false,data:terrain},
+    {name:'Objects',visible:true,locked:false,data:new Array(w*h).fill(0)},
+    {name:'Enemies',visible:true,locked:false,data:new Array(w*h).fill(0)},
+    {name:'Background',visible:true,locked:false,data:new Array(w*h).fill(0)}
+  ];
+  collisionData=new Int8Array(w*h);
+  let spawn=-1, goal=-1;
+  for(let i=0;i<terrain.length;i++){ if(terrain[i]){ if(spawn<0) spawn=i; goal=i; } }
+  if(spawn>=0){
+    layers[1].data[spawn]=21;
+    if(goal!==spawn) layers[1].data[goal]=22;
+  }
+  enemyPaths={}; tileProps={};
+  setLevelName('BuildLab Grid');
+  currentTheme=BG_THEMES[0]; currentLayer=0; undoStack=[]; redoStack=[];
+  buildThemeGrid(); autoZoom(); resizeCanvases(); renderLayerList(); renderAll();
+  updateStats(); updateUndoRedoBtns(); renderUndoHistory(); updateCollisionStats();
+  if(typeof closeStart==='function') closeStart();
+  showToast('BuildLab grid imported: '+w+' x '+h);
+  return { w, h, spawn, goal };
+}
+
+function openBuildLabGrid(){
+  const ta=document.createElement('textarea');
+  ta.id='blGridText'; ta.rows=7; ta.placeholder='Paste the BuildLab grid JSON here';
+  ta.setAttribute('aria-label','BuildLab grid JSON');
+  ta.style.cssText='width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--panel3,#1b1e2b);color:var(--text,#eee);font:12px/1.5 monospace;resize:vertical';
+  const msg=document.createElement('p');
+  msg.style.cssText='margin:8px 0;font-size:.72rem;color:var(--muted,#9aa3b5)';
+  msg.textContent='In BuildLab, press Export grid. Then paste the copied JSON here.';
+  const importBtn=document.createElement('button');
+  importBtn.type='button'; importBtn.className='ab ab-p'; importBtn.textContent='Import grid';
+  importBtn.style.cssText='padding:8px 14px;border-radius:8px;border:none;background:#70a3a7;color:#fff;font-weight:800;cursor:pointer;margin-right:8px';
+  importBtn.onclick=function(){ try{ importBuildLabGridText(ta.value); }catch(e){ showToast('Import failed: '+e.message); } };
+  const lastBtn=document.createElement('button');
+  lastBtn.type='button'; lastBtn.className='ab ab-s'; lastBtn.textContent='Use last BuildLab grid';
+  lastBtn.style.cssText='padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:inherit;font-weight:700;cursor:pointer';
+  lastBtn.onclick=function(){ try{ importBuildLabGridText(localStorage.getItem('jvds_buildlab_grid')||''); }catch(e){ showToast('No BuildLab grid saved yet. Export one first.'); } };
+  const wrap=document.createElement('div');
+  wrap.appendChild(msg); wrap.appendChild(ta); wrap.appendChild(importBtn); wrap.appendChild(lastBtn);
+  if(window.JVDSStudio && JVDSStudio.drawer) JVDSStudio.drawer({ title:'BuildLab grid', content:wrap });
+  else { const txt=prompt('Paste the BuildLab grid JSON:'); if(txt) importBuildLabGridText(txt); }
 }
 
 function openShare(){
