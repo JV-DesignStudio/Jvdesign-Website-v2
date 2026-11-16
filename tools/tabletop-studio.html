@@ -45,8 +45,8 @@
 <link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="/ember-guide.css">
-<link rel="stylesheet" href="../style-tool-tabletop-studio.css?v=2">
-<noscript><link rel="stylesheet" href="../style-tool-tabletop-studio.css?v=2"></noscript>
+<link rel="stylesheet" href="../style-tool-tabletop-studio.css?v=3">
+<noscript><link rel="stylesheet" href="../style-tool-tabletop-studio.css?v=3"></noscript>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tabletop Studio","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/tabletop-studio.html","description":"A free browser tabletop game maker: paint a board, place pieces, draw cards, roll dice and play.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
 </script>
@@ -119,6 +119,8 @@
 <main id="main-content" tabindex="-1">
 <div class="tt-app" id="ttApp">
 
+  <div class="tt-storage-warn" id="ttStorageWarn" role="status" hidden></div>
+
   <header class="tt-head">
     <div class="tt-head-main">
       <div class="tt-kicker">
@@ -129,6 +131,7 @@
       <p class="tt-sub">Make a board, add pieces and play. It saves as you go on this device.</p>
     </div>
     <div class="tt-head-tools">
+      <button type="button" id="ttSimpleToggle" class="tt-btn tt-btn--quiet" aria-pressed="true" title="Switch between simple and advanced tools">Simple mode</button>
       <div class="tt-mode" role="group" aria-label="Build or play">
         <button type="button" class="tt-mode-btn" data-mode="build" aria-pressed="true">🔨 Build</button>
         <button type="button" class="tt-mode-btn" data-mode="play" aria-pressed="false">🎲 Play</button>
@@ -153,7 +156,7 @@
       </div>
       <div class="tt-sidebar-scroll">
 
-        <details class="tt-sec" open>
+        <details class="tt-sec" data-build-only open>
           <summary><span>✨ Starter boards</span><span class="tt-sec-hint">one tap</span></summary>
           <div class="tt-sec-body">
             <div class="tt-starters">
@@ -167,16 +170,21 @@
             <button type="button" class="tt-starter" data-template="property" title="11 x 11 loop with streets, money and cards">🏙️ Property Loop</button>
             <button type="button" class="tt-starter" data-template="life" title="A winding life path with paydays and setbacks">🛣️ Life Path</button>
             <button type="button" class="tt-starter" data-template="draughts" title="8 x 8 board with 24 pieces">⚫ Draughts</button>
+            <button type="button" class="tt-starter" data-template="draughts" title="8 x 8 board with 24 pieces">⚫ Draughts</button>
             <button type="button" class="tt-starter" data-template="connect" title="7 x 6 board for Connect 4">🔴 Connect 4</button>
             <button type="button" class="tt-starter" data-template="chess" title="8 x 8 board with 32 pieces">♟️ Chess</button>
             <button type="button" class="tt-starter" data-template="backgammon" title="13 x 13 board with 30 checkers">🎲 Backgammon</button>
             <button type="button" class="tt-starter" data-template="go" title="9 x 9 Go board with stones">⚪ Go</button>
+            <p class="tt-help" style="margin:8px 0 4px"><strong>Game recipes</strong></p>
+            <button type="button" class="tt-starter" data-template="race" title="A quick 1-100 race with one clear winner">🏁 Fast Race</button>
+            <button type="button" class="tt-starter" data-template="gems" title="Collect the most treasure to win">💎 Gem Hunt</button>
+            <button type="button" class="tt-starter" data-template="coop" title="Work together to escape">🤝 Co-op Escape</button>
             <button type="button" class="tt-btn tt-btn--wide tt-btn--quiet" data-template="blank">Start blank</button>
             <p class="tt-help" style="margin-top:8px">Tap a board, then change anything you like.</p>
           </div>
         </details>
 
-        <details class="tt-sec" open>
+        <details class="tt-sec" data-build-only data-simple-stage="1" open>
           <summary><span>🎨 Terrain</span><span class="tt-sec-hint">tap to paint</span></summary>
           <div class="tt-sec-body">
             <p class="tt-help" id="ttTerrainHelp">Pick a colour, then paint the board.</p>
@@ -202,7 +210,7 @@
           </div>
         </details>
 
-        <details class="tt-sec" open>
+        <details class="tt-sec" id="ttSecPieces" data-rail="pieces" data-simple-stage="2" open>
           <summary><span>🧩 Pieces</span><span class="tt-sec-hint">drag or tap</span></summary>
           <div class="tt-sec-body">
             <input type="text" id="ttPieceSearch" class="tt-input" maxlength="24" placeholder="Search pieces" autocomplete="off" aria-label="Search pieces">
@@ -217,7 +225,7 @@
           </div>
         </details>
 
-        <details class="tt-sec" id="ttRouteSec">
+        <details class="tt-sec" id="ttRouteSec" data-build-only data-advanced>
           <summary><span>🛤️ Route</span><span class="tt-sec-hint">number a path</span></summary>
           <div class="tt-sec-body">
             <p class="tt-help" id="ttRouteHelp">Draw a route, then number it. Race games, snakes and ladders and ludo all use a route.</p>
@@ -242,7 +250,7 @@
           </div>
         </details>
 
-        <details class="tt-sec" open>
+        <details class="tt-sec" id="ttSecCards" data-rail="cards" data-advanced open>
           <summary><span>🃏 Cards</span><span class="tt-sec-hint">draw or make</span></summary>
           <div class="tt-sec-body">
             <div class="tt-field">
@@ -314,7 +322,7 @@
           </div>
         </details>
 
-        <details class="tt-sec" open>
+        <details class="tt-sec" id="ttSecDice" data-rail="dice" data-simple-stage="2" open>
           <summary><span>🎲 Dice</span><span class="tt-sec-hint">roll d4-d20</span></summary>
           <div class="tt-sec-body">
             <div class="tt-seg tt-rollmode" role="group" aria-label="Dice or spinner">
@@ -374,7 +382,7 @@
           </div>
         </details>
 
-        <details class="tt-sec">
+        <details class="tt-sec" id="ttPlayAidsSec" data-simple-stage="2">
           <summary><span>🎯 Play aids</span><span class="tt-sec-hint">scores + rules</span></summary>
           <div class="tt-sec-body">
             <div id="ttPlayers" class="tt-players" aria-label="Player scores"></div>
@@ -400,9 +408,37 @@
               <label class="tt-label" for="ttRules">Rules and notes</label>
               <textarea id="ttRules" class="tt-input tt-input--area" maxlength="800" rows="5" placeholder="How to win, what each card does, anything players need to know."></textarea>
             </div>
+            <button type="button" id="ttBoardListPlay" class="tt-btn tt-btn--wide tt-btn--quiet">📋 Read the board list</button>
             <button type="button" id="ttRulesGenerate" class="tt-btn tt-btn--wide tt-btn--quiet">📝 Write rules from this board</button>
             <p class="tt-help" id="ttRulesSummary"></p>
             <div class="tt-field">
+              <label class="tt-label" for="ttWinMode">How do you win?</label>
+              <select id="ttWinMode" class="tt-select">
+                <option value="finish">First to the finish</option>
+                <option value="allPawns">Bring every pawn home</option>
+                <option value="mostMoney">Most money when you stop</option>
+                <option value="manual">I'll decide</option>
+              </select>
+              <p class="tt-help">The win rule shows in Play mode and on the win screen.</p>
+            </div>
+            <div class="tt-field">
+              <span class="tt-label">Declare the winner</span>
+              <div class="tt-seg" id="ttDeclareWin" role="group" aria-label="Declare the winner">
+                <button type="button" data-win-player="1">P1</button>
+                <button type="button" data-win-player="2">P2</button>
+                <button type="button" data-win-player="3">P3</button>
+                <button type="button" data-win-player="4">P4</button>
+              </div>
+              <p class="tt-help">Use this when your own winning rule is met.</p>
+            </div>
+            <div class="tt-echo-tip">
+              <img src="/assets/mascots/echo-badge.webp" alt="" width="28" height="28" loading="lazy">
+              <div>
+                <p><strong>Echo says:</strong> play one turn, then change one thing. That is how a game gets better.</p>
+                <button type="button" id="ttEchoImprove" class="tt-btn tt-btn--quiet">Change one thing</button>
+              </div>
+            </div>
+            <div class="tt-field" data-advanced>
               <button type="button" id="ttPlaytest" class="tt-btn tt-btn--wide tt-btn--quiet" aria-pressed="false">🔍 Playtest: off</button>
               <ol class="tt-playtest-log" id="ttPlaytestLog" aria-live="polite"></ol>
               <div class="tt-row">
@@ -410,7 +446,7 @@
                 <button type="button" id="ttPlaytestClear" class="tt-btn tt-btn--quiet">Clear log</button>
               </div>
             </div>
-            <div class="tt-field">
+            <div class="tt-field" data-advanced>
               <label class="tt-label" for="ttTurnSeconds">Turn timer (seconds)</label>
               <div class="tt-row">
                 <input type="number" id="ttTurnSeconds" class="tt-input" min="5" max="600" step="5" value="60" inputmode="numeric">
@@ -422,7 +458,7 @@
               </div>
               <label class="tt-check"><input type="checkbox" id="ttTimerAuto"> End the turn when the timer reaches zero</label>
             </div>
-            <div class="tt-field">
+            <div class="tt-field" data-advanced>
               <span class="tt-label">Session</span>
               <p class="tt-help" id="ttSessionStats">Rolls 0 · Turns 0 · Captures 0</p>
               <div class="tt-row">
@@ -431,9 +467,9 @@
               </div>
               <button type="button" id="ttDesignSheet" class="tt-btn tt-btn--wide tt-btn--quiet">🖨️ Print design worksheet</button>
             </div>
-            <button type="button" id="ttSetupPawns" class="tt-btn tt-btn--wide tt-btn--quiet">🎭 Set up player pawns</button>
-            <button type="button" id="ttBuyTile" class="tt-btn tt-btn--wide tt-btn--quiet">🏷️ Buy the tile under the pawn</button>
-            <div class="tt-rule-toggles">
+            <button type="button" id="ttSetupPawns" class="tt-btn tt-btn--wide tt-btn--quiet" data-advanced>🎭 Set up player pawns</button>
+            <button type="button" id="ttBuyTile" class="tt-btn tt-btn--wide tt-btn--quiet" data-advanced>🏷️ Buy the tile under the pawn</button>
+            <div class="tt-rule-toggles" data-advanced>
               <label class="tt-check"><input type="checkbox" id="ttRuleExact"> Exact roll to finish</label>
               <label class="tt-check"><input type="checkbox" id="ttRuleSix"> Roll a 6 to start</label>
               <label class="tt-check"><input type="checkbox" id="ttRuleStartBonus"> Bonus for passing start</label>
@@ -442,7 +478,7 @@
               <label class="tt-check"><input type="checkbox" id="ttRuleRent"> Pay £25 rent on owned tiles</label>
               <label class="tt-check"><input type="checkbox" id="ttRuleAllPawns"> Win only when every pawn is home</label>
             </div>
-            <div class="tt-field">
+            <div class="tt-field" data-advanced>
               <label class="tt-label" for="ttPawnCount">Pawns each player</label>
               <select id="ttPawnCount" class="tt-select">
                 <option value="1" selected>1</option>
@@ -451,7 +487,7 @@
                 <option value="4">4</option>
               </select>
             </div>
-            <div class="tt-field">
+            <div class="tt-field" data-advanced>
               <label class="tt-label" for="ttStartingMoney">Starting money</label>
               <input type="number" id="ttStartingMoney" class="tt-input" min="0" max="100000" step="10" value="0" inputmode="numeric">
             </div>
@@ -459,7 +495,7 @@
           </div>
         </details>
 
-        <details class="tt-sec">
+        <details class="tt-sec" id="ttMakeRealSec" data-advanced>
           <summary><span>🖨️ Make it real</span><span class="tt-sec-hint">SVG for 3D</span></summary>
           <div class="tt-sec-body">
             <p class="tt-help">Save a board as an SVG, open it in Tinkercad and extrude the tiles. One square is 20 mm, so a 12 x 9 board prints at 240 x 180 mm.</p>
@@ -471,6 +507,7 @@
               </select>
             </div>
             <button type="button" id="ttPrintKit" class="tt-btn tt-btn--wide tt-btn--quiet">🖨️ Print kit (board, cards, rules)</button>
+            <button type="button" id="ttTakeHome" class="tt-btn tt-btn--wide tt-btn--primary">🎒 Take it home (board, rules, cards, sheet)</button>
             <button type="button" id="ttExportSvg" class="tt-btn tt-btn--wide tt-btn--quiet">⬇ Board SVG (3D print)</button>
             <button type="button" id="ttExportPiecesSvg" class="tt-btn tt-btn--wide tt-btn--quiet">⬇ Piece sheet SVG</button>
             <a class="tt-3d-link" href="/workshops/world-builder-3d.html" target="_blank" rel="noopener">Make a 3D piece in World Builder <span aria-hidden="true">→</span></a>
@@ -478,7 +515,7 @@
           </div>
         </details>
 
-        <details class="tt-sec">
+        <details class="tt-sec" id="ttBoardSec" data-build-only data-advanced>
           <summary><span>🗺️ Board</span><span class="tt-sec-hint">size and map</span></summary>
           <div class="tt-sec-body">
             <div class="tt-lib">
@@ -494,6 +531,7 @@
                 <button type="button" id="ttBackupRestore" class="tt-btn tt-btn--quiet">Restore backup</button>
                 <input type="file" id="ttBackupFile" accept="application/json,.json" hidden>
               </div>
+              <p class="tt-help" id="ttStorageMeter"></p>
             </div>
             <div class="tt-field">
               <label class="tt-label" for="ttBoardName">Board name</label>
@@ -544,11 +582,13 @@
               <label class="tt-check"><input type="checkbox" id="ttPatterns"> Colour-blind terrain patterns</label>
               <label class="tt-check"><input type="checkbox" id="ttHighContrast"> High-contrast tile labels</label>
               <button type="button" id="ttBoardListBtn" class="tt-btn tt-btn--wide tt-btn--quiet">📋 Board list for screen readers</button>
+              <button type="button" id="ttTableEditorBtn" class="tt-btn tt-btn--wide tt-btn--quiet">⌨️ Edit board as a table</button>
             </div>
             <button type="button" id="ttBgBtn" class="tt-btn tt-btn--wide">Upload a map image</button>
             <input type="file" id="ttBgFile" accept="image/*" hidden>
             <button type="button" id="ttBgRemove" class="tt-btn tt-btn--wide tt-btn--quiet">Remove map image</button>
             <button type="button" id="ttExportPlayable" class="tt-btn tt-btn--wide tt-btn--quiet">▶ Save playable HTML game</button>
+            <p class="tt-help" id="ttExportPlayableNote"></p>
             <button type="button" id="ttExportJson" class="tt-btn tt-btn--wide tt-btn--quiet">Save board file (.json)</button>
             <button type="button" id="ttLoadJson" class="tt-btn tt-btn--wide tt-btn--quiet">Load board file (.json)</button>
             <input type="file" id="ttLoadFile" accept="application/json,.json" hidden>
@@ -564,7 +604,7 @@
           </div>
         </details>
 
-        <details class="tt-sec" id="ttEditorSec">
+        <details class="tt-sec" id="ttEditorSec" data-build-only data-advanced>
           <summary><span>✂️ Editor tools</span><span class="tt-sec-hint">copy and flip</span></summary>
           <div class="tt-sec-body">
             <button type="button" id="ttSelectArea" class="tt-btn tt-btn--wide tt-btn--quiet" aria-pressed="false">▭ Select an area</button>
@@ -603,6 +643,7 @@
         <button type="button" class="tt-btn tt-btn--quiet tt-sidebar-toggle" id="ttSidebarOpen" aria-expanded="false" aria-controls="ttSidebar">☰ Toolbox</button>
         <p class="tt-status" id="ttStatus">Build mode: paint a tile to start.</p>
         <p class="tt-save-state" id="ttSaved">Not saved yet</p>
+        <span class="tt-view-hint" id="ttViewHint" aria-live="polite"></span>
       </div>
 
       <div class="tt-steps" id="ttSteps" role="group" aria-label="First steps" hidden>
@@ -610,6 +651,14 @@
         <span class="tt-step" data-step="piece"><span class="tt-step-num">2</span><span class="tt-step-text">Add a piece</span></span>
         <span class="tt-step" data-step="roll"><span class="tt-step-num">3</span><span class="tt-step-text">Roll the dice</span></span>
         <button type="button" class="tt-icon-btn tt-steps-close" id="ttStepsClose" aria-label="Hide first steps">✕</button>
+      </div>
+
+      <div class="tt-simple-next" id="ttSimpleNext" hidden>
+        <img src="/assets/mascots/echo-badge.webp" alt="" width="30" height="30" loading="lazy">
+        <div>
+          <p><strong>You played a turn.</strong> Echo says change one thing, then play again.</p>
+          <button type="button" id="ttSimpleNextBtn" class="tt-btn tt-btn--quiet">Change one thing</button>
+        </div>
       </div>
 
       <div class="tt-stage" id="ttStage" data-mode="build">
@@ -688,6 +737,20 @@
                 <span class="tt-template-body"><strong>Go</strong><small>9 x 9 board with stones</small></span>
               </button>
             </div>
+            <div class="tt-templates tt-templates--more" role="group" aria-label="Game recipes">
+              <button type="button" class="tt-template" data-template="race">
+                <span class="tt-template-emoji" aria-hidden="true">🏁</span>
+                <span class="tt-template-body"><strong>Fast Race</strong><small>A quick 1-100 race</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="gems">
+                <span class="tt-template-emoji" aria-hidden="true">💎</span>
+                <span class="tt-template-body"><strong>Gem Hunt</strong><small>Collect the most treasure</small></span>
+              </button>
+              <button type="button" class="tt-template" data-template="coop">
+                <span class="tt-template-emoji" aria-hidden="true">🤝</span>
+                <span class="tt-template-body"><strong>Co-op Escape</strong><small>Work together to escape</small></span>
+              </button>
+            </div>
             <div class="tt-empty-foot">
               <a href="/workshops/make-your-first-board-game.html" class="tt-btn tt-btn--quiet">15 minute guide</a>
               <button type="button" id="ttStartBlank" class="tt-btn tt-btn--quiet">Start blank</button>
@@ -711,7 +774,7 @@
       <div class="tt-board-bar">
         <button type="button" id="ttQuickRoll" class="tt-btn tt-btn--primary">🎲 Roll d6</button>
         <span class="tt-bar-result" id="ttBarResult" aria-hidden="true"></span>
-        <button type="button" id="ttQuickCard" class="tt-btn tt-btn--secondary">🃏 Draw card</button>
+        <button type="button" id="ttQuickCard" class="tt-btn tt-btn--secondary" data-advanced>🃏 Draw card</button>
         <button type="button" id="ttEndTurn" class="tt-btn tt-btn--quiet" hidden title="End turn (E)">End turn</button>
         <button type="button" id="ttPiecesOpen" class="tt-btn tt-btn--quiet">🧩 Pieces</button>
         <button type="button" id="ttHelpBtn" class="tt-btn tt-btn--quiet">❓ How to play</button>
@@ -727,6 +790,13 @@
 
       <p class="tt-sr" id="ttBoardHelp">Paint tiles with the terrain colours. In Play mode, drag pieces anywhere on the board.</p>
     </section>
+
+    <aside class="tt-rail" id="ttRail" aria-label="Pieces, cards and dice" hidden>
+      <div class="tt-sidebar-head">
+        <span class="tt-sidebar-title">Play tools</span>
+      </div>
+      <div class="tt-rail-scroll" id="ttRailScroll"></div>
+    </aside>
 
   </div>
 
@@ -848,6 +918,25 @@
       </div>
       <p id="ttWinText">Pip says: that was a proper game.</p>
       <button type="button" id="ttWinAgain" class="tt-btn tt-btn--primary tt-btn--wide">Play again</button>
+      <button type="button" id="ttWinImprove" class="tt-btn tt-btn--quiet tt-btn--wide">Echo: change one thing</button>
+    </section>
+  </div>
+
+  <div class="tt-modal" id="ttPlayPreview" hidden>
+    <div class="tt-modal-backdrop" id="ttPlayPreviewBackdrop"></div>
+    <section class="tt-modal-card tt-play-preview" role="dialog" aria-modal="true" aria-labelledby="ttPlayPreviewTitle">
+      <div class="tt-modal-head">
+        <img src="/assets/mascots/pip-badge.webp" alt="" width="38" height="38" loading="lazy">
+        <h2 id="ttPlayPreviewTitle">Your playable game</h2>
+        <button type="button" class="tt-icon-btn" id="ttPlayPreviewClose" aria-label="Close preview">✕</button>
+      </div>
+      <img id="ttPlayPreviewImg" alt="Preview of the exported board">
+      <p class="tt-help" id="ttPlayPreviewSummary"></p>
+      <p class="tt-help" id="ttPlayPreviewIncludes"></p>
+      <div class="tt-row tt-row--between">
+        <button type="button" id="ttPlayPreviewDownload" class="tt-btn tt-btn--primary">Download game</button>
+        <button type="button" id="ttPlayPreviewKeep" class="tt-btn tt-btn--quiet">Keep editing</button>
+      </div>
     </section>
   </div>
 
@@ -877,6 +966,24 @@
         <table class="tt-boardlist">
           <thead><tr><th>Stop</th><th>Number</th><th>Name</th><th>Ground</th><th>Rule</th><th>Owner</th><th>Price</th></tr></thead>
           <tbody id="ttBoardListBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="tt-modal" id="ttTableEditor" hidden>
+    <div class="tt-modal-backdrop" id="ttTableEditorBackdrop"></div>
+    <section class="tt-modal-card tt-boardlist-card" role="dialog" aria-modal="true" aria-labelledby="ttTableEditorTitle">
+      <div class="tt-modal-head">
+        <img src="/assets/mascots/ember-badge.webp" alt="" width="38" height="38" loading="lazy">
+        <h2 id="ttTableEditorTitle">Edit board as a table</h2>
+        <button type="button" class="tt-icon-btn" id="ttTableEditorClose" aria-label="Close table editor">✕</button>
+      </div>
+      <p class="tt-help">Change a tile's ground, number or name. Empty tiles are hidden; paint them on the board.</p>
+      <div class="tt-boardlist-wrap">
+        <table class="tt-boardlist">
+          <thead><tr><th>Row</th><th>Column</th><th>Ground</th><th>Number</th><th>Name</th></tr></thead>
+          <tbody id="ttTableEditorBody"></tbody>
         </table>
       </div>
     </section>

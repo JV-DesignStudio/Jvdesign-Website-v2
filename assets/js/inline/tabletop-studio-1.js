@@ -9,6 +9,9 @@
 
   var STORE_KEY = 'jvds-tabletop-v1';
   var LIB_KEY = 'jvds-tabletop-v2';
+  var IDB_NAME = 'jvds-tabletop';
+  var IDB_STORE = 'library';
+  var IDB_KEY = 'boards';
   var MAX_BOARDS = 12;
   var CELL = 80;
   var SVG_MM_PER_CELL = 20;
@@ -124,10 +127,21 @@
 
   var cv = document.getElementById('ttBoard');
   var ctx = cv.getContext('2d');
+  var appEl = document.getElementById('ttApp');
+  var simpleToggle = document.getElementById('ttSimpleToggle');
+  var simpleNext = document.getElementById('ttSimpleNext');
+  var simpleNextBtn = document.getElementById('ttSimpleNextBtn');
+  var SIMPLE_KEY = 'jvds-tabletop-simple';
+  var simpleMode = true;
+  var simpleProgress = { started: false, painted: false, pieced: false, played: false };
+  var bootAt = Date.now();
+  var milestones = {};
   var stage = document.getElementById('ttStage');
   var scaleWrap = document.getElementById('ttScale');
   var tokensLayer = document.getElementById('ttTokens');
   var sidebar = document.getElementById('ttSidebar');
+  var rail = document.getElementById('ttRail');
+  var railScroll = document.getElementById('ttRailScroll');
   var backdrop = document.getElementById('ttBackdrop');
   var sidebarOpen = document.getElementById('ttSidebarOpen');
   var statusEl = document.getElementById('ttStatus');
@@ -232,6 +246,15 @@
   var winBackdrop = document.getElementById('ttWinBackdrop');
   var winCloseBtn = document.getElementById('ttWinClose');
   var winAgainBtn = document.getElementById('ttWinAgain');
+  var winImproveBtn = document.getElementById('ttWinImprove');
+  var winModeInput = document.getElementById('ttWinMode');
+  var declareWinEl = document.getElementById('ttDeclareWin');
+  var echoImproveBtn = document.getElementById('ttEchoImprove');
+  var playAidsSec = document.getElementById('ttPlayAidsSec');
+  var viewHintEl = document.getElementById('ttViewHint');
+  var storageWarnEl = document.getElementById('ttStorageWarn');
+  var storageMeterEl = document.getElementById('ttStorageMeter');
+  var exportPlayableNote = document.getElementById('ttExportPlayableNote');
   var winText = document.getElementById('ttWinText');
   var winTitle = document.getElementById('ttWinTitle');
   var printSizeInput = document.getElementById('ttPrintSize');
@@ -263,6 +286,12 @@
   var patternsInput = document.getElementById('ttPatterns');
   var highContrastInput = document.getElementById('ttHighContrast');
   var boardListBtn = document.getElementById('ttBoardListBtn');
+  var boardListPlayBtn = document.getElementById('ttBoardListPlay');
+  var tableEditorBtn = document.getElementById('ttTableEditorBtn');
+  var tableEditorEl = document.getElementById('ttTableEditor');
+  var tableEditorBackdrop = document.getElementById('ttTableEditorBackdrop');
+  var tableEditorClose = document.getElementById('ttTableEditorClose');
+  var tableEditorBody = document.getElementById('ttTableEditorBody');
   var boardListEl = document.getElementById('ttBoardList');
   var boardListBackdrop = document.getElementById('ttBoardListBackdrop');
   var boardListClose = document.getElementById('ttBoardListClose');
@@ -326,7 +355,14 @@
   var dirty = false;
   var lastDrawReshuffled = false;
   var drawQueued = false;
+  var storageBlocked = false;
+  var idb = null;
+  var idbReady = false;
+  var idbOpenPromise = null;
   var zoom = 1;
+  var MIN_ZOOM = 0.25;
+  var autoFit = true;
+  var fitTimer = null;
   var pinch = null;
   var touchPointers = [];
   var rollOverlay = null;
@@ -558,6 +594,10 @@
     out.snapPath = !!raw.snapPath;
     out.pawnsPerPlayer = clamp(Math.round(Number(raw.pawnsPerPlayer) || 1), 1, 4);
     out.allPawnsWin = !!raw.allPawnsWin;
+    out.winMode = ['finish', 'allPawns', 'mostMoney', 'manual'].indexOf(raw.winMode) >= 0
+      ? raw.winMode
+      : (out.allPawnsWin ? 'allPawns' : 'finish');
+    if (out.winMode !== 'allPawns') out.allPawnsWin = false;
     out.patterns = !!raw.patterns;
     out.highContrastLabels = !!raw.highContrastLabels;
     out.useHomeLanes = !!raw.useHomeLanes;
@@ -591,6 +631,7 @@
       snapPath: false,
       pawnsPerPlayer: 1,
       allPawnsWin: false,
+      winMode: 'finish',
       patterns: false,
       highContrastLabels: false,
       useHomeLanes: false,
@@ -801,6 +842,8 @@
       spinner: defaultSpinner(),
       actionFaces: defaultActionFaces(),
       dieMode: 'numbers',
+      dieSides: 6,
+      dieCount: 1,
       playtest: { on: false, log: [] },
       session: defaultSession(),
       rollMode: 'dice',
@@ -1545,6 +1588,7 @@
     if (cv.width !== size.W || cv.height !== size.H) {
       cv.width = size.W;
       cv.height = size.H;
+      scheduleFit();
     }
     drawScene(ctx, size.W, size.H, true);
   }
@@ -1575,6 +1619,7 @@
     renderActionDie();
     renderPlaytest();
     renderLibrary();
+    updatePlayableExportNote();
   }
 
   /* ------------------------------------------------------------------ */
@@ -1766,6 +1811,8 @@
     };
     if (def.counter) t.value = 1;
     S.tokens.push(t);
+    markSimpleProgress('pieced');
+    trackMilestone('piece');
     return t;
   }
 
@@ -1820,11 +1867,13 @@
   function checkCardFinish(player, token) {
     if (!token || !S.path.length) return;
     if (tokenReachedFinish(token)) {
-      showWinner(player);
       renderPlayers();
       updatePlayAids();
       scheduleDraw();
       markDirty();
+      var winMode = S.settings.winMode || 'finish';
+      if (winMode === 'manual' || winMode === 'mostMoney') return;
+      showWinner(player);
     }
   }
 
@@ -2325,6 +2374,8 @@
       hexNeighbours(col, row).forEach(function (n) {
         setTileAt(n.col, n.row, value);
       });
+      markSimpleProgress('painted');
+    trackMilestone('paint');
       return;
     }
     var spread = (S.shape === 'square' && S.brush === 3) ? 1 : 0;
@@ -2336,6 +2387,8 @@
         S.tiles[r * S.cols + c] = value;
       }
     }
+    markSimpleProgress('painted');
+    trackMilestone('paint');
   }
 
   function floodFill(startCol, startRow, terrain) {
@@ -2364,6 +2417,8 @@
         );
       }
     }
+    markSimpleProgress('painted');
+    trackMilestone('paint');
   }
 
   function paintLine(a, b, terrain) {
@@ -2480,7 +2535,9 @@
     if (effects) parts.push(effects + ' tiles have a landing rule.');
     if (owners) parts.push(owners + ' tiles have an owner.');
     if (S.settings.pawnsPerPlayer > 1) parts.push('Each player has ' + S.settings.pawnsPerPlayer + ' pawns.');
-    if (S.settings.allPawnsWin) parts.push('Bring every pawn home to win.');
+    if (S.settings.winMode === 'mostMoney') parts.push('When you stop, the player with the most money wins.');
+    else if (S.settings.winMode === 'manual') parts.push('Agree your own winning rule, then declare the winner.');
+    else if (S.settings.allPawnsWin) parts.push('Bring every pawn home to win.');
     if (S.settings.useHomeLanes) parts.push('Finish in your own home lane.');
     if (S.settings.blockades) parts.push('Two pawns on a tile block rivals.');
     if (S.safeCells && S.safeCells.length) parts.push(S.safeCells.length + ' safe squares cannot be captured.');
@@ -2496,7 +2553,7 @@
     if (S.decks && S.decks.length > 1) {
       parts.push('Decks: ' + S.decks.map(function (d) { return d.name; }).join(', ') + '.');
     }
-    if (S.path.length) parts.push('First to the finish wins.');
+    if (S.path.length && !S.settings.allPawnsWin && (S.settings.winMode === 'finish' || !S.settings.winMode)) parts.push('First to the finish wins.');
     if (!parts.length) parts.push('Paint a board, add pieces and roll the dice.');
     return parts.join(' ');
   }
@@ -3573,6 +3630,8 @@
       return;
     }
     var player = S.turn || 1;
+    markSimpleProgress('played');
+    trackMilestone('roll');
     if (!playerTokens(player).length) setupPawns(false);
     var active = playerTokens(player).filter(function (t) { return !t.finished; });
     if (!active.length) {
@@ -3632,6 +3691,15 @@
       if (homeCellFor(player)) placePawnHome(token);
       else token.finished = true;
       renderPlayers();
+      var winMode = S.settings.winMode || 'finish';
+      if (winMode === 'manual' || winMode === 'mostMoney') {
+        toast('Pawn home. Keep playing, then declare the winner when your rule is met.');
+        announce('Pawn home.');
+        advanceTurn(!!again);
+        scheduleDraw();
+        markDirty();
+        return;
+      }
       if (S.settings.allPawnsWin) {
         var all = playerTokens(player);
         var allHome = all.length > 0 && all.every(function (t) { return t.finished; });
@@ -3814,6 +3882,8 @@
       spinner: normaliseSpinner(S.spinner),
       actionFaces: normaliseActionFaces(S.actionFaces),
       dieMode: S.dieMode === 'action' ? 'action' : 'numbers',
+      dieSides: DICE.indexOf(Number(dieSides)) >= 0 ? Number(dieSides) : 6,
+      dieCount: clamp(Number(dieCount) || 1, 1, MAX_DICE),
       playtest: normalisePlaytest(S.playtest),
       customPieces: normaliseCustomPieces(S.customPieces),
       session: normaliseSession(S.session),
@@ -3898,6 +3968,10 @@
     S.spinner = normaliseSpinner(snap.spinner);
     S.actionFaces = normaliseActionFaces(snap.actionFaces);
     S.dieMode = snap.dieMode === 'action' ? 'action' : 'numbers';
+    dieSides = DICE.indexOf(Number(snap.dieSides)) >= 0 ? Number(snap.dieSides) : 6;
+    S.dieSides = dieSides;
+    dieCount = clamp(Number(snap.dieCount) || 1, 1, MAX_DICE);
+    S.dieCount = dieCount;
     S.playtest = normalisePlaytest(snap.playtest);
     S.customPieces = normaliseCustomPieces(snap.customPieces);
     S.session = normaliseSession(snap.session);
@@ -4001,13 +4075,111 @@
     return null;
   }
 
+  function openLibraryDb() {
+    if (idbOpenPromise) return idbOpenPromise;
+    idbOpenPromise = new Promise(function (resolve) {
+      if (!window.indexedDB) { resolve(null); return; }
+      var request;
+      try {
+        request = window.indexedDB.open(IDB_NAME, 1);
+      } catch (err) {
+        resolve(null);
+        return;
+      }
+      request.onupgradeneeded = function () {
+        var db = request.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      request.onsuccess = function () {
+        idb = request.result;
+        idbReady = true;
+        resolve(idb);
+      };
+      request.onerror = function () { resolve(null); };
+      request.onblocked = function () { resolve(null); };
+    });
+    return idbOpenPromise;
+  }
+
+  function idbReadLibrary() {
+    return openLibraryDb().then(function (db) {
+      return new Promise(function (resolve) {
+        if (!db) { resolve(null); return; }
+        try {
+          var tx = db.transaction(IDB_STORE, 'readonly');
+          var request = tx.objectStore(IDB_STORE).get(IDB_KEY);
+          request.onsuccess = function () { resolve(request.result || null); };
+          request.onerror = function () { resolve(null); };
+        } catch (err) {
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  function idbWriteLibrary(value) {
+    return openLibraryDb().then(function (db) {
+      return new Promise(function (resolve) {
+        if (!db) { resolve(false); return; }
+        try {
+          var tx = db.transaction(IDB_STORE, 'readwrite');
+          tx.objectStore(IDB_STORE).put(value, IDB_KEY);
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+        } catch (err) {
+          resolve(false);
+        }
+      });
+    });
+  }
+
   function writeLibrary() {
+    var json;
     try {
-      localStorage.setItem(LIB_KEY, JSON.stringify(library));
-      return true;
+      library.savedAt = Date.now();
+      json = JSON.stringify(library);
+    } catch (err) { return false; }
+    var localOk = false;
+    try {
+      localStorage.setItem(LIB_KEY, json);
+      localOk = true;
     } catch (err) {
-      return false;
+      localOk = false;
     }
+    if (idbReady) idbWriteLibrary(library);
+    return localOk || idbReady;
+  }
+
+  function mergeLibraries(local, remote) {
+    var byId = {};
+    [local, remote].forEach(function (store) {
+      (store && store.boards ? store.boards : []).forEach(function (board) {
+        if (!board || typeof board.id !== 'string' || !board.data) return;
+        var existing = byId[board.id];
+        if (!existing || (Number(board.updated) || 0) >= (Number(existing.updated) || 0)) byId[board.id] = board;
+      });
+    });
+    var boards = Object.keys(byId).map(function (id) { return byId[id]; });
+    boards.sort(function (a, b) { return (Number(b.updated) || 0) - (Number(a.updated) || 0); });
+    var activeId = (remote && remote.activeId && byId[remote.activeId])
+      ? remote.activeId
+      : (local && local.activeId && byId[local.activeId] ? local.activeId : (boards[0] && boards[0].id));
+    return { v: 3, activeId: activeId, boards: boards, savedAt: Date.now() };
+  }
+
+  function adoptLibrary(parsed) {
+    if (!parsed || !Array.isArray(parsed.boards) || !parsed.boards.length) return false;
+    var boards = parsed.boards.filter(function (board) {
+      return board && typeof board.id === 'string' && board.data && Array.isArray(board.data.tiles);
+    });
+    if (!boards.length) return false;
+    library.boards = boards;
+    library.activeId = boards.some(function (board) { return board.id === parsed.activeId; })
+      ? parsed.activeId
+      : boards[0].id;
+    if (parsed.v) library.v = parsed.v;
+    library.savedAt = Number(parsed.savedAt) || Date.now();
+    return true;
   }
 
   function loadLibrary() {
@@ -4015,18 +4187,7 @@
     try { raw = localStorage.getItem(LIB_KEY); } catch (err) { raw = null; }
     if (raw) {
       try {
-        var parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.boards) && parsed.boards.length) {
-          library.boards = parsed.boards.filter(function (b) {
-            return b && typeof b.id === 'string' && b.data && Array.isArray(b.data.tiles);
-          });
-          if (library.boards.length) {
-            library.activeId = library.boards.some(function (b) { return b.id === parsed.activeId; })
-              ? parsed.activeId
-              : library.boards[0].id;
-            return true;
-          }
-        }
+        if (adoptLibrary(JSON.parse(raw))) return true;
       } catch (err) { /* fall through to the old single-board save */ }
     }
 
@@ -4055,6 +4216,46 @@
     return false;
   }
 
+  function hydrateLibrary() {
+    return idbReadLibrary().then(function (remote) {
+      var local = null;
+      try {
+        var raw = localStorage.getItem(LIB_KEY);
+        if (raw) local = JSON.parse(raw);
+      } catch (err) { local = null; }
+      var remoteOk = remote && Array.isArray(remote.boards) && remote.boards.length;
+      var localOk = local && Array.isArray(local.boards) && local.boards.length;
+      if (remoteOk && localOk) {
+        if (remote.savedAt && local.savedAt && remote.savedAt !== local.savedAt) {
+          var newest = remote.savedAt > local.savedAt ? remote : local;
+          if (adoptLibrary(newest)) {
+            idbWriteLibrary(library);
+            try { localStorage.setItem(LIB_KEY, JSON.stringify(library)); } catch (err) { /* mirror is optional */ }
+            return true;
+          }
+        }
+        var merged = mergeLibraries(local, remote);
+        if (adoptLibrary(merged)) {
+          idbWriteLibrary(library);
+          try { localStorage.setItem(LIB_KEY, JSON.stringify(library)); } catch (err) { /* mirror is optional */ }
+          return true;
+        }
+      }
+      var chosen = remoteOk ? remote : (localOk ? local : null);
+      if (chosen && adoptLibrary(chosen)) {
+        if (chosen !== remote) idbWriteLibrary(library);
+        try { localStorage.setItem(LIB_KEY, JSON.stringify(library)); } catch (err) { /* mirror is optional */ }
+        return true;
+      }
+      if (loadLibrary()) {
+        idbWriteLibrary(library);
+        return true;
+      }
+      return false;
+    });
+  }
+
+
   function boardPayload() {
     var payload = snapshot();
     payload.v = 3;
@@ -4067,6 +4268,30 @@
     payload.snap = S.snap;
     payload.selectedId = 0;
     return payload;
+  }
+
+  function storageBytes() {
+    var total = 0;
+    try {
+      [LIB_KEY, STORE_KEY].forEach(function (key) {
+        var value = localStorage.getItem(key);
+        if (value) total += (key.length + value.length) * 2;
+      });
+    } catch (err) { /* storage may be blocked */ }
+    return total;
+  }
+
+  function updateStorageMeter() {
+    if (!storageMeterEl) return;
+    if (storageBlocked) {
+      storageMeterEl.textContent = 'This browser is blocking saves. Download a backup before you close the page.';
+      return;
+    }
+    var kb = Math.round(storageBytes() / 1024);
+    var base = idbReady
+      ? 'Saved in this browser\'s board database, with a local mirror.'
+      : 'Saved in this browser.';
+    storageMeterEl.textContent = base + ' Local mirror: about ' + kb + ' KB. Backup all keeps a copy you can restore later.';
   }
 
   function saveBoard(quiet) {
@@ -4099,7 +4324,8 @@
           if (writeLibrary()) {
             dirty = false;
             updateSaveState(quiet ? 'Autosaved' : 'Saved just now', false);
-            toast('Saved. Older versions were cleared to make room.');
+            updateStorageMeter();
+            toast('Saved. Older versions were cleared to make room. Use Backup all for a safe copy.');
             return true;
           }
         }
@@ -4110,16 +4336,19 @@
       dirty = false;
       window.clearTimeout(autosaveTimer);
       updateSaveState(quiet ? 'Autosaved' : 'Saved just now', false);
+      updateStorageMeter();
       if (!quiet) {
         toast('Saved to this browser.', 'save');
         announce('Board saved to this browser.');
+        trackMilestone('save');
         if (window.ToolAnalytics) {
           try { ToolAnalytics.event('board_saved', 'manual'); } catch (err) { /* analytics is optional */ }
         }
       }
       return true;
     } catch (err) {
-      toast('Could not save. Browser storage may be full.', 'error');
+      updateStorageMeter();
+      toast('Could not save. Browser storage may be full. Use Backup all to download a copy.', 'error');
       return false;
     }
   }
@@ -4210,143 +4439,6 @@
     writeLibrary();
     renderLibrary();
     toast('Copied “' + (src.name || 'board') + '”.');
-  }
-
-  function exportBackup() {
-    var payload = { v: 2, app: 'Tabletop Studio', exportedAt: new Date().toISOString(), boards: library.boards };
-    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, 'tabletop-backup-' + new Date().toISOString().slice(0, 10) + '.json');
-    toast('Backup file saved with ' + library.boards.length + ' boards.');
-    announce('All boards saved to a backup file.');
-  }
-
-  function onRestoreBackup(event) {
-    var file = event.target.files && event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast('That backup file is too big.');
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      var parsed;
-      try {
-        parsed = JSON.parse(String(reader.result));
-      } catch (err) {
-        toast('That file is not a Tabletop backup.');
-        return;
-      }
-      var boards = Array.isArray(parsed) ? parsed : parsed.boards;
-      if (!Array.isArray(boards) || !boards.length) {
-        toast('That backup has no boards in it.');
-        return;
-      }
-      boards = boards.filter(function (b) {
-        return b && typeof b.id === 'string' && b.data && Array.isArray(b.data.tiles);
-      }).slice(0, MAX_BOARDS);
-      if (!boards.length) {
-        toast('That backup has no usable boards.');
-        return;
-      }
-      if (!window.confirm('Replace your ' + library.boards.length + ' saved boards with ' + boards.length + ' from this backup?')) {
-        return;
-      }
-      library = { v: 2, activeId: boards[0].id, boards: boards };
-      writeLibrary();
-      clearHistory();
-      applyBoardData(boards[0].data);
-      emptyDismissed = true;
-      firstSteps.dismissed = true;
-      setBgImage(S.bg);
-      syncControls();
-      renderAll();
-      updateSaveState('Restored', false);
-      toast(library.boards.length + ' boards restored.');
-      announce(library.boards.length + ' boards restored from the backup.');
-    };
-    reader.readAsText(file);
-  }
-
-  function renderVersions() {
-    if (!versionList) return;
-    versionList.textContent = '';
-    var board = activeBoard();
-    var versions = board && Array.isArray(board.versions) ? board.versions : [];
-    if (!versions.length) {
-      var empty = document.createElement('p');
-      empty.className = 'tt-help';
-      empty.textContent = 'No earlier versions yet. Save a few changes and Echo will keep them here.';
-      versionList.appendChild(empty);
-      return;
-    }
-    versions.slice().reverse().forEach(function (version, reversedIndex) {
-      var index = versions.length - 1 - reversedIndex;
-      var row = document.createElement('div');
-      row.className = 'tt-version-row';
-      row.setAttribute('role', 'listitem');
-      var meta = document.createElement('div');
-      meta.className = 'tt-version-meta';
-      var strong = document.createElement('strong');
-      strong.textContent = new Date(version.at).toLocaleString();
-      var small = document.createElement('span');
-      var data = version.data || {};
-      small.textContent = (data.cols || '?') + ' x ' + (data.rows || '?') + ' · ' +
-        (Array.isArray(data.tokens) ? data.tokens.length : 0) + ' pieces';
-      meta.appendChild(strong);
-      meta.appendChild(small);
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'tt-btn tt-btn--quiet';
-      btn.dataset.versionIndex = String(index);
-      btn.textContent = 'Restore';
-      row.appendChild(meta);
-      row.appendChild(btn);
-      versionList.appendChild(row);
-    });
-  }
-
-  function openVersions() {
-    renderVersions();
-    versionsEl.hidden = false;
-    document.body.classList.add('tt-modal-open');
-    try { versionsClose.focus({ preventScroll: true }); } catch (err) { versionsClose.focus(); }
-  }
-
-  function closeVersions() {
-    if (!versionsEl || versionsEl.hidden) return;
-    versionsEl.hidden = true;
-    document.body.classList.remove('tt-modal-open');
-    if (versionBtn) {
-      try { versionBtn.focus({ preventScroll: true }); } catch (err) { versionBtn.focus(); }
-    }
-  }
-
-  function restoreVersion(index) {
-    var board = activeBoard();
-    if (!board || !Array.isArray(board.versions)) return;
-    var version = board.versions[index];
-    if (!version || !version.data) return;
-    if (!window.confirm('Restore the version from ' + new Date(version.at).toLocaleString() + '?')) return;
-    if (dirty && !saveBoard(true)) return;
-    board.data = JSON.parse(JSON.stringify(version.data));
-    board.name = String(board.data.name || board.name || 'My board').slice(0, 40);
-    board.updated = Date.now();
-    if (!writeLibrary()) {
-      toast('Could not restore that version. Browser storage may be full.');
-      return;
-    }
-    applyBoardData(board.data);
-    clearHistory();
-    emptyDismissed = true;
-    firstSteps.dismissed = true;
-    setBgImage(S.bg);
-    syncControls();
-    renderAll();
-    updateSaveState('Restored version', false);
-    closeVersions();
-    toast('Version restored.');
-    announce('Previous version restored.');
   }
 
   function renderLibrary() {
@@ -4452,8 +4544,11 @@
     kbActive = false;
     emptyDismissed = false;
     firstSteps = { paint: false, piece: false, roll: false, dismissed: false, celebrated: false };
+    simpleProgress = { started: true, painted: false, pieced: false, played: false };
+    updateSimpleProgress();
     zoom = 1;
-    applyZoom(1);
+    autoFit = true;
+    applyZoom(1, true);
   }
 
   function openBoard(id) {
@@ -4498,6 +4593,7 @@
     library.activeId = board.id;
     syncControls();
     renderAll();
+    fitBoardView();
     setBgImage(null);
     saveBoard(true);
     renderLibrary();
@@ -4691,6 +4787,11 @@
     }
     S.nextId = Math.max(maxId + 1, Number(data.nextId) || 1);
     S.mode = data.mode === 'play' ? 'play' : 'build';
+    if (stage) stage.dataset.mode = S.mode;
+    if (appEl) appEl.classList.toggle('tt-play', S.mode === 'play');
+    var sideTitle = sidebar ? sidebar.querySelector('.tt-sidebar-title') : null;
+    if (sideTitle) sideTitle.textContent = S.mode === 'play' ? 'Play helpers' : 'Toolbox';
+    if (S.mode === 'play' && playAidsSec) playAidsSec.open = true;
     S.terrain = TERRAIN[data.terrain] ? data.terrain : 'grass';
     S.brush = Number(data.brush) === 3 ? 3 : 1;
     S.tool = /^(brush|fill|pick|tile)$/.test(data.tool) ? data.tool : 'brush';
@@ -4701,6 +4802,10 @@
     S.spinner = normaliseSpinner(data.spinner);
     S.actionFaces = normaliseActionFaces(data.actionFaces);
     S.dieMode = data.dieMode === 'action' ? 'action' : 'numbers';
+    dieSides = DICE.indexOf(Number(data.dieSides)) >= 0 ? Number(data.dieSides) : 6;
+    S.dieSides = dieSides;
+    dieCount = clamp(Number(data.dieCount) || 1, 1, MAX_DICE);
+    S.dieCount = dieCount;
     S.playtest = normalisePlaytest(data.playtest);
     S.customPieces = normaliseCustomPieces(data.customPieces);
     S.session = normaliseSession(data.session);
@@ -4890,6 +4995,7 @@
     if (S.dieMode === 'action') setDie(6);
     renderActionDie();
     markDirty();
+    updatePlayableExportNote();
     announce(S.dieMode === 'action' ? 'Action die selected.' : 'Number dice selected.');
   }
 
@@ -4929,6 +5035,7 @@
     S.rollMode = mode === 'spinner' ? 'spinner' : 'dice';
     renderSpinner();
     markDirty();
+    updatePlayableExportNote();
     announce(S.rollMode === 'spinner' ? 'Spinner selected.' : 'Dice selected.');
   }
 
@@ -5010,6 +5117,7 @@
 
   function setDie(sides) {
     dieSides = sides;
+    S.dieSides = sides;
     var chips = byId('ttDiceTypes').querySelectorAll('.tt-die-chip');
     for (var i = 0; i < chips.length; i++) {
       chips[i].setAttribute('aria-pressed', Number(chips[i].dataset.sides) === sides ? 'true' : 'false');
@@ -5022,6 +5130,7 @@
       barResultEl.classList.remove('is-on');
     }
     announce('Ready to roll a d' + sides + '.');
+    updatePlayableExportNote();
   }
 
   function cubeFaceTransform(value) {
@@ -5271,6 +5380,7 @@
 
   function setCount(next) {
     dieCount = clamp(next, 1, MAX_DICE);
+    S.dieCount = dieCount;
     dieCountOut.textContent = String(dieCount);
     countDownBtn.disabled = dieCount <= 1;
     countUpBtn.disabled = dieCount >= MAX_DICE;
@@ -5281,9 +5391,74 @@
   /* Mode, status and empty state                                        */
   /* ------------------------------------------------------------------ */
 
+  function readSimpleMode() {
+    try {
+      var saved = localStorage.getItem(SIMPLE_KEY);
+      return saved === null ? true : saved === '1';
+    } catch (err) {
+      return true;
+    }
+  }
+
+  function simpleStage() {
+    if (!simpleProgress.started) return 0;
+    if (!simpleProgress.painted && !simpleProgress.pieced) return 1;
+    if (!simpleProgress.played) return 2;
+    return 3;
+  }
+
+  function updateSimpleProgress() {
+    if (!appEl) return;
+    appEl.classList.remove('tt-progress-0', 'tt-progress-1', 'tt-progress-2', 'tt-progress-3');
+    appEl.classList.add('tt-progress-' + simpleStage());
+    if (simpleNext) simpleNext.hidden = !(simpleMode && simpleStage() >= 3);
+  }
+
+  function markSimpleProgress(key) {
+    simpleProgress[key] = true;
+    if (key === 'painted' || key === 'pieced') simpleProgress.started = true;
+    updateSimpleProgress();
+  }
+
+  function trackMilestone(name) {
+    if (milestones[name]) return;
+    milestones[name] = true;
+    var elapsed = Date.now() - bootAt;
+    try {
+      if (window.ToolAnalytics) ToolAnalytics.event('tabletop_milestone', name + ':' + elapsed);
+    } catch (err) { /* analytics is optional */ }
+    try {
+      localStorage.setItem('jvds-tabletop-milestones', JSON.stringify(milestones));
+    } catch (err) { /* storage is optional */ }
+  }
+
+  function inferSimpleProgress() {
+    simpleProgress.started = !!S.bg || (S.tiles || []).some(function (tile) { return !!tile; }) || (S.tokens || []).length > 0;
+    simpleProgress.painted = (S.tiles || []).some(function (tile) { return !!tile; });
+    simpleProgress.pieced = (S.tokens || []).length > 0;
+    simpleProgress.played = !!((S.session && S.session.turns > 0) || (S.turn || 1) > 1 || (S.round || 1) > 1);
+    updateSimpleProgress();
+  }
+
+  function applySimpleMode() {
+    if (appEl) appEl.classList.toggle('tt-simple', simpleMode);
+    if (simpleToggle) {
+      simpleToggle.setAttribute('aria-pressed', simpleMode ? 'true' : 'false');
+      simpleToggle.textContent = simpleMode ? 'Show me everything' : 'Simple mode';
+      simpleToggle.title = simpleMode
+        ? 'Show every tool.'
+        : 'Go back to the short path.';
+    }
+    updateSimpleProgress();
+  }
+
   function setMode(mode) {
     S.mode = mode === 'play' ? 'play' : 'build';
     stage.dataset.mode = S.mode;
+    if (appEl) appEl.classList.toggle('tt-play', S.mode === 'play');
+    var sideTitle = sidebar ? sidebar.querySelector('.tt-sidebar-title') : null;
+    if (sideTitle) sideTitle.textContent = S.mode === 'play' ? 'Play helpers' : 'Toolbox';
+    if (S.mode === 'play' && playAidsSec) playAidsSec.open = true;
     var buttons = document.querySelectorAll('.tt-mode-btn');
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', buttons[i].dataset.mode === S.mode ? 'true' : 'false');
@@ -5310,14 +5485,15 @@
     var terrainHelp = byId('ttTerrainHelp');
     var barText = barHint ? barHint.textContent : '';
     if (S.mode === 'play') {
+      var winText = ' Win: ' + winModeLabel(S.settings.winMode || 'finish') + '.';
       if (S.winner) {
         statusEl.textContent = 'Player ' + S.winner + ' won. Play again or change the board.';
         barText = 'Game over. Use Play again on the win screen.';
       } else if (S.path.length > 1) {
-        statusEl.textContent = 'Play mode: ' + activePlayerName() + ' rolls, then moves along the route.';
+        statusEl.textContent = 'Play mode: ' + activePlayerName() + ' rolls, then moves along the route.' + winText;
         barText = 'Roll to move ' + activePlayerName() + ' along the route.';
       } else {
-        statusEl.textContent = 'Play mode: drag pieces freely';
+        statusEl.textContent = 'Play mode: drag pieces freely.' + winText;
         barText = 'Add a route to roll and move players.';
       }
       if (terrainHelp) terrainHelp.textContent = 'Play mode is on. Switch to Build to paint.';
@@ -5452,6 +5628,11 @@
     S.rules = '';
     S.bgColor = null;
     S.players = defaultPlayers();
+    dieSides = 6;
+    dieCount = 1;
+    S.actionFaces = defaultActionFaces();
+    S.dieMode = 'numbers';
+    S.rollMode = 'dice';
   }
 
   function clearPieces() {
@@ -5613,6 +5794,58 @@
     }
   }
 
+  function buildRaceTemplate() {
+    resetGridTo(10, 10, 'square');
+    fillTiles('grass');
+    fillSerpentine();
+    placeTemplatePawns(4);
+    S.name = 'Fast Race';
+    S.rules = 'Race from 1 to 100. Roll a d6, move that many tiles, and be first to land on the last tile. Ladders climb you up and snakes slide you down.';
+    S.settings.winMode = 'finish';
+    S.settings.exactFinish = true;
+    S.settings.snapPath = true;
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildGemsTemplate() {
+    resetGridTo(12, 9, 'square');
+    fillTiles('sand');
+    fillSerpentine();
+    placeTemplatePawns(4);
+    ensureMeta();
+    for (var i = 0; i < S.path.length; i += 4) {
+      var p = S.path[i];
+      var idx = cellIndex(p.c, p.r);
+      var meta = S.meta[idx] || {};
+      meta.effect = { type: 'money', value: 10 };
+      meta.label = '+£10';
+      meta.icon = '💎';
+      S.meta[idx] = meta;
+    }
+    S.name = 'Gem Hunt';
+    S.rules = 'Roll and move. Pick up treasure when you land on a gem tile. Stop whenever you agree, then count your money: the richest player wins.';
+    S.settings.winMode = 'mostMoney';
+    S.settings.snapPath = true;
+    S.settings.startingMoney = 0;
+    S.players.forEach(function (player) { player.money = 0; });
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildCoopTemplate() {
+    resetGridTo(12, 9, 'square');
+    fillTiles('stone');
+    fillSerpentine();
+    placeTemplatePawns(4);
+    S.name = 'Co-op Escape';
+    S.rules = 'Work together. Everyone must reach the last tile to escape. Play as a team, then declare the winner when you all make it.';
+    S.settings.winMode = 'manual';
+    S.settings.snapPath = true;
+    S.turn = 1;
+    S.round = 1;
+  }
+
   function buildSnakesTemplate() {
     resetGridTo(10, 10, 'square');
     fillTiles('sand');
@@ -5676,6 +5909,7 @@
     });
     S.settings.pawnsPerPlayer = 4;
     S.settings.allPawnsWin = true;
+    S.settings.winMode = 'allPawns';
     S.settings.useHomeLanes = true;
     S.settings.blockades = true;
     S.homeCells = homes.map(function (home) { return { c: home.c, r: home.r }; });
@@ -5956,7 +6190,10 @@
       connect: 'Connect 4 Board',
       chess: 'Chess Board',
       backgammon: 'Backgammon Board',
-      go: 'Go Board'
+      go: 'Go Board',
+      race: 'Fast Race',
+      gems: 'Gem Hunt',
+      coop: 'Co-op Escape'
     };
     var hadContent = !!(S.bg || S.tokens.length || S.tiles.some(function (t) { return !!t; }));
     if (window.ToolAnalytics) {
@@ -5983,18 +6220,27 @@
     else if (id === 'chess') buildChessTemplate();
     else if (id === 'backgammon') buildBackgammonTemplate();
     else if (id === 'go') buildGoTemplate();
+    else if (id === 'race') buildRaceTemplate();
+    else if (id === 'gems') buildGemsTemplate();
+    else if (id === 'coop') buildCoopTemplate();
     S.deck = makeDeck();
     if (id === 'property') seedPropertyDecks();
-    if (/^(snakes|ludo|property|life)$/.test(id)) dieSides = 6;
+    if (/^(snakes|ludo|property|life|race|gems|coop)$/.test(id)) dieSides = 6;
     hideEmpty();
     S.selectedId = 0;
     if (S.mode !== 'build') setMode('build');
-    if (id !== 'blank') {
-      firstSteps.paint = true;
-      firstSteps.piece = true;
-    }
-    syncControls();
-    renderAll();
+      if (id !== 'blank') {
+        firstSteps.paint = true;
+        firstSteps.piece = true;
+      }
+      simpleProgress.started = true;
+      simpleProgress.painted = S.tiles.some(function (tile) { return !!tile; });
+      simpleProgress.pieced = S.tokens.length > 0;
+      simpleProgress.played = false;
+      updateSimpleProgress();
+      trackMilestone('board');
+      syncControls();
+      renderAll();
     markDirty();
     var label = names[id] || 'Board';
     var message = id === 'blank'
@@ -6039,6 +6285,8 @@
     S.selectedId = 0;
     emptyDismissed = false;
     firstSteps = { paint: false, piece: false, roll: false, dismissed: firstSteps.dismissed, celebrated: false };
+    simpleProgress = { started: true, painted: false, pieced: false, played: false };
+    updateSimpleProgress();
     deselect();
     renderAll();
     markDirty();
@@ -6058,6 +6306,9 @@
     S.homeCells = [];
     S.homeLanes = [];
     S.safeCells = [];
+    simpleProgress.started = true;
+    simpleProgress.painted = false;
+    updateSimpleProgress();
     renderAll();
     markDirty();
     toast('Tiles cleared. Pieces are still on the board.');
@@ -6207,283 +6458,113 @@
     return out.toDataURL('image/png');
   }
 
-  function buildPlayableHTML() {
-    var data = snapshot();
-    data.v = 3;
-    data.mode = 'play';
-    data.selectedId = 0;
-    var json = JSON.stringify(data).replace(/</g, '\\u003c');
-    var title = S.name || 'My board game';
-    var runtime = [
-      "(function(){",
-      "var D=GAME;",
-      "var T=" + JSON.stringify(TERRAIN) + ";",
-      "var cv=document.getElementById('b'),ctx=cv.getContext('2d');",
-      "var CELL=Math.max(32,Math.min(64,Math.floor(760/Math.max(D.cols,D.rows))));",
-      "cv.width=D.cols*CELL;cv.height=D.rows*CELL;",
-      "var turn=1,winner=0;",
-      "function toks(p){return D.tokens.filter(function(t){return t.pawn&&t.player===p;});}",
-      "function centre(c,r){return {x:(c+.5)*CELL,y:(r+.5)*CELL};}",
-      "function pathCell(i){return D.path[i]||null;}",
-      "function tokPos(t){var p=pathCell(t.pathIndex)||D.path[0];return p?centre(p.c,p.r):{x:0,y:0};}",
-      "function draw(){",
-      "ctx.fillStyle=D.bgColor||'#f0ead6';ctx.fillRect(0,0,cv.width,cv.height);",
-      "for(var r=0;r<D.rows;r++)for(var c=0;c<D.cols;c++){var k=D.tiles[r*D.cols+c];if(!k||!T[k])continue;var q=centre(c,r);ctx.fillStyle=T[k].color;ctx.fillRect(q.x-CELL/2+2,q.y-CELL/2+2,CELL-4,CELL-4);}",
-      "ctx.strokeStyle='rgba(40,35,30,.18)';ctx.lineWidth=1;for(var c2=0;c2<=D.cols;c2++){ctx.beginPath();ctx.moveTo(c2*CELL,0);ctx.lineTo(c2*CELL,cv.height);ctx.stroke();}for(var r2=0;r2<=D.rows;r2++){ctx.beginPath();ctx.moveTo(0,r2*CELL);ctx.lineTo(cv.width,r2*CELL);ctx.stroke();}",
-      "if(D.path&&D.path.length>1){ctx.strokeStyle='rgba(40,35,30,.35)';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();D.path.forEach(function(p,i){var q=centre(p.c,p.r);if(i)ctx.lineTo(q.x,q.y);else ctx.moveTo(q.x,q.y);});ctx.stroke();ctx.setLineDash([]);}",
-      "D.meta.forEach(function(m,i){if(!m)return;var c=i%D.cols,r=Math.floor(i/D.cols),q=centre(c,r);if(m.n){ctx.fillStyle='rgba(20,15,10,.82)';ctx.fillRect(q.x-CELL/2+4,q.y+CELL/2-18,18,14);ctx.fillStyle='#fff';ctx.font='700 10px system-ui';ctx.textAlign='center';ctx.fillText(String(m.n),q.x-CELL/2+13,q.y+CELL/2-7);}if(m.label){ctx.fillStyle='rgba(20,15,10,.75)';ctx.font='600 9px system-ui';ctx.textAlign='left';ctx.fillText(m.label.slice(0,14),q.x-CELL/2+4,q.y+CELL/2-22);}});",
-      "D.tokens.forEach(function(t){if(!t.pawn)return;var q=tokPos(t),col=(D.players[t.player-1]||{}).color||'#BC4749';ctx.beginPath();ctx.arc(q.x,q.y,CELL*.25,0,Math.PI*2);ctx.fillStyle=t.finished?'#c98a2e':col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();});",
-      "document.getElementById('turn').textContent=(D.players[turn-1]&&D.players[turn-1].name)||('Player '+turn);",
-      "document.getElementById('money').textContent=D.players.map(function(p,i){return ((p.name||('P'+(i+1)))+' £'+(p.money||0));}).join(' · ');",
-      "}",
-      "function finish(t,p){if(t.pathIndex<D.path.length-1)return false;t.finished=true;if(D.settings&&D.settings.allPawnsWin){if(toks(p).every(function(x){return x.finished;}))return true;}else return true;return false;}",
-      "function apply(t){var p=pathCell(t.pathIndex),m=p?D.meta[p.r*D.cols+p.c]:null;if(!m)return false;if(m.effect){var e=m.effect,v=Number(e.value)||0;if(e.type==='money'){D.players[turn-1].money+=v;}if(e.type==='toStart'){t.pathIndex=0;}if(e.type==='forward'){t.pathIndex=Math.min(D.path.length-1,t.pathIndex+v);}if(e.type==='back'){t.pathIndex=Math.max(0,t.pathIndex-v);}if(e.type==='goTo'){for(var i=0;i<D.meta.length;i++){if(D.meta[i]&&D.meta[i].n===v){t.pathIndex=D.path.findIndex(function(pp){return pp.c===i%D.cols&&pp.r===Math.floor(i/D.cols);});break;}}}}return false;}",
-      "function next(){if(winner)return;turn=(turn%D.players.length)+1;draw();}",
-      "function roll(){if(winner)return;var p=turn,list=toks(p).filter(function(t){return !t.finished;});if(!list.length){next();return;}var t=list[0],n=1+Math.floor(Math.random()*6),i;for(i=0;i<n;i++){if(t.pathIndex<D.path.length-1)t.pathIndex++;}apply(t);if(D.links){D.links.forEach(function(l){var a=pathCell(t.pathIndex);if(a&&a.c===l.from.c&&a.r===l.from.r){for(var j=0;j<D.path.length;j++){if(D.path[j].c===l.to.c&&D.path[j].r===l.to.r){t.pathIndex=j;break;}}}});}var won=finish(t,p);document.getElementById('result').textContent='Rolled '+n+(won?' · game over':' · next turn');if(won){winner=p;}else{turn=(turn%D.players.length)+1;}draw();}",
-      "document.getElementById('roll').onclick=roll;",
-      "document.getElementById('new').onclick=function(){turn=1;winner=0;D.tokens.forEach(function(t){if(t.pawn){t.pathIndex=0;t.finished=false;}});document.getElementById('result').textContent='New game';draw();};",
-      "draw();",
-      "})();"
-    ].join('\n');
-    return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
-      '<title>' + escapeHtml(title) + '</title><style>' +
-      'body{font-family:Inter,system-ui,sans-serif;background:#fbf8f2;color:#1a1208;margin:0;padding:14px;text-align:center}' +
-      'h1{font-size:1.35rem;margin:0 0 4px}p{margin:0 0 10px;line-height:1.45;color:#3d3224}' +
-      'canvas{max-width:100%;height:auto;border:2px solid #403B33;border-radius:10px;background:#f0ead6}' +
-      '.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}' +
-      'button{font:inherit;font-weight:800;padding:10px 16px;border:0;border-radius:9px;background:#4e7d80;color:#fff;cursor:pointer;min-height:44px}' +
-      'button.secondary{background:#fff;color:#1a1208;border:2px solid #403B33}' +
-      '#turn{font-weight:800}#money{font-size:.85rem;color:#3d3224}#result{font-weight:700;min-height:1.4em}' +
-      '.rules{max-width:620px;margin:12px auto 0;text-align:left;font-size:.9rem;line-height:1.5;white-space:pre-wrap}' +
-      '</style></head><body>' +
-      '<h1>' + escapeHtml(title) + '</h1>' +
-      '<p>Roll and play. This game works offline.</p>' +
-      '<canvas id="b" width="320" height="320" aria-label="Game board"></canvas>' +
-      '<div class="bar"><button id="roll">Roll</button><button id="new" class="secondary">New game</button></div>' +
-      '<p>Next: <span id="turn">Player 1</span></p><p id="money"></p><p id="result">Ready when you are.</p>' +
-      (S.rules ? '<div class="rules">' + escapeHtml(S.rules) + '</div>' : '') +
-      '<script>var GAME=' + json + ';<\/script><script>' + runtime + '<\/script></body></html>';
+  function playableExportIssues() {
+    return [];
   }
 
-  function exportPlayableHTML() {
-    var html = buildPlayableHTML();
-    downloadBlob(new Blob([html], { type: 'text/html' }), safeName() + '-play.html');
-    toast('Playable HTML game saved.');
-    announce('Playable HTML game saved. It works offline.');
+  function updatePlayableExportNote() {
+    if (!exportPlayableNote) return;
+    var issues = playableExportIssues();
+    exportPlayableNote.textContent = issues.length
+      ? 'These stay in the studio: ' + issues.join(', ') + '. Everything else is in the export.'
+      : 'This export includes your board, route, rules, pieces, dice, cards, property and win rule.';
   }
 
-  function printKit() {
-    var paper = printSizeInput ? printSizeInput.value : 'A4';
-    var rules = String(S.rules || '').trim();
-    var title = S.name || 'My tabletop game';
-    var boardImg = boardImageData();
-    var cardImg = cardSheetData();
-    var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
-      '<title>' + escapeHtml(title) + ' - print kit</title>' +
-      '<style>' +
-      '@page { size: ' + (paper === 'A3' ? 'A3' : 'A4') + ' portrait; margin: 10mm; }' +
-      'body { font-family: Inter, system-ui, sans-serif; color: #1a1208; background: #fff; margin: 0; }' +
-      '.sheet { page-break-after: always; padding: 4mm; }' +
-      '.sheet:last-child { page-break-after: auto; }' +
-      'h1 { font-size: 22pt; margin: 0 0 2mm; }' +
-      'h2 { font-size: 14pt; margin: 4mm 0 2mm; }' +
-      '.meta { font-size: 9pt; color: #555; margin-bottom: 3mm; }' +
-      '.board { width: 100%; max-height: 220mm; object-fit: contain; border: 1px solid #999; }' +
-      '.rules { white-space: pre-wrap; font-size: 11pt; line-height: 1.5; margin-top: 4mm; }' +
-      '.cards { width: 100%; max-height: 240mm; object-fit: contain; }' +
-      '.cut { font-size: 8pt; color: #777; margin-top: 2mm; }' +
-      '@media print { .no-print { display: none; } }' +
-      '</style></head><body>' +
-      '<section class="sheet"><h1>' + escapeHtml(title) + '</h1>' +
-      '<p class="meta">JVDesignStudio Tabletop Studio - ' + S.cols + ' x ' + S.rows + ' - ' + paper + '</p>' +
-      '<img class="board" alt="Board" src="' + boardImg + '">' +
-      (rules ? '<h2>Rules</h2><div class="rules">' + escapeHtml(rules) + '</div>' : '') +
-      '</section>' +
-      '<section class="sheet"><h1>Cards</h1>' +
-      '<img class="cards" alt="Card sheet" src="' + cardImg + '">' +
-      '<p class="cut">Cut along the card borders. Print at 100% for the best fit.</p>' +
-      '</section>' +
-      '<p class="no-print">If the print dialog did not open, press Ctrl and P.</p>' +
-      '</body></html>';
-    var win = window.open('', '_blank');
-    if (!win) {
-      toast('Allow pop-ups to open the print kit.');
-      return;
-    }
+  var playRuntimeLoading = false;
+
+  function gzipShareCode(text) {
+    if (!window.CompressionStream) return Promise.resolve(null);
     try {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      window.setTimeout(function () {
-        try { win.print(); } catch (err) { /* the print button is still there */ }
-      }, 500);
-      toast('Print kit ready in a new tab.');
-      announce('Print kit ready. Choose A4 or A3 in the print dialog.');
+      return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip')))
+        .arrayBuffer()
+        .then(function (buffer) {
+          var bytes = new Uint8Array(buffer);
+          var binary = '';
+          for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          return btoa(binary);
+        })
+        .catch(function () { return null; });
     } catch (err) {
-      toast('Could not open the print kit.');
+      return Promise.resolve(null);
     }
+  }
+
+  function gunzipShareCode(code) {
+    if (!window.DecompressionStream) return Promise.reject(new Error('no decompression'));
+    var binary = atob(code);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   }
 
   function encodeShareCode() {
     var json = JSON.stringify(boardPayload());
-    return 'TT3-' + btoa(unescape(encodeURIComponent(json)));
+    return gzipShareCode(json).then(function (compressed) {
+      if (compressed) return 'TT4-' + compressed;
+      return 'TT3-' + btoa(unescape(encodeURIComponent(json)));
+    });
   }
 
   function decodeShareCode(text) {
     var raw = String(text || '').trim();
-    if (!raw) return null;
+    if (!raw) return Promise.resolve(null);
+    if (raw.indexOf('TT4-') === 0) {
+      return gunzipShareCode(raw.slice(4).replace(/\s+/g, '')).then(function (json) {
+        return JSON.parse(json);
+      });
+    }
     if (raw.indexOf('TT3-') === 0) raw = raw.slice(4);
     raw = raw.replace(/\s+/g, '');
     var json = decodeURIComponent(escape(atob(raw)));
-    return JSON.parse(json);
+    return Promise.resolve(JSON.parse(json));
   }
 
   function copyShareCode() {
     if (!shareCodeInput) return;
-    var code;
-    try {
-      code = encodeShareCode();
-    } catch (err) {
-      toast('Could not make a share code for this board.');
-      return;
-    }
-    shareCodeInput.value = code;
-    try {
-      shareCodeInput.focus();
-      shareCodeInput.select();
-    } catch (err) { /* select is optional */ }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(function () {
-        toast('Share code copied.');
-        announce('Share code copied to the clipboard.');
-      }).catch(function () {
+    encodeShareCode().then(function (code) {
+      shareCodeInput.value = code;
+      try {
+        shareCodeInput.focus();
+        shareCodeInput.select();
+      } catch (err) { /* select is optional */ }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function () {
+          toast('Share code copied.');
+          announce('Share code copied to the clipboard.');
+        }).catch(function () {
+          toast('Share code is in the box. Copy it from there.');
+        });
+      } else {
         toast('Share code is in the box. Copy it from there.');
-      });
-    } else {
-      toast('Share code is in the box. Copy it from there.');
-    }
+      }
+    }).catch(function () {
+      toast('Could not make a share code for this board.');
+    });
   }
 
   function loadShareCode() {
     if (!shareCodeInput) return;
-    var data;
-    try {
-      data = decodeShareCode(shareCodeInput.value);
-    } catch (err) {
-      toast('That share code is not complete.');
-      return;
-    }
-    if (!data) {
-      toast('Paste a share code first.');
-      return;
-    }
-    var snap = snapshot();
-    if (!applyBoardData(data)) {
-      toast('That share code could not be loaded.');
-      return;
-    }
-    pushUndoSnapshot(snap);
-    emptyDismissed = true;
-    setBgImage(S.bg);
-    syncControls();
-    renderAll();
-    markDirty();
-    toast('Share code loaded.');
-    announce('Board loaded from a share code.');
-  }
-
-  function exportPNG() {
-    var size = boardSize();
-    var scale = 2;
-    var out = document.createElement('canvas');
-    out.width = size.W * scale;
-    out.height = size.H * scale;
-
-    var o = out.getContext('2d');
-    o.save();
-    o.scale(scale, scale);
-    drawScene(o, size.W, size.H, false);
-    o.restore();
-
-    drawTokensForExport(o, scale);
-
-    o.fillStyle = 'rgba(64,59,51,.78)';
-    o.font = '700 ' + Math.round(12 * scale) + 'px Inter, system-ui, sans-serif';
-    o.textAlign = 'right';
-    o.textBaseline = 'bottom';
-    o.fillText('JVDesignStudio - Tabletop Studio', out.width - 14, out.height - 10);
-
-    if (out.toBlob) {
-      out.toBlob(function (blob) {
-        if (!blob) {
-          toast('Could not export the board image.');
-          return;
-        }
-        downloadBlob(blob, safeName() + '.png');
-        toast('Board image exported.');
-        announce('Board image exported as a PNG.');
-      }, 'image/png');
-    } else {
-      var link = document.createElement('a');
-      link.href = out.toDataURL('image/png');
-      link.download = safeName() + '.png';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast('Board image exported.');
-    }
-  }
-
-  function exportJSON() {
-    var data = snapshot();
-    data.v = 2;
-    data.savedAt = Date.now();
-    data.mode = S.mode;
-    data.terrain = S.terrain;
-    data.brush = S.brush;
-    data.snap = S.snap;
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, safeName() + '.json');
-    toast('Board file saved.');
-    announce('Board file saved as JSON.');
-  }
-
-  function onLoadFile(event) {
-    var file = event.target.files && event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast('That board file is too big.');
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      var data;
-      try {
-        data = JSON.parse(String(reader.result));
-      } catch (err) {
-        toast('That file is not a board file.');
+    decodeShareCode(shareCodeInput.value).then(function (data) {
+      if (!data) {
+        toast('Paste a share code first.');
         return;
       }
       var snap = snapshot();
       if (!applyBoardData(data)) {
-        toast('That file is not a board file.');
+        toast('That share code could not be loaded.');
         return;
       }
       pushUndoSnapshot(snap);
       emptyDismissed = true;
-      firstSteps.dismissed = true;
       setBgImage(S.bg);
       syncControls();
       renderAll();
       markDirty();
-      toast('Board loaded.');
-      announce('Board loaded from file.');
-    };
-    reader.onerror = function () {
-      toast('That file could not be read.');
-    };
-    reader.readAsText(file);
+      toast('Share code loaded.');
+      announce('Board loaded from a share code.');
+    }).catch(function () {
+      toast('That share code is not complete.');
+    });
   }
 
   function onBoardNameInput(event) {
@@ -6659,6 +6740,10 @@
     countDownBtn.disabled = dieCount <= 1;
     countUpBtn.disabled = dieCount >= MAX_DICE;
     rollBtn.textContent = 'Roll d' + dieSides;
+    var dieChips = byId('ttDiceTypes').querySelectorAll('.tt-die-chip');
+    for (var dc = 0; dc < dieChips.length; dc++) {
+      dieChips[dc].setAttribute('aria-pressed', Number(dieChips[dc].dataset.sides) === dieSides ? 'true' : 'false');
+    }
     stage.dataset.mode = S.mode;
     var bgColorInput = byId('ttBgColor');
     if (bgColorInput) bgColorInput.value = S.bgColor || '#F0EAD6';
@@ -6841,44 +6926,6 @@
     toast('Session CSV saved.');
   }
 
-  function printDesignSheet() {
-    var title = S.name || 'My board game';
-    var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
-      '<title>' + escapeHtml(title) + ' - design sheet</title>' +
-      '<style>@page { size: A4 portrait; margin: 12mm; }' +
-      'body { font-family: Inter, system-ui, sans-serif; color: #1a1208; margin: 0; }' +
-      'h1 { font-size: 20pt; margin: 0 0 2mm; } h2 { font-size: 13pt; margin: 6mm 0 2mm; }' +
-      '.q { border: 1px solid #999; border-radius: 3mm; padding: 4mm; margin: 3mm 0; min-height: 20mm; }' +
-      '.q strong { display: block; margin-bottom: 2mm; } .meta { font-size: 9pt; color: #555; }' +
-      '</style></head><body>' +
-      '<h1>' + escapeHtml(title) + ' - design sheet</h1>' +
-      '<p class="meta">Echo says: plan it, play it, then change one thing.</p>' +
-      '<div class="q"><strong>Game name</strong></div>' +
-      '<div class="q"><strong>Players and ages</strong></div>' +
-      '<div class="q"><strong>How do you win?</strong></div>' +
-      '<div class="q"><strong>What does a turn look like?</strong></div>' +
-      '<div class="q"><strong>What can go wrong or surprise you?</strong></div>' +
-      '<div class="q"><strong>What will you test first?</strong></div>' +
-      '<p class="meta">If the print dialog did not open, press Ctrl and P.</p>' +
-      '</body></html>';
-    var win = window.open('', '_blank');
-    if (!win) {
-      toast('Allow pop-ups to open the design worksheet.');
-      return;
-    }
-    try {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      window.setTimeout(function () {
-        try { win.print(); } catch (err) { /* optional */ }
-      }, 500);
-      toast('Design worksheet ready in a new tab.');
-    } catch (err) {
-      toast('Could not open the design worksheet.');
-    }
-  }
-
   function endTurn() {
     if (S.mode !== 'play') return;
     if (S.winner) {
@@ -6925,7 +6972,8 @@
     if (ruleCaptureInput) ruleCaptureInput.checked = !!S.settings.capture;
     if (ruleStackInput) ruleStackInput.checked = !!S.settings.stacking;
     if (ruleRentInput) ruleRentInput.checked = !!S.settings.rent;
-    if (ruleAllPawnsInput) ruleAllPawnsInput.checked = !!S.settings.allPawnsWin;
+    if (winModeInput) winModeInput.value = S.settings.winMode || 'finish';
+    if (ruleAllPawnsInput) ruleAllPawnsInput.checked = S.settings.winMode === 'allPawns';
     if (patternsInput) patternsInput.checked = !!S.settings.patterns;
     if (highContrastInput) highContrastInput.checked = !!S.settings.highContrastLabels;
     if (startingMoneyInput && document.activeElement !== startingMoneyInput) {
@@ -6961,14 +7009,57 @@
     markDirty();
   }
 
-  function applyZoom(next) {
-    zoom = clamp(Number(next) || 1, 1, 3);
+  function applyZoom(next, keepAuto) {
+    if (!keepAuto) autoFit = false;
+    zoom = clamp(Number(next) || 1, MIN_ZOOM, 3);
     if (scaleWrap) scaleWrap.style.width = (zoom * 100) + '%';
     if (zoomVal) zoomVal.textContent = Math.round(zoom * 100) + '%';
-    if (zoomOutBtn) zoomOutBtn.disabled = zoom <= 1;
+    if (zoomOutBtn) zoomOutBtn.disabled = zoom <= MIN_ZOOM + 1e-9;
     if (zoomInBtn) zoomInBtn.disabled = zoom >= 3;
+    updateViewHint();
     layoutTokens();
   }
+
+  function fitZoom() {
+    if (!stage || !cv || !cv.width || !cv.height) return 1;
+    var availW = stage.clientWidth;
+    var availH = stage.clientHeight;
+    if (!availW || !availH) return 1;
+    var baseH = availW * (cv.height / cv.width);
+    var scale = baseH > 0 ? Math.min(1, availH / baseH) : 1;
+    if (scale > 0.995) return 1;
+    return clamp(scale, MIN_ZOOM, 1);
+  }
+
+  function fitBoardView() {
+    autoFit = true;
+    applyZoom(fitZoom(), true);
+    if (stage) {
+      stage.scrollLeft = 0;
+      stage.scrollTop = 0;
+    }
+  }
+
+  function updateViewHint() {
+    if (!viewHintEl) return;
+    var fitted = fitZoom();
+    if (zoom > fitted + 0.01) {
+      viewHintEl.textContent = 'Zoomed in. Scroll inside the board to see the rest.';
+    } else if (fitted < 0.995) {
+      viewHintEl.textContent = 'Whole board fitted to the screen.';
+    } else {
+      viewHintEl.textContent = '';
+    }
+  }
+
+  function scheduleFit() {
+    if (!autoFit || fitTimer) return;
+    fitTimer = setTimeout(function () {
+      fitTimer = null;
+      if (autoFit) fitBoardView();
+    }, 0);
+  }
+
 
   function wrapTextLines(context, text, maxWidth) {
     var words = String(text).replace(/\r/g, '').split(/\s+/);
@@ -6986,254 +7077,6 @@
     if (line) lines.push(line);
     return lines;
   }
-
-  function exportSheetPNG() {
-    var size = boardSize();
-    var scale = 2;
-    var boardW = size.W * scale;
-    var boardH = size.H * scale;
-    var pad = 36;
-    var panelW = Math.max(760, boardW);
-    var rules = String(S.rules || '').trim();
-    var title = S.name || 'My tabletop game';
-
-    var boardCanvas = document.createElement('canvas');
-    boardCanvas.width = boardW;
-    boardCanvas.height = boardH;
-    var bctx = boardCanvas.getContext('2d');
-    bctx.save();
-    bctx.scale(scale, scale);
-    drawScene(bctx, size.W, size.H, false);
-    bctx.restore();
-    drawTokensForExport(bctx, scale);
-
-    var meas = document.createElement('canvas').getContext('2d');
-    meas.font = '400 16px Inter, system-ui, sans-serif';
-    var lines = rules ? wrapTextLines(meas, rules, panelW - pad * 2) : [];
-    var panelH = 92 + (lines.length ? lines.length * 24 + 12 : 0);
-
-    var out = document.createElement('canvas');
-    out.width = panelW;
-    out.height = boardH + panelH + pad;
-    var o = out.getContext('2d');
-    o.fillStyle = S.bgColor || '#F0EAD6';
-    o.fillRect(0, 0, out.width, out.height);
-    o.drawImage(boardCanvas, Math.round((panelW - boardW) / 2), 0);
-
-    o.textAlign = 'left';
-    o.textBaseline = 'top';
-    o.fillStyle = '#1a1208';
-    o.font = '800 26px Inter, system-ui, sans-serif';
-    o.fillText(title, pad, boardH + 24);
-    o.fillStyle = '#4e4a42';
-    o.font = '700 15px Inter, system-ui, sans-serif';
-    o.fillText('Round ' + (S.round || 1) + ' · Turn ' + (S.turn || 1), pad, boardH + 58);
-    if (lines.length) {
-      o.fillStyle = '#2b2620';
-      o.font = '400 16px Inter, system-ui, sans-serif';
-      var y = boardH + 86;
-      lines.forEach(function (line) {
-        o.fillText(line, pad, y);
-        y += 24;
-      });
-    }
-    o.fillStyle = '#6b6257';
-    o.font = '700 12px Inter, system-ui, sans-serif';
-    o.textAlign = 'right';
-    o.fillText('JVDesignStudio - Tabletop Studio', out.width - pad, out.height - 22);
-
-    if (out.toBlob) {
-      out.toBlob(function (blob) {
-        if (!blob) {
-          toast('Could not save the play sheet.');
-          return;
-        }
-        downloadBlob(blob, safeName() + '-play-sheet.png');
-        toast('Play sheet saved.');
-        announce('Play sheet saved as a PNG.');
-      }, 'image/png');
-    } else {
-      var link = document.createElement('a');
-      link.href = out.toDataURL('image/png');
-      link.download = safeName() + '-play-sheet.png';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast('Play sheet saved.');
-    }
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* SVG export for paper and 3D printing                                */
-  /* ------------------------------------------------------------------ */
-
-  function escapeXml(value) {
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-  }
-
-  function svgNumber(value) {
-    return String(Math.round(Number(value) * 100) / 100);
-  }
-
-  function polygonPoints(cx, cy, r, sides, rotation) {
-    var points = [];
-    for (var i = 0; i < sides; i++) {
-      var angle = ((rotation || 0) + (360 / sides) * i) * Math.PI / 180;
-      points.push(svgNumber(cx + r * Math.cos(angle)) + ',' + svgNumber(cy + r * Math.sin(angle)));
-    }
-    return points.join(' ');
-  }
-
-  function starPoints(cx, cy, r, innerRatio) {
-    var points = [];
-    for (var i = 0; i < 10; i++) {
-      var radius = (i % 2) ? r * innerRatio : r;
-      var angle = (-90 + i * 36) * Math.PI / 180;
-      points.push(svgNumber(cx + radius * Math.cos(angle)) + ',' + svgNumber(cy + radius * Math.sin(angle)));
-    }
-    return points.join(' ');
-  }
-
-  function pieceSvgShape(def, r) {
-    var colour = def.color || '#c98a2e';
-    var kind = def.id;
-    if (def.counter) {
-      return '<rect x="' + svgNumber(-r) + '" y="' + svgNumber(-r) + '" width="' + svgNumber(r * 2) +
-        '" height="' + svgNumber(r * 2) + '" rx="' + svgNumber(r * 0.2) + '" fill="' + colour + '"/>';
-    }
-    if (kind === 'treasure') return '<polygon points="' + polygonPoints(0, 0, r, 4, 0) + '" fill="' + colour + '"/>';
-    if (kind === 'star') return '<polygon points="' + starPoints(0, 0, r, 0.45) + '" fill="' + colour + '"/>';
-    if (kind === 'monster') return '<polygon points="' + starPoints(0, 0, r, 0.62) + '" fill="' + colour + '"/>';
-    if (kind === 'flag') return '<polygon points="' + polygonPoints(0, 0, r, 3, -90) + '" fill="' + colour + '"/>';
-    if (kind === 'castle' || kind === 'rock') {
-      return '<rect x="' + svgNumber(-r) + '" y="' + svgNumber(-r) + '" width="' + svgNumber(r * 2) +
-        '" height="' + svgNumber(r * 2) + '" rx="' + svgNumber(kind === 'castle' ? r * 0.18 : r * 0.55) +
-        '" fill="' + colour + '"/>';
-    }
-    if (def.img) return '<polygon points="' + polygonPoints(0, 0, r, 6, 0) + '" fill="' + colour + '"/>';
-    return '<circle cx="0" cy="0" r="' + svgNumber(r) + '" fill="' + colour + '"/>';
-  }
-
-  function buildBoardSVG() {
-    var size = boardSize();
-    var gap = 1.5;
-    var mmW = (size.W / CELL) * SVG_MM_PER_CELL;
-    var mmH = (size.H / CELL) * SVG_MM_PER_CELL;
-    var out = [];
-    out.push('<?xml version="1.0" encoding="UTF-8"?>');
-    out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size.W + ' ' + size.H +
-      '" width="' + svgNumber(mmW) + 'mm" height="' + svgNumber(mmH) +
-      '" role="img" aria-label="Tabletop board ready for 3D printing">');
-    out.push('  <title>' + escapeXml(S.name || 'Tabletop board') + '</title>');
-    out.push('  <desc>Each tile is a separate shape at 20 mm per cell. Import into Tinkercad and extrude.</desc>');
-    out.push('  <g id="terrain">');
-    for (var row = 0; row < S.rows; row++) {
-      for (var col = 0; col < S.cols; col++) {
-        var key = S.tiles[row * S.cols + col];
-        if (!key || !TERRAIN[key]) continue;
-        var centre = centerOf(col, row);
-        if (S.shape === 'square') {
-          out.push('    <rect class="tile" data-terrain="' + key +
-            '" x="' + svgNumber(col * CELL + gap) + '" y="' + svgNumber(row * CELL + gap) +
-            '" width="' + svgNumber(CELL - gap * 2) + '" height="' + svgNumber(CELL - gap * 2) +
-            '" rx="2.5" fill="' + TERRAIN[key].color + '"/>');
-        } else {
-          out.push('    <polygon class="tile" data-terrain="' + key +
-            '" points="' + polygonPoints(centre.x, centre.y, hexMetrics().r - gap, 6, -90) +
-            '" fill="' + TERRAIN[key].color + '"/>');
-        }
-      }
-    }
-    out.push('  </g>');
-
-    if (S.tokens.length) {
-      out.push('  <g id="pieces">');
-      S.tokens.forEach(function (t) {
-        var transform = 'translate(' + svgNumber(t.x) + ' ' + svgNumber(t.y) + ') rotate(' +
-          svgNumber(t.rot || 0) + ') scale(' + svgNumber(t.scale || 1) + ')';
-        if (t.type === 'card') {
-          var cw = CELL * 0.36;
-          var ch = CELL * 0.5;
-          out.push('    <g class="piece card" data-piece="card" transform="' + transform + '">');
-          out.push('      <title>' + escapeXml(cardLabel(t)) + '</title>');
-          out.push('      <rect x="' + svgNumber(-cw / 2) + '" y="' + svgNumber(-ch / 2) +
-            '" width="' + svgNumber(cw) + '" height="' + svgNumber(ch) +
-            '" rx="3.5" fill="' + (t.faceDown ? '#70A3A7' : cardBorder(t)) + '"/>');
-          out.push('    </g>');
-        } else {
-          var def = pieceDef(t.kind);
-          out.push('    <g class="piece" data-piece="' + def.id + '" transform="' + transform + '">');
-          out.push('      <title>' + escapeXml(tokenLabel(t)) + '</title>');
-          out.push('      ' + pieceSvgShape(def, CELL * 0.3));
-          out.push('    </g>');
-        }
-      });
-      out.push('  </g>');
-    }
-    out.push('</svg>');
-    return out.join('\n');
-  }
-
-  function buildPiecesSVG() {
-    var cols = 6;
-    var cellW = 96;
-    var cellH = 118;
-    var top = 64;
-    var rows = Math.ceil(PIECE_DEFS.length / cols);
-    var W = cols * cellW;
-    var H = top + rows * cellH;
-    var mmW = (W / CELL) * SVG_MM_PER_CELL;
-    var mmH = (H / CELL) * SVG_MM_PER_CELL;
-    var out = [];
-    out.push('<?xml version="1.0" encoding="UTF-8"?>');
-    out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H +
-      '" width="' + svgNumber(mmW) + 'mm" height="' + svgNumber(mmH) +
-      '" role="img" aria-label="Tabletop Studio piece sheet">');
-    out.push('  <title>Tabletop Studio piece sheet</title>');
-    out.push('  <text x="16" y="28" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#1a1208">Tabletop Studio pieces</text>');
-    out.push('  <text x="16" y="46" font-family="Inter, sans-serif" font-size="11" fill="#4e4a42">Extrude each shape. One board square is 20 mm.</text>');
-    PIECE_DEFS.forEach(function (def, i) {
-      var col = i % cols;
-      var row = Math.floor(i / cols);
-      var cx = col * cellW + cellW / 2;
-      var cy = top + row * cellH + 32;
-      out.push('  <g class="piece" data-piece="' + def.id + '" transform="translate(' + cx + ' ' + cy + ')">');
-      out.push('    <title>' + escapeXml(def.label) + '</title>');
-      out.push('    ' + pieceSvgShape(def, 24));
-      out.push('  </g>');
-      out.push('  <text x="' + cx + '" y="' + (cy + 44) +
-        '" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#1a1208">' +
-        escapeXml(def.label) + '</text>');
-    });
-    out.push('</svg>');
-    return out.join('\n');
-  }
-
-  function downloadSvg(text, filename) {
-    var blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
-    downloadBlob(blob, filename);
-  }
-
-  function exportBoardSVG() {
-    downloadSvg(buildBoardSVG(), safeName() + '-board.svg');
-    toast('Board SVG saved. Open it in Tinkercad and extrude the tiles.');
-    announce('Board SVG saved for 3D printing.');
-  }
-
-  function exportPiecesSVG() {
-    downloadSvg(buildPiecesSVG(), safeName() + '-pieces.svg');
-    toast('Piece sheet SVG saved. Extrude each piece.');
-    announce('Piece sheet SVG saved for 3D printing.');
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Events                                                              */
-  /* ------------------------------------------------------------------ */
 
   function filterPieces(query) {
     var q = String(query || '').trim().toLowerCase();
@@ -7371,6 +7214,62 @@
     }
   }
 
+  var railWide = null;
+  var railSections = [];
+  var RAIL_ORDER = ['cards', 'dice', 'pieces'];
+
+  function railRank(sec) {
+    var i = RAIL_ORDER.indexOf(sec.getAttribute('data-rail'));
+    return i < 0 ? RAIL_ORDER.length : i;
+  }
+
+  function moveRailSections(wide) {
+    if (!rail || !railScroll || !railSections.length) return;
+    if (wide) {
+      railSections.forEach(function (sec) {
+        if (!sec._ttRailSlot) {
+          var slot = document.createElement('span');
+          slot.className = 'tt-rail-slot';
+          slot.hidden = true;
+          slot.setAttribute('data-rail-slot', sec.getAttribute('data-rail') || '');
+          sec.parentNode.insertBefore(slot, sec);
+          sec._ttRailSlot = slot;
+        }
+      });
+      railSections.slice().sort(function (a, b) { return railRank(a) - railRank(b); }).forEach(function (sec) {
+        railScroll.appendChild(sec);
+      });
+      rail.hidden = false;
+    } else {
+      railSections.forEach(function (sec) {
+        var slot = sec._ttRailSlot;
+        if (slot && slot.parentNode) slot.parentNode.insertBefore(sec, slot);
+        if (slot && slot.parentNode) slot.parentNode.removeChild(slot);
+        sec._ttRailSlot = null;
+      });
+      rail.hidden = true;
+    }
+  }
+
+  function setupWideRail() {
+    if (!rail || !railScroll || !sidebar) return;
+    railSections = [].slice.call(sidebar.querySelectorAll('[data-rail]'));
+    if (!railSections.length) return;
+    var mq = window.matchMedia('(min-width: 1900px)');
+    var apply = function () {
+      var wide = mq.matches;
+      if (wide === railWide) return;
+      var first = railWide === null;
+      railWide = wide;
+      moveRailSections(wide);
+      if (!first) scheduleFit();
+    };
+    apply();
+    if (mq.addEventListener) mq.addEventListener('change', apply);
+    else if (mq.addListener) mq.addListener(apply);
+  }
+
+
   var helpTrigger = null;
 
   function updateTileEffectLabel() {
@@ -7457,6 +7356,127 @@
     if (boardListBtn) {
       try { boardListBtn.focus({ preventScroll: true }); } catch (err) { boardListBtn.focus(); }
     }
+  }
+
+  function renderTableEditor() {
+    if (!tableEditorBody) return;
+    tableEditorBody.textContent = '';
+    ensureMeta();
+    var pathStops = {};
+    (S.path || []).forEach(function (cell, index) { pathStops[cell.r * S.cols + cell.c] = index + 1; });
+    var fragment = document.createDocumentFragment();
+    for (var i = 0; i < S.tiles.length; i++) {
+      var tile = S.tiles[i];
+      var meta = S.meta[i];
+      if (!tile && !meta && !pathStops[i]) continue;
+      var row = document.createElement('tr');
+      row.dataset.col = String(i % S.cols);
+      row.dataset.row = String(Math.floor(i / S.cols));
+      var rowCell = document.createElement('td');
+      rowCell.textContent = String(Math.floor(i / S.cols) + 1);
+      row.appendChild(rowCell);
+      var colCell = document.createElement('td');
+      colCell.textContent = String((i % S.cols) + 1) + (pathStops[i] ? ' · stop ' + pathStops[i] : '');
+      row.appendChild(colCell);
+      var terrainCell = document.createElement('td');
+      var select = document.createElement('select');
+      select.className = 'tt-select';
+      select.setAttribute('data-tcell-terrain', '1');
+      select.setAttribute('aria-label', 'Ground for row ' + (Math.floor(i / S.cols) + 1) + ', column ' + ((i % S.cols) + 1));
+      var emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Empty';
+      select.appendChild(emptyOption);
+      Object.keys(TERRAIN).forEach(function (key) {
+        var option = document.createElement('option');
+        option.value = key;
+        option.textContent = TERRAIN[key].name;
+        select.appendChild(option);
+      });
+      select.value = tile || '';
+      terrainCell.appendChild(select);
+      row.appendChild(terrainCell);
+      var numberCell = document.createElement('td');
+      var number = document.createElement('input');
+      number.type = 'number';
+      number.min = '0';
+      number.max = '999';
+      number.className = 'tt-input';
+      number.setAttribute('data-tcell-number', '1');
+      number.value = meta && meta.n != null ? String(meta.n) : '';
+      number.setAttribute('aria-label', 'Number for row ' + (Math.floor(i / S.cols) + 1) + ', column ' + ((i % S.cols) + 1));
+      numberCell.appendChild(number);
+      row.appendChild(numberCell);
+      var labelCell = document.createElement('td');
+      var label = document.createElement('input');
+      label.type = 'text';
+      label.maxLength = 24;
+      label.className = 'tt-input';
+      label.setAttribute('data-tcell-label', '1');
+      label.value = meta && meta.label ? meta.label : '';
+      label.setAttribute('aria-label', 'Name for row ' + (Math.floor(i / S.cols) + 1) + ', column ' + ((i % S.cols) + 1));
+      labelCell.appendChild(label);
+      row.appendChild(labelCell);
+      fragment.appendChild(row);
+    }
+    if (!fragment.childNodes.length) {
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.colSpan = 5;
+      emptyCell.textContent = 'Paint a tile or add a route, then open this table again.';
+      emptyRow.appendChild(emptyCell);
+      fragment.appendChild(emptyRow);
+    }
+    tableEditorBody.appendChild(fragment);
+  }
+
+  function openTableEditor() {
+    if (!tableEditorEl) return;
+    renderTableEditor();
+    tableEditorEl.hidden = false;
+    document.body.classList.add('tt-modal-open');
+    try { tableEditorClose.focus({ preventScroll: true }); } catch (err) { tableEditorClose.focus(); }
+    announce('Board table opened.');
+  }
+
+  function closeTableEditor() {
+    if (!tableEditorEl || tableEditorEl.hidden) return;
+    tableEditorEl.hidden = true;
+    document.body.classList.remove('tt-modal-open');
+    if (tableEditorBtn) {
+      try { tableEditorBtn.focus({ preventScroll: true }); } catch (err) { tableEditorBtn.focus(); }
+    }
+  }
+
+  function onTableEditorChange(event) {
+    var target = event.target;
+    var row = target.closest('tr');
+    if (!row || !row.dataset.col) return;
+    var col = Number(row.dataset.col);
+    var rowIndex = Number(row.dataset.row);
+    var index = rowIndex * S.cols + col;
+    if (!isFinite(col) || !isFinite(rowIndex) || index < 0 || index >= S.tiles.length) return;
+    pushUndo();
+    ensureMeta();
+    if (target.hasAttribute('data-tcell-terrain')) {
+      S.tiles[index] = target.value || null;
+    } else if (target.hasAttribute('data-tcell-number')) {
+      var meta = S.meta[index] || {};
+      var number = Number(target.value);
+      if (target.value === '' || !isFinite(number)) delete meta.n;
+      else meta.n = clamp(Math.round(number), 0, 999);
+      S.meta[index] = meta;
+    } else if (target.hasAttribute('data-tcell-label')) {
+      var metaLabel = S.meta[index] || {};
+      var label = String(target.value || '').trim().slice(0, 24);
+      if (label) metaLabel.label = label; else delete metaLabel.label;
+      S.meta[index] = metaLabel;
+    }
+    scheduleDraw();
+    markDirty();
+    updateStatus();
+    updatePlayAids();
+    renderBoardList();
   }
 
   function openTilePanel(col, row) {
@@ -7637,9 +7657,13 @@
   function showWinner(playerIndex) {
     var player = S.players[playerIndex - 1] || S.players[0];
     var name = player && player.name ? player.name : 'Player ' + playerIndex;
+    var winMode = S.settings.winMode || 'finish';
+    var why = winMode === 'mostMoney'
+      ? 'had the most money'
+      : (winMode === 'manual' ? 'is the winner' : 'reached the finish');
     S.winner = playerIndex;
     winTitle.textContent = name + ' wins!';
-    winText.textContent = 'Pip says: ' + name + ' reached the finish. Play again, or change the board and make it your own.';
+    winText.textContent = 'Pip says: ' + name + ' ' + why + '. Play again, or change the board and make it your own.';
     winTrigger = document.activeElement;
     winEl.hidden = false;
     document.body.classList.add('tt-modal-open');
@@ -7657,6 +7681,32 @@
       try { winTrigger.focus({ preventScroll: true }); } catch (err) { winTrigger.focus(); }
     }
     winTrigger = null;
+  }
+
+  function winModeLabel(mode) {
+    return {
+      finish: 'first to the finish',
+      allPawns: 'every pawn home',
+      mostMoney: 'most money',
+      manual: 'you decide'
+    }[mode] || 'first to the finish';
+  }
+
+  function improveAfterGame() {
+    hideWin(false);
+    setMode('build');
+    if (window.matchMedia('(max-width: 980px)').matches) openSidebar();
+    var terrainSec = byId('ttTerrain') ? byId('ttTerrain').closest('details') : null;
+    if (terrainSec) {
+      terrainSec.open = true;
+      try { terrainSec.scrollIntoView({ block: 'nearest' }); } catch (err) { /* ignore */ }
+    }
+    var first = byId('ttTerrain') ? byId('ttTerrain').querySelector('.tt-swatch') : null;
+    if (first) {
+      try { first.focus({ preventScroll: true }); } catch (err) { first.focus(); }
+    }
+    toast('Echo says: change one thing, then play again.');
+    announce('Build mode. Echo says change one thing, then play again.');
   }
 
   function openHelp(event) {
@@ -8165,12 +8215,82 @@
     applyZoom(zoom + (event.deltaY < 0 ? 0.25 : -0.25));
   }
 
+  function openModalElement() {
+    var ids = ['ttPlayPreview', 'ttTableEditor', 'ttBoardList', 'ttVersions', 'ttHelp', 'ttTilePanel', 'ttWin', 'ttChoice'];
+    for (var i = 0; i < ids.length; i++) {
+      var element = document.getElementById(ids[i]);
+      if (element && !element.hidden) return element;
+    }
+    return null;
+  }
+
+  function closeModalElement(id) {
+    if (id === 'ttHelp') return closeHelp();
+    if (id === 'ttTilePanel') return closeTilePanel();
+    if (id === 'ttWin') return hideWin();
+    if (id === 'ttChoice') return chooseOption(null);
+    if (id === 'ttBoardList') return closeBoardList();
+    if (id === 'ttVersions') return closeVersions();
+    if (id === 'ttTableEditor') return closeTableEditor();
+    if (id === 'ttPlayPreview') {
+      if (advancedApi && advancedApi.closePlayPreview) return advancedApi.closePlayPreview();
+      var modal = document.getElementById('ttPlayPreview');
+      if (modal) modal.hidden = true;
+      document.body.classList.remove('tt-modal-open');
+    }
+  }
+
+  function modalFocusable(modal) {
+    return Array.prototype.slice.call(modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(function (element) {
+      return element.offsetParent !== null && !element.hidden;
+    });
+  }
+
+  function handleModalKeydown(event) {
+    var modal = openModalElement();
+    if (!modal) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModalElement(modal.id);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    var items = modalFocusable(modal);
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (!modal.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   function wireEvents() {
+    document.addEventListener('keydown', handleModalKeydown);
     document.querySelectorAll('.tt-mode-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         setMode(btn.dataset.mode);
       });
     });
+    if (simpleToggle) {
+      simpleToggle.addEventListener('click', function () {
+        simpleMode = !simpleMode;
+        try { localStorage.setItem(SIMPLE_KEY, simpleMode ? '1' : '0'); } catch (err) { /* optional */ }
+        applySimpleMode();
+        updateSteps();
+        toast(simpleMode ? 'Simple mode. The extra tools are hidden.' : 'Advanced mode. Every tool is shown.');
+        announce(simpleMode ? 'Simple mode on.' : 'Advanced mode on.');
+      });
+    }
+    if (simpleNextBtn) simpleNextBtn.addEventListener('click', improveAfterGame);
 
     byId('ttTerrain').addEventListener('click', onTerrainClick);
     document.querySelectorAll('[data-brush]').forEach(function (btn) {
@@ -8200,6 +8320,7 @@
     if (rulesInput) rulesInput.addEventListener('input', onRulesInput);
     byId('ttExportSheet').addEventListener('click', exportSheetPNG);
     if (printKitBtn) printKitBtn.addEventListener('click', printKit);
+    if (byId('ttTakeHome')) byId('ttTakeHome').addEventListener('click', takeItHome);
     if (shareCopyBtn) shareCopyBtn.addEventListener('click', copyShareCode);
     if (shareLoadBtn) shareLoadBtn.addEventListener('click', loadShareCode);
     byId('ttExportSvg').addEventListener('click', exportBoardSVG);
@@ -8254,10 +8375,7 @@
 
     zoomOutBtn.addEventListener('click', function () { applyZoom(zoom - 0.25); });
     zoomInBtn.addEventListener('click', function () { applyZoom(zoom + 0.25); });
-    zoomFitBtn.addEventListener('click', function () {
-      applyZoom(1);
-      if (stage) { stage.scrollLeft = 0; stage.scrollTop = 0; }
-    });
+    zoomFitBtn.addEventListener('click', fitBoardView);
 
     byId('ttDiceTypes').addEventListener('click', function (event) {
       var chip = event.target.closest('.tt-die-chip');
@@ -8456,6 +8574,29 @@
       hideWin(false);
       resetGame();
     });
+    if (winImproveBtn) winImproveBtn.addEventListener('click', improveAfterGame);
+    if (echoImproveBtn) echoImproveBtn.addEventListener('click', improveAfterGame);
+    if (winModeInput) winModeInput.addEventListener('change', function () {
+      var mode = ['finish', 'allPawns', 'mostMoney', 'manual'].indexOf(winModeInput.value) >= 0 ? winModeInput.value : 'finish';
+      S.settings.winMode = mode;
+      S.settings.allPawnsWin = mode === 'allPawns';
+      if (ruleAllPawnsInput) ruleAllPawnsInput.checked = S.settings.allPawnsWin;
+      markDirty();
+      updatePlayAids();
+      updatePlayableExportNote();
+      announce('Win condition: ' + winModeLabel(mode) + '.');
+      toast('Win condition: ' + winModeLabel(mode) + '.');
+    });
+    if (declareWinEl) declareWinEl.addEventListener('click', function (event) {
+      var btn = event.target.closest('[data-win-player]');
+      if (btn) showWinner(Number(btn.dataset.winPlayer));
+    });
+    if (ruleAllPawnsInput) ruleAllPawnsInput.addEventListener('change', function () {
+      S.settings.winMode = ruleAllPawnsInput.checked ? 'allPawns' : 'finish';
+      if (winModeInput) winModeInput.value = S.settings.winMode;
+      updatePlayAids();
+      updatePlayableExportNote();
+    });
     if (cv) cv.addEventListener('contextmenu', function (event) { event.preventDefault(); });
     if (patternsInput) {
       patternsInput.addEventListener('change', function () {
@@ -8474,6 +8615,11 @@
       });
     }
     if (boardListBtn) boardListBtn.addEventListener('click', openBoardList);
+    if (boardListPlayBtn) boardListPlayBtn.addEventListener('click', openBoardList);
+    if (tableEditorBtn) tableEditorBtn.addEventListener('click', openTableEditor);
+    if (tableEditorClose) tableEditorClose.addEventListener('click', closeTableEditor);
+    if (tableEditorBackdrop) tableEditorBackdrop.addEventListener('click', closeTableEditor);
+    if (tableEditorBody) tableEditorBody.addEventListener('change', onTableEditorChange);
     if (boardListClose) boardListClose.addEventListener('click', closeBoardList);
     if (boardListBackdrop) boardListBackdrop.addEventListener('click', closeBoardList);
     if (versionBtn) versionBtn.addEventListener('click', openVersions);
@@ -8903,12 +9049,145 @@
     });
   }
 
+
+  var advancedApi = null;
+  var advancedLoading = null;
+
+  function advancedApiObject() {
+    return {
+      get S() { return S; },
+      set S(value) { S = value; },
+      get library() { return library; },
+      set library(value) { library = value; },
+      get bgImg() { return bgImg; },
+      set bgImg(value) { bgImg = value; },
+      get dieSides() { return dieSides; },
+      set dieSides(value) { dieSides = value; },
+      get dieCount() { return dieCount; },
+      set dieCount(value) { dieCount = value; },
+      CELL: CELL,
+      MAX_BOARDS: MAX_BOARDS,
+      PIECE_DEFS: PIECE_DEFS,
+      SVG_MM_PER_CELL: SVG_MM_PER_CELL,
+      TERRAIN: TERRAIN,
+      activeBoard: activeBoard,
+      announce: announce,
+      applyBoardData: applyBoardData,
+      boardImageData: boardImageData,
+      boardSize: boardSize,
+      cardBorder: cardBorder,
+      cardLabel: cardLabel,
+      cardSheetData: cardSheetData,
+      centerOf: centerOf,
+      clearHistory: clearHistory,
+      dirty: dirty,
+      downloadBlob: downloadBlob,
+      drawScene: drawScene,
+      drawTokensForExport: drawTokensForExport,
+      emptyDismissed: emptyDismissed,
+      escapeHtml: escapeHtml,
+      firstSteps: firstSteps,
+      hexMetrics: hexMetrics,
+      markDirty: markDirty,
+      pieceDef: pieceDef,
+      playRuntimeLoading: playRuntimeLoading,
+      printSizeInput: printSizeInput,
+      pushUndoSnapshot: pushUndoSnapshot,
+      renderAll: renderAll,
+      restore: restore,
+      safeName: safeName,
+      saveBoard: saveBoard,
+      setBgImage: setBgImage,
+      snapshot: snapshot,
+      syncControls: syncControls,
+      toast: toast,
+      tokenLabel: tokenLabel,
+      trackMilestone: trackMilestone,
+      updateSaveState: updateSaveState,
+      versionBtn: versionBtn,
+      versionList: versionList,
+      versionsClose: versionsClose,
+      versionsEl: versionsEl,
+      wrapTextLines: wrapTextLines,
+      writeLibrary: writeLibrary,
+    };
+  }
+
+  function loadAdvancedTools() {
+    if (advancedApi) return Promise.resolve(advancedApi);
+    if (advancedLoading) return advancedLoading;
+    advancedLoading = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = '/tabletop-advanced.js';
+      script.onload = function () {
+        try { advancedApi = window.TT_ADVANCED(advancedApiObject()); resolve(advancedApi); }
+        catch (err) { reject(err); }
+      };
+      script.onerror = function () { reject(new Error('advanced tools did not load')); };
+      document.head.appendChild(script);
+    });
+    return advancedLoading;
+  }
+
+  function withAdvanced(run) {
+    loadAdvancedTools().then(function (api) {
+      try { run(api); } catch (err) { console.error(err); toast('The advanced tools hit a problem. Try again.', 'error'); }
+    }).catch(function () {
+      toast('Could not load the advanced tools. Check your connection and try again.', 'error');
+    });
+  }
+
+  function wireAdvancedPreload() {
+    ['ttBoardSec', 'ttMakeRealSec'].forEach(function (id) {
+      var section = byId(id);
+      if (!section) return;
+      section.addEventListener('toggle', function () {
+        if (section.open) loadAdvancedTools().catch(function () { /* the wrapper shows the error */ });
+      });
+    });
+  }
+
+  function exportBackup() { var args = arguments; withAdvanced(function (api) { return api.exportBackup.apply(null, args); }); }
+  function onRestoreBackup(event) { withAdvanced(function (api) { return api.onRestoreBackup(event); }); }
+  function renderVersions() { withAdvanced(function (api) { return api.renderVersions(); }); }
+  function openVersions() { withAdvanced(function (api) { return api.openVersions(); }); }
+  function closeVersions() { withAdvanced(function (api) { return api.closeVersions(); }); }
+  function restoreVersion(index) { withAdvanced(function (api) { return api.restoreVersion(index); }); }
+  function exportPlayableHTML() { withAdvanced(function (api) { return api.exportPlayableHTML(); }); }
+  function printKit() { withAdvanced(function (api) { return api.printKit(); }); }
+  function exportPNG() { withAdvanced(function (api) { return api.exportPNG(); }); }
+  function exportJSON() { withAdvanced(function (api) { return api.exportJSON(); }); }
+  function onLoadFile(event) { withAdvanced(function (api) { return api.onLoadFile(event); }); }
+  function printDesignSheet() { withAdvanced(function (api) { return api.printDesignSheet(); }); }
+  function exportSheetPNG() { withAdvanced(function (api) { return api.exportSheetPNG(); }); }
+  function exportBoardSVG() { withAdvanced(function (api) { return api.exportBoardSVG(); }); }
+  function exportPiecesSVG() { withAdvanced(function (api) { return api.exportPiecesSVG(); }); }
+  function takeItHome() { withAdvanced(function (api) { return api.takeItHome(); }); }
+
   /* ------------------------------------------------------------------ */
   /* Boot                                                                */
   /* ------------------------------------------------------------------ */
 
-  function init() {
-    var existing = loadLibrary();
+  async function init() {
+    var localOk = false;
+    try {
+      localStorage.setItem('__tt_storage_probe', '1');
+      localStorage.removeItem('__tt_storage_probe');
+      localOk = true;
+    } catch (err) {
+      localOk = false;
+    }
+    simpleMode = readSimpleMode();
+    applySimpleMode();
+    var existing = await hydrateLibrary();
+    storageBlocked = !localOk && !idbReady;
+    if (storageWarnEl) {
+      storageWarnEl.hidden = !storageBlocked;
+      if (storageBlocked) {
+        storageWarnEl.textContent = 'Saving is blocked in this browser. You can still make and export a board, but download a copy before you close the page.';
+      }
+    }
+    updateStorageMeter();
     if (!existing) {
       var id = newBoardId();
       library = { v: 2, activeId: id, boards: [] };
@@ -8917,6 +9196,8 @@
     }
     var loaded = existing ? loadBoard() : false;
     firstSteps.dismissed = loaded;
+    inferSimpleProgress();
+
 
     preloadSprites();
     buildTerrainPalette();
@@ -8925,21 +9206,33 @@
     wireEvents();
     wireSectionMemory();
     restoreSectionStates();
-    applyZoom(1);
+    setupWideRail();
+    wireAdvancedPreload();
+    window.addEventListener('resize', function () {
+      if (!autoFit) return;
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(function () {
+        fitTimer = null;
+        if (autoFit) fitBoardView();
+      }, 150);
+    });
 
     ensureDecks();
     if (loaded && S.bg) setBgImage(S.bg);
     syncControls();
     renderAll();
+    fitBoardView();
     updateSaveState(loaded ? 'Saved' : 'Not saved yet', false);
     renderLibrary();
     if (loaded) toast('Your saved board is back.');
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function () {
+      init().catch(function (err) { console.error(err); });
+    });
   } else {
-    init();
+    init().catch(function (err) { console.error(err); });
   }
 })();
 

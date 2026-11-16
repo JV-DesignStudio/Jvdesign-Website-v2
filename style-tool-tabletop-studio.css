@@ -731,7 +731,7 @@ html[data-theme="dark"] .tt-save-state.is-dirty { color: var(--danger-ink); }
   touch-action: pan-x pan-y;
   overscroll-behavior: contain;
 }
-.tt-scale { position: relative; width: 100%; }
+.tt-scale { position: relative; width: 100%; margin-inline: auto; }
 #ttBoard { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; outline: none; }
 .tt-stage[data-mode="play"] #ttBoard { cursor: default; }
 #ttBoard:focus-visible { outline: 3px solid var(--rose); outline-offset: -3px; }
@@ -1126,6 +1126,110 @@ body.tt-modal-open { overflow: hidden; }
   .tt-save-state { white-space: normal; }
 }
 
+/* ---------- Wide screens: use the sides for play tools ---------- */
+.tt-rail { display: none; }
+.tt-rail-scroll { min-height: 0; }
+
+@media (min-width: 1900px) {
+  .tt-app {
+    width: calc(100% - 88px);
+    max-width: 3200px;
+  }
+  .tt-shell {
+    grid-template-columns: 320px minmax(0, 1fr) 320px;
+    gap: 18px;
+  }
+  .tt-rail {
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    max-height: calc(100vh - 260px);
+    max-height: calc(100dvh - 260px);
+    overflow: auto;
+    position: sticky;
+    top: 12px;
+  }
+  .tt-rail .tt-sidebar-head { border-bottom: 1px solid var(--line-soft); }
+  .tt-rail .tt-sec { border-bottom: 1px solid var(--line-soft); }
+  .tt-rail .tt-sec:last-child { border-bottom: 0; }
+  .tt-sidebar {
+    max-height: calc(100vh - 260px);
+    max-height: calc(100dvh - 260px);
+  }
+  .tt-stage {
+    max-height: calc(100vh - 390px);
+    max-height: calc(100dvh - 390px);
+    background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, .05), transparent 62%), var(--beige);
+  }
+}
+
+/* Play mode keeps the build tools out of the way */
+.tt-app.tt-play .tt-sidebar [data-build-only] { display: none; }
+.tt-app.tt-play .tt-sidebar-scroll { display: flex; flex-direction: column; }
+.tt-app.tt-play .tt-sidebar #ttPlayAidsSec { order: -10; }
+
+/* Simple mode hides the advanced panels until the learner asks for them */
+.tt-app.tt-simple [data-advanced] { display: none !important; }
+.tt-app.tt-simple.tt-progress-0 .tt-sec[data-simple-stage="1"],
+.tt-app.tt-simple.tt-progress-0 .tt-sec[data-simple-stage="2"],
+.tt-app.tt-simple.tt-progress-0 .tt-sec[data-simple-stage="3"],
+.tt-app.tt-simple.tt-progress-1 .tt-sec[data-simple-stage="2"],
+.tt-app.tt-simple.tt-progress-1 .tt-sec[data-simple-stage="3"],
+.tt-app.tt-simple.tt-progress-2 .tt-sec[data-simple-stage="3"] { display: none !important; }
+#ttSimpleToggle[aria-pressed="true"] { border-color: var(--teal); color: var(--teal-dk); }
+.tt-app.tt-simple .tt-steps {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.tt-storage-warn {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--rose);
+  border-radius: 10px;
+  background: var(--rose-lt);
+  color: var(--danger-ink);
+  font-size: .86rem;
+  font-weight: 700;
+}
+
+.tt-view-hint { font-size: .72rem; font-weight: 700; color: var(--muted); }
+
+.tt-echo-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--teal) 45%, transparent);
+  border-radius: 12px;
+  background: var(--teal-lt);
+}
+.tt-echo-tip img { border-radius: 50%; flex: 0 0 auto; }
+.tt-echo-tip p { margin: 0 0 8px; font-size: .83rem; line-height: 1.45; color: var(--charcoal); }
+
+.tt-simple-next {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--teal) 45%, transparent);
+  border-radius: 12px;
+  background: var(--teal-lt);
+}
+.tt-simple-next img { border-radius: 50%; flex: 0 0 auto; }
+.tt-simple-next p { margin: 0 0 8px; font-size: .84rem; line-height: 1.45; color: var(--charcoal); }
+
+
 @media (max-width: 560px) {
   .tt-head { gap: 8px; margin: 6px 0 12px; }
   .tt-head-main { flex-basis: 100%; }
@@ -1213,7 +1317,11 @@ body.tt-modal-open { overflow: hidden; }
   .mascot-companion,
   .tt-head,
   .tt-sidebar,
+  .tt-rail,
   .tt-backdrop,
+  .tt-storage-warn,
+  .tt-view-hint,
+  .tt-simple-next,
   .tt-board-head,
   .tt-steps,
   .tt-board-bar,
@@ -1795,11 +1903,26 @@ button.tt-player-dot:hover { transform: scale(1.12); }
   font-size: .86rem;
 }
 .tt-boardlist-card { width: min(760px, 100%); }
+.tt-play-preview { width: min(620px, 100%); }
+#ttPlayPreviewImg {
+  display: block;
+  width: 100%;
+  max-height: 38vh;
+  object-fit: contain;
+  background: var(--beige);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+#ttPlayPreviewSummary { font-weight: 800; color: var(--charcoal); }
+#ttPlayPreviewIncludes { color: var(--muted); }
 .tt-boardlist-wrap { max-height: 60vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
 .tt-boardlist { width: 100%; border-collapse: collapse; font-size: .82rem; }
 .tt-boardlist th, .tt-boardlist td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .tt-boardlist th { position: sticky; top: 0; background: var(--beige); font-weight: 800; }
 .tt-boardlist tr:last-child td { border-bottom: 0; }
+#ttTableEditorBody select,
+#ttTableEditorBody input { min-height: 34px; font-size: .78rem; padding: 4px 6px; }
+#ttTableEditorBody td { min-width: 64px; }
 .tt-version-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .tt-version-row {
   display: flex;
