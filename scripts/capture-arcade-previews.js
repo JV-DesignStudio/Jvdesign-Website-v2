@@ -27,6 +27,17 @@ const onlyArg = process.argv.find(a => a.startsWith('--only='));
 const only = onlyArg ? (onlyArg.split('=')[1] || '').split(',').filter(Boolean) : null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// The real Phaser scene key for each genre, so a preview can never be captured
+// from a stale or idle scene.
+const SCENE_KEYS = {
+  SHOOTER:'ShooterScene', PLATFORMER:'PlatformerScene', DODGE:'DodgeScene', BREAKER:'BreakerScene',
+  RUNNER:'RunnerScene', FLAPPY:'FlappyScene', INVADERS:'InvadersScene', PONG:'PongScene',
+  SNAKE:'SnakeScene', ASTEROIDS:'AsteroidsScene', ROGUELIKE:'RoguelikeScene', RACING:'RacingScene',
+  HOPPER:'HopperScene', BEAT:'BeatScene', PUZZLE:'PuzzleScene', RHYTHM:'RhythmScene',
+  DEFENSE:'TDScene', PINBALL:'PinballScene', CLICKER:'ClickerScene', MEMORY:'MemoryScene',
+  WAVESURVIVAL:'WaveSurvivalScene', PAPERTOSS:'PaperTossScene', CUSTOM:'CustomScene',
+};
+
 // A stable fingerprint of the tuning a preview represents. If a template's
 // title, genre, theme or key tuning changes, the preview is stale.
 function tplHash(t) {
@@ -75,24 +86,48 @@ function tplHash(t) {
   for (const t of todo) {
     errors.length = 0;
     try {
+      const boot = async () => {
+        await page.evaluate(() => {
+          try { if (window._phaserGame) window._phaserGame.destroy(true); } catch (e) {}
+          window._phaserGame = null; window.currentPhaserGame = null;
+          const c = document.getElementById('game-container'); if (c) c.innerHTML = '';
+        });
+        await sleep(350);
+        await page.evaluate(k => { if (typeof _loadTemplate === 'function') _loadTemplate(k); }, t.key);
+        await sleep(300);
+        await page.evaluate(() => {
+          if (typeof compileAndBootEngine === 'function') { compileAndBootEngine._lastRun = 0; compileAndBootEngine(); }
+        });
+        await sleep(750);
+        await page.evaluate(() => {
+          const io = document.getElementById('introOverlay');
+          if (io && io.classList.contains('show')) { if (typeof closeIntro === 'function') closeIntro(); else io.classList.remove('show'); }
+          // Clear every end-of-run overlay a previous template may have left up.
+          ['welcome-overlay', 'tutOverlay', 'goOverlay', 'rewindOverlay'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.classList.remove('show');
+          });
+          const pm = document.getElementById('pauseMenu'); if (pm) pm.style.display = 'none';
+          const cd = document.getElementById('countdownOverlay'); if (cd) cd.style.display = 'none';
+          document.body.classList.remove('overlay-active');
+        });
+        return page.waitForFunction(arg => {
+          const gm = window._phaserGame;
+          const sc = gm && gm.scene && gm.scene.getScenes(true)[0];
+          return !!(sc && sc.sys && sc.sys.isActive() && sc.sys.settings.key === arg.key &&
+            typeof _engineData !== 'undefined' && _engineData && _engineData.genre === arg.genre);
+        }, { timeout: 12000 }, { genre: t.genre, key: SCENE_KEYS[t.genre] }).then(() => true).catch(() => false);
+      };
+      let ok = await boot();
+      if (!ok) { await sleep(900); ok = await boot(); }
+      if (!ok) throw new Error('scene did not boot for ' + t.genre);
+      // Let the scene animate into a representative frame. Snake moves fast,
+      // so capture it early while the first apple is still on screen.
+      const delay = ({ glow_serpent: 350, snake_b: 350, snake_c: 350 })[t.key] || 1600;
+      await sleep(delay);
       await page.evaluate(() => {
-        try { if (window._phaserGame) window._phaserGame.destroy(true); } catch (e) {}
-        window._phaserGame = null;
-        const c = document.getElementById('game-container'); if (c) c.innerHTML = '';
-      });
-      await sleep(750);
-      await page.evaluate(k => { if (typeof _loadTemplate === 'function') _loadTemplate(k); }, t.key);
-      await sleep(300);
-      await page.evaluate(() => { if (typeof compileAndBootEngine === 'function') compileAndBootEngine(); });
-      await sleep(700);
-      await page.evaluate(() => {
-        const io = document.getElementById('introOverlay');
-        if (io && io.classList.contains('show')) { if (typeof closeIntro === 'function') closeIntro(); else io.classList.remove('show'); }
-        const w = document.getElementById('welcome-overlay'); if (w) w.classList.remove('show');
+        ['goOverlay', 'rewindOverlay'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('show'); });
         document.body.classList.remove('overlay-active');
       });
-      // Let the scene animate into a representative frame.
-      await sleep(1600);
       const canvas = await page.$('#game-container canvas');
       if (!canvas) throw new Error('no canvas');
       const shot = await canvas.screenshot({ type: 'png' });

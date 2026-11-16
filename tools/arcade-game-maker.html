@@ -90,7 +90,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-e+hdj1wiFFnq82Zu6kZqnHnFwLFHPupRIAj9nnwtpT0=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-x9SjZ7h0NoQVxgUN1h2bZd/0ylZDK+0R7uItceSr+4U=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -11839,6 +11839,14 @@ function _drawDefaultBrick(g) {
     g.lineStyle(2, 0x64748b, 1);
     g.strokeRect(1, 1, 30, 30);
 }
+function _drawDefaultCoin(g) {
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(8, 8, 7);                   // outer disc (tinted per game)
+    g.fillStyle(0xd6d3c4, 1);
+    g.fillCircle(8, 8, 4.4);                 // inner face
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(5.6, 5.4, 1.7);             // shine
+}
 
 // Fit an Arcade body to the sprite's drawn size. Body.setSize() takes
 // source-pixel dimensions and multiplies them by the sprite scale, so passing
@@ -12521,7 +12529,7 @@ function makeBaseScene(data) {
     return class extends Phaser.Scene {
         preload() {
             // Remove stale cached textures so fresh assets always load correctly
-            ['player','enemy','laser','block','bg_custom','_run_far','_run_near','_ptfm_far','_ptfm_near'].forEach(k => {
+            ['player','enemy','laser','block','coin','bg_custom','_run_far','_run_near','_ptfm_far','_ptfm_near'].forEach(k => {
                 if (this.textures.exists(k)) this.textures.remove(k);
             });
 
@@ -12626,6 +12634,8 @@ function makeBaseScene(data) {
             } else {
                 makeFallback('block', 32, 32, _drawDefaultBrick);
             }
+            // Coin / pickup sprite (white so the per-game tint colours it)
+            makeFallback('coin', 16, 16, _drawDefaultCoin);
             // Background image
             if (data.bgImage) {
                 loadCustom('bg_custom', data.bgImage);
@@ -13675,7 +13685,7 @@ function scenePlatformer(data) {
                 // Exact painted coin tiles from World Builder
                 ents.coins.forEach(([cx,cy]) => {
                     const tx=cx*TW+TW/2, ty=cy*TH+TH/2;
-                    const c=this._coinGrp.create(tx,ty,'block').setDisplaySize(9,9).setDepth(DEPTH.COLLECTIBLE);
+                    const c=this._coinGrp.create(tx,ty,'coin').setDisplaySize(9,9).setDepth(DEPTH.COLLECTIBLE);
                     c.body.allowGravity=false; c.setTint(0xfbbf24);
                     this.tweens.add({targets:c, y:ty-5, duration:700+Math.random()*300, yoyo:true, repeat:-1, ease:'Sine.easeInOut'});
                 });
@@ -13690,7 +13700,7 @@ function scenePlatformer(data) {
                     if(Math.random() > 0.22) return;                    // ~22% chance
                     const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH - TH*0.65;
                     const isGold = Math.random() < 0.15;
-                    const c = this._coinGrp.create(tx, ty, 'block').setDisplaySize(isGold?12:9, isGold?12:9).setDepth(DEPTH.COLLECTIBLE);
+                    const c = this._coinGrp.create(tx, ty, 'coin').setDisplaySize(isGold?12:9, isGold?12:9).setDepth(DEPTH.COLLECTIBLE);
                     c.body.allowGravity = false;
                     c.setTint(isGold ? 0xffd700 : 0xfbbf24);
                     c.setData('gold', isGold);
@@ -13742,7 +13752,7 @@ function scenePlatformer(data) {
                     h.body.allowGravity = false; h.setImmovable(true);
                     h.setData('isSpike', true);
                 } else if (t.type === 'coin') {
-                    const c = this._coinGrp.create(px, py - tileH * 0.3, 'block').setDepth(DEPTH.COLLECTIBLE);
+                    const c = this._coinGrp.create(px, py - tileH * 0.3, 'coin').setDepth(DEPTH.COLLECTIBLE);
                     c.setDisplaySize(10, 10).setTint(0xfbbf24);
                     c.body.allowGravity = false;
                     this.tweens.add({ targets: c, y: c.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -13916,7 +13926,7 @@ function scenePlatformer(data) {
             while (!this._isTilemapMode && this.actor.x + 700 > this._nextCoinX && this._nextCoinX < WORLD_W - 100) {
                 const isGold = Math.random() < 0.18;
                 const cy = Phaser.Math.Between(Math.round(GH*0.35), GH-90);
-                const c = this._coinGrp.create(this._nextCoinX, cy, 'block').setDisplaySize(isGold?13:10, isGold?13:10).setDepth(DEPTH.COLLECTIBLE);
+                const c = this._coinGrp.create(this._nextCoinX, cy, 'coin').setDisplaySize(isGold?13:10, isGold?13:10).setDepth(DEPTH.COLLECTIBLE);
                 c.body.allowGravity = false; c.setTint(isGold ? 0xffd700 : 0xfbbf24);
                 c.setData('gold', isGold);
                 this._nextCoinX += Phaser.Math.Between(70, 180);
@@ -14162,11 +14172,25 @@ function sceneBreaker(data) {
                 { fontSize:'11px', fill:'rgba(167,139,250,.45)', fontFamily:"'Fredoka',sans-serif" }).setOrigin(0.5,0).setDepth(10);
             // Paddle
             const pw = liveConfig.paddleW || 90;
-            this.paddle = _fitBody(this.physics.add.image(GW/2, GH-20, 'block').setDisplaySize(pw, 14));
+            const _brkTex = (key, w, h, draw) => {
+                if (this.textures.exists(key)) return;
+                const g = this.make.graphics({ x:0, y:0, add:false });
+                draw(g); g.generateTexture(key, w, h); g.destroy();
+            };
+            _brkTex('_brk_paddle', 128, 16, g => {
+                g.fillStyle(0xffffff,1); g.fillRoundedRect(0,0,128,16,8);
+                g.fillStyle(0xc4b5fd,1); g.fillRect(10,4,108,3);
+            });
+            _brkTex('_brk_ball', 16, 16, g => {
+                g.fillStyle(0xffffff,1); g.fillCircle(8,8,7);
+                g.fillStyle(0x38bdf8,1); g.fillCircle(8,8,4);
+                g.fillStyle(0xffffff,1); g.fillCircle(5.5,5.5,1.6);
+            });
+            this.paddle = _fitBody(this.physics.add.image(GW/2, GH-20, '_brk_paddle').setDisplaySize(pw, 14));
             this.paddle.setImmovable(true); this.paddle.body.allowGravity=false;
             this._tint(this.paddle, 1, 0xa78bfa);
             // Ball
-            this.ball = _fitBody(this.physics.add.image(GW/2, GH-50, 'laser').setDisplaySize(14,14));
+            this.ball = _fitBody(this.physics.add.image(GW/2, GH-50, '_brk_ball').setDisplaySize(14,14));
             this.ball.setBounce(1).setCollideWorldBounds(true);
             this.physics.world.setBounds(0, 0, GW, GH, true, true, true, false); // open bottom so ball drains
             this.ball.body.allowGravity=false; this.ball.body.checkCollision.down=false;
@@ -14878,7 +14902,7 @@ function sceneFlappy(data) {
             // Coin in the gap centre
             if (Math.random()<0.55) {
                 const cy=gapY+gap/2;
-                const c=this._flCoins.create(GW+30,cy,'block').setDisplaySize(10,10).setTint(0xfbbf24);
+                const c=this._flCoins.create(GW+30,cy,'coin').setDisplaySize(10,10).setTint(0xfbbf24);
                 c.body.allowGravity=false; c.setVelocityX(spd);
             }
         }
@@ -15557,19 +15581,50 @@ function sceneSnake(data) {
         }
         _draw() {
             const g=this._gfx, C=this.C; g.clear();
-            // Food colour: golden=cyan, poison=red, normal=yellow
-            const foodCol = this._foodType==='golden' ? 0x22d3ee : this._foodType==='poison' ? 0xef4444 : themeInt(3,0xffd700);
-            g.fillStyle(foodCol,1);
-            g.fillRect(this._food.x*C+3,this._food.y*C+3,C-6,C-6);
+            const fx=this._food.x*C+C/2, fy=this._food.y*C+C/2;
+            if(this._foodType==='golden'){
+                // Golden star
+                const pts=[];
+                for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, r=i%2===0?C*0.46:C*0.2; pts.push({x:fx+Math.cos(a)*r,y:fy+Math.sin(a)*r}); }
+                g.fillStyle(0xfbbf24,1); g.fillPoints(pts,true);
+                g.fillStyle(0xfff7cc,1); g.fillCircle(fx,fy,C*0.11);
+            } else if(this._foodType==='poison'){
+                g.fillStyle(0x7c3aed,1); g.fillCircle(fx,fy,C*0.4);
+                g.lineStyle(2,0xef4444,1);
+                g.lineBetween(fx-C*0.18,fy-C*0.18,fx+C*0.18,fy+C*0.18);
+                g.lineBetween(fx+C*0.18,fy-C*0.18,fx-C*0.18,fy+C*0.18);
+            } else {
+                // Apple: red fruit, green leaf
+                g.fillStyle(0xef4444,1); g.fillCircle(fx,fy+C*0.06,C*0.38);
+                g.fillStyle(0x4ade80,1);
+                g.fillTriangle(fx+C*0.02,fy-C*0.34, fx+C*0.3,fy-C*0.42, fx+C*0.18,fy-C*0.16);
+                g.fillStyle(0x92400e,1); g.fillRect(fx-1,fy-C*0.42,2,C*0.16);
+                g.fillStyle(0xffffff,0.55); g.fillCircle(fx-C*0.12,fy-C*0.02,C*0.08);
+            }
             // Bonus star item
             if(this._bonusFood){
-                g.fillStyle(0xf9a8d4,1);
                 const bx=this._bonusFood.x*C, by=this._bonusFood.y*C;
+                g.fillStyle(0xf9a8d4,1);
                 g.fillTriangle(bx+C/2,by+2, bx+C-2,by+C-2, bx+2,by+C-2);
             }
             this._snake.forEach((s,i)=>{
-                g.fillStyle(i===0?themeInt(0,0x00d4aa):themeInt(1,0x22c55e),1);
-                g.fillRect(s.x*C+1,s.y*C+1,C-2,C-2);
+                const x=s.x*C, y=s.y*C;
+                if(i===0){
+                    g.fillStyle(themeInt(0,0x00d4aa),1);
+                    g.fillRoundedRect(x+1,y+1,C-2,C-2,5);
+                    // Eyes face the travel direction.
+                    const cx=x+C/2, cy=y+C/2, dx=this._dir.x, dy=this._dir.y;
+                    const px=-dy, py=dx, fwd=C*0.16, side=C*0.16;
+                    const e1x=cx+dx*fwd+px*side, e1y=cy+dy*fwd+py*side;
+                    const e2x=cx+dx*fwd-px*side, e2y=cy+dy*fwd-py*side;
+                    g.fillStyle(0xffffff,1); g.fillCircle(e1x,e1y,C*0.11); g.fillCircle(e2x,e2y,C*0.11);
+                    g.fillStyle(0x1e293b,1);
+                    g.fillCircle(e1x+dx*C*0.04,e1y+dy*C*0.04,C*0.055);
+                    g.fillCircle(e2x+dx*C*0.04,e2y+dy*C*0.04,C*0.055);
+                } else {
+                    g.fillStyle(i%2===0?themeInt(1,0x22c55e):themeInt(0,0x00d4aa),1);
+                    g.fillRoundedRect(x+2,y+2,C-4,C-4,Math.max(2,C*0.22));
+                }
             });
         }
         update() {

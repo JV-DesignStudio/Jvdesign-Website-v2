@@ -100,6 +100,21 @@ const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', 
     }, DEPS);
     check('maker HTML + Phaser + modules precached on first visit', Object.values(cachedAll).every(Boolean), JSON.stringify(cachedAll));
 
+    // A3065: the starter previews come from the manifest and must be cached too.
+    const previewCached = await page.evaluate(async () => {
+      const key = (await caches.keys()).find(x => /^jvds-v\d+$/.test(x));
+      const cache = await caches.open(key);
+      const res = await cache.match('/assets/arcade-previews/manifest.json');
+      if (!res) return { manifest: false };
+      let manifest = null;
+      try { manifest = await res.json(); } catch (e) {}
+      const files = Object.values((manifest && manifest.entries) || {}).slice(0, 3).map(e => e.file);
+      const out = { manifest: true };
+      for (const f of files) out[f] = !!(await cache.match('/assets/arcade-previews/' + f));
+      return out;
+    });
+    check('starter preview manifest + images are precached', previewCached.manifest === true && Object.values(previewCached).every(Boolean), JSON.stringify(previewCached));
+
     // Go fully offline and prove the engine still opens.
     offline = true;
     await page.setOfflineMode(true);
@@ -108,6 +123,11 @@ const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', 
       const r = await page.evaluate(async p => { const res = await fetch(p); return { ok: res.ok, status: res.status, len: (await res.text()).length }; }, dep);
       check(`offline fetch ${dep}`, r.ok && r.len > 0, 'status ' + r.status + ', ' + r.len + ' bytes');
     }
+    const previewOffline = await page.evaluate(async () => {
+      const res = await fetch('/assets/arcade-previews/dino_runner.webp');
+      return { ok: res.ok, status: res.status, bytes: (await res.blob()).size };
+    });
+    check('starter preview image loads with the network down', previewOffline.ok && previewOffline.bytes > 0, JSON.stringify(previewOffline));
 
     await page.goto(base + '/tools/arcade-game-maker.html', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#runGameBtn', { timeout: 20000 });

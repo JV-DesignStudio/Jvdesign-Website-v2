@@ -38,6 +38,10 @@ function check(name, ok, detail) { console.log((ok ? 'PASS ' : 'FAIL ') + name +
   check('landing no longer says 21 genres', !html.includes('21 Game Genres'));
   check('landing links to the maker', html.includes('arcade-game-maker.html'), 'start link');
   check('landing shows Dino Dash', html.includes('Dino Dash'));
+  const previews = [...html.matchAll(/src="\/assets\/arcade-previews\/([^"]+)"/g)].map(m => m[1]);
+  check('landing gallery uses starter previews', previews.length >= 8, previews.length + ' previews');
+  const missingPreviews = previews.filter(f => !fs.existsSync(path.join(ROOT, 'assets', 'arcade-previews', f)));
+  check('every landing preview file exists', missingPreviews.length === 0, missingPreviews.join(','));
 
   const maker = await fetch(base + '/tools/arcade-game-maker.html');
   const makerHtml = await maker.text();

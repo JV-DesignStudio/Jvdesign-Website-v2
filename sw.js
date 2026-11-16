@@ -342,8 +342,19 @@ self.addEventListener('message',e=>{
         .then(async c=>{
           // A2676: cache each dependency on its own. A single blocked or moved
           // asset must not cancel the whole offline pack for the maker.
-          const results=await Promise.allSettled(MAKER_DEPS.map(url=>c.add(url)));
-          const failed=MAKER_DEPS.filter((_,i)=>results[i].status==='rejected');
+          // A3065: include every starter preview from the manifest so the
+          // first-game picker is not made of broken images offline.
+          let previewUrls=[];
+          try{
+            const res=await fetch('/assets/arcade-previews/manifest.json',{cache:'no-store'});
+            if(res.ok){
+              const m=await res.json();
+              previewUrls=Object.values(m.entries||{}).map(x=>'/assets/arcade-previews/'+x.file);
+            }
+          }catch(_e){}
+          const urls=MAKER_DEPS.concat('/assets/arcade-previews/manifest.json',previewUrls);
+          const results=await Promise.allSettled(urls.map(url=>c.add(url)));
+          const failed=urls.filter((_,i)=>results[i].status==='rejected');
           if(failed.length) console.warn('[SW] maker precache skipped',failed.join(', '));
         })
         .then(()=>{
