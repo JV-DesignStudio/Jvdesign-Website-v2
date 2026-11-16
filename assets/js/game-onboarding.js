@@ -32,7 +32,9 @@
     'crossy-crew': 'Plan the next two hops, not only the one in front of you.',
     'lumo-hive': 'Kill the glowing hive anchor first: every bee linked to it is only half hurt while it lives.',
     'lumo-firefly': 'Match beside a firefly to rescue it, then let the unsupported cluster drop for a big chain.',
-    'stardust-snake': 'Leave yourself an exit lane before you turn for the next star.'
+    'stardust-snake': 'Leave yourself an exit lane before you turn for the next star.',
+    'pips-cozy-cove': 'Wait for the ripple, then flick straight up: a calm cast beats a fast one.',
+    'call-of-cards': 'Hold one Power card back for the turn you end, so you reach 8 before the Fortress.'
   };
 
   var END_SELECTORS = [

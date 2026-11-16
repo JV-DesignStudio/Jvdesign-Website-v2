@@ -306,6 +306,15 @@ class ParticleSystem {
 }
 
 /* ─── Export for use ─── */
+/* A top-level `class` declaration is a global lexical binding, not a property
+   of window, so pages that guard on `window.AudioEffects` (the shared arcade
+   pattern) saw undefined and silently ran silent. Publish the classes so that
+   guard, and `new AudioEffects(...)`, both work everywhere this file loads. */
+if (typeof window !== 'undefined') {
+  window.AudioEffects = AudioEffects;
+  window.ScreenShake = ScreenShake;
+  window.ParticleSystem = ParticleSystem;
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AudioEffects, ScreenShake, ParticleSystem };
 }
