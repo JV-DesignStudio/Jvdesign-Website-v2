@@ -14,6 +14,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.join(__dirname, '..');
@@ -28,6 +29,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function isIgnorable(text) {
   return /ERR_NETWORK_ACCESS_DENIED|ERR_NAME_NOT_RESOLVED|ERR_INTERNET_DISCONNECTED|ERR_CONNECTION|net::ERR_|ERR_FAILED/i.test(text)
     || /googletagmanager|google-analytics|fonts\.googleapis|fonts\.gstatic|cdn\.jsdelivr|gstatic\.com/i.test(text);
+}
+function tplHash(t) {
+  const subset = { title: t.title, genre: t.genre, theme: t.theme, speed: t.speed, lives: t.lives,
+    obstacleSpeed: t.obstacleSpeed, enemySpeed: t.enemySpeed, difficultyScale: t.difficultyScale, spawnDelay: t.spawnDelay };
+  return crypto.createHash('sha256').update(JSON.stringify(subset)).digest('hex').slice(0, 16);
 }
 
 (async () => {
@@ -72,6 +78,30 @@ function isIgnorable(text) {
   });
   check('every starter has a real WebP preview', disk.length === starters.length, `${disk.length}/${starters.length}`);
 
+  // Manifest freshness: a template change without a re-capture must fail.
+  const dump = await page.evaluate(() => Object.keys(_TEMPLATES).map(k => Object.assign({ key: k }, _TEMPLATES[k])));
+  const manifestPath = path.join(ROOT, 'assets', 'arcade-previews', 'manifest.json');
+  let manifest = null;
+  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch (e) {}
+  check('preview manifest exists', !!(manifest && manifest.entries), path.relative(ROOT, manifestPath));
+  const missingEntries = [], stale = [];
+  for (const t of dump) {
+    const e = manifest && manifest.entries[t.key];
+    if (!e) { missingEntries.push(t.key); continue; }
+    if (e.configHash !== tplHash(t)) stale.push(t.key);
+  }
+  check('every template has a manifest entry', missingEntries.length === 0, missingEntries.join(','));
+  check('previews match the current templates', stale.length === 0,
+    stale.length ? 'run npm run previews:capture: ' + stale.join(',') : '');
+
+  const genreCounts = await page.evaluate(() => {
+    const out = {};
+    Object.keys(_STARTERS).forEach(g => { out[g] = _templatesForGenre(g).length; });
+    return out;
+  });
+  const thin = Object.entries(genreCounts).filter(([, n]) => n < 3 || n > 5);
+  check('every genre offers 3-5 starters', thin.length === 0, thin.map(([g, n]) => g + ':' + n).join(','));
+
   const buttons = await page.evaluate(() => {
     const list = Array.from(document.querySelectorAll('#starterGrid .starter-btn'));
     return {
@@ -115,6 +145,20 @@ function isIgnorable(text) {
   });
   check('picking Runner updates the preview to Dino Dash', runnerPreview.key === 'dino_runner' && /Dino Dash/.test(runnerPreview.title), JSON.stringify(runnerPreview));
 
+  const carouselBefore = await page.evaluate(() => ({
+    count: (document.getElementById('genrePreviewCount') || {}).textContent || '',
+    key: (document.getElementById('genrePreview') || {}).dataset.key || ''
+  }));
+  await page.evaluate(() => { const b = document.querySelector('#genrePreview .gpy-next'); if (b) b.click(); });
+  await sleep(300);
+  const carouselAfter = await page.evaluate(() => ({
+    count: (document.getElementById('genrePreviewCount') || {}).textContent || '',
+    key: (document.getElementById('genrePreview') || {}).dataset.key || '',
+    title: (document.getElementById('genrePreviewTitle') || {}).textContent || ''
+  }));
+  check('starter carousel shows the shelf position', /^1 \/ \d+$/.test(carouselBefore.count.trim()), carouselBefore.count);
+  check('starter carousel reaches another starter', carouselAfter.key && carouselAfter.key !== carouselBefore.key, JSON.stringify(carouselAfter));
+
   // Welcome examples show real thumbnails.
   const welcomeThumbs = await page.evaluate(async () => {
     const details = document.querySelector('.fg-examples');
@@ -128,6 +172,17 @@ function isIgnorable(text) {
     return { count: imgs.length, loaded: res.filter(x => x.w > 0).length, bad: res.find(x => !x.w) || null };
   });
   check('welcome examples show preview thumbnails', welcomeThumbs.count >= 5 && welcomeThumbs.loaded >= 5, JSON.stringify(welcomeThumbs));
+
+  const wizardThumbs = await page.evaluate(async () => {
+    const w = document.getElementById('welcome-overlay');
+    if (w) w.classList.add('show');
+    const imgs = Array.from(document.querySelectorAll('#fgStep1 .fg-thumb'));
+    await new Promise(r => setTimeout(r, 450));
+    const res = imgs.map(i => ({ src: i.getAttribute('src'), w: i.naturalWidth }));
+    if (w) w.classList.remove('show');
+    return { count: imgs.length, loaded: res.filter(x => x.w > 0).length, bad: res.find(x => !x.w) || null };
+  });
+  check('first-game wizard shows preview thumbnails', wizardThumbs.count >= 4 && wizardThumbs.loaded >= 4, JSON.stringify(wizardThumbs));
 
   // Surprise me boots a recommended genre.
   pageErrors.length = 0;

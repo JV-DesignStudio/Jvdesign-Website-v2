@@ -12,6 +12,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const puppeteer = require('puppeteer');
 const sharp = require('sharp');
 
@@ -25,6 +26,14 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javasc
 const onlyArg = process.argv.find(a => a.startsWith('--only='));
 const only = onlyArg ? (onlyArg.split('=')[1] || '').split(',').filter(Boolean) : null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// A stable fingerprint of the tuning a preview represents. If a template's
+// title, genre, theme or key tuning changes, the preview is stale.
+function tplHash(t) {
+  const subset = { title: t.title, genre: t.genre, theme: t.theme, speed: t.speed, lives: t.lives,
+    obstacleSpeed: t.obstacleSpeed, enemySpeed: t.enemySpeed, difficultyScale: t.difficultyScale, spawnDelay: t.spawnDelay };
+  return crypto.createHash('sha256').update(JSON.stringify(subset)).digest('hex').slice(0, 16);
+}
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -50,9 +59,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await page.waitForSelector('#runGameBtn', { timeout: 30000 });
   await page.waitForFunction(() => typeof _TEMPLATES === 'object' && typeof compileAndBootEngine === 'function', { timeout: 30000 });
 
-  const templates = await page.evaluate(() => Object.keys(_TEMPLATES).map(k => ({ key: k, title: _TEMPLATES[k].title, genre: _TEMPLATES[k].genre })));
+  const templates = await page.evaluate(() => Object.keys(_TEMPLATES).map(k => Object.assign({ key: k }, _TEMPLATES[k])));
   const todo = only ? templates.filter(t => only.includes(t.key)) : templates;
   console.log(`\nRendering ${todo.length} previews into ${path.relative(ROOT, OUT)}`);
+
+  const manifestPath = path.join(OUT, 'manifest.json');
+  let manifest = { version: 1, capturedAt: new Date().toISOString(), entries: {} };
+  if (only && fs.existsSync(manifestPath)) {
+    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch (e) {}
+  }
+  manifest.version = 1;
+  manifest.capturedAt = new Date().toISOString();
 
   let made = 0, failed = 0;
   for (const t of todo) {
@@ -85,6 +102,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         .resize(480, 300, { fit: 'cover', position: 'centre' })
         .webp({ quality: 82 })
         .toFile(out);
+      manifest.entries[t.key] = { file: t.key + '.webp', title: t.title || t.key, genre: t.genre || '', configHash: tplHash(t), capturedAt: new Date().toISOString() };
       made++;
       console.log(`  ✓ ${t.key.padEnd(18)} ${String(t.genre).padEnd(13)} ${t.title || ''}`);
     } catch (e) {
@@ -93,8 +111,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
   }
 
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
   await browser.close();
   server.close();
-  console.log(`\n${made} preview(s) written, ${failed} failed.`);
+  console.log(`\n${made} preview(s) written, ${failed} failed. Manifest: ${path.relative(ROOT, manifestPath)}`);
   if (failed) process.exit(1);
 })().catch(e => { console.error('capture previews crashed:', e); process.exit(1); });

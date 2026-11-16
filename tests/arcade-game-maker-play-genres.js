@@ -120,7 +120,12 @@ const BODY_AUDIT = () => {
     await sleep(900);
 
     const before = await page.evaluate(BODY_AUDIT).catch(e => ({ err: String(e.message || e) }));
-    await sleep(700);
+    // Wait for a real frame advance instead of assuming the tab stayed at full
+    // speed for exactly 700ms (headless runs can be throttled under load).
+    const advanced = await page.waitForFunction(f => {
+      const g = window._phaserGame || window.currentPhaserGame;
+      return !!(g && g.loop && g.loop.frame > f);
+    }, { timeout: 6000 }, before.frame || -1).then(() => true).catch(() => false);
     const after = await page.evaluate(BODY_AUDIT).catch(e => ({ err: String(e.message || e) }));
 
     // Feed a spread of inputs so the loop runs, not just the idle path.
@@ -135,7 +140,7 @@ const BODY_AUDIT = () => {
     }
     await sleep(500);
 
-    const loopOk = !before.err && !after.err && before.frame >= 0 && after.frame > before.frame;
+    const loopOk = !before.err && !after.err && before.frame >= 0 && advanced;
     const bodyOk = !before.err && !after.err && before.bad.length === 0 && after.bad.length === 0;
     const clean = !bootErr && pageErrors.length === 0;
     const detail = bootErr || (pageErrors[0] || '').slice(0, 150)
