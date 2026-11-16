@@ -90,7 +90,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-MTx/qhdGe8ltXpvonB73A0ShhO2Hw9nGJXWQlGCscr8=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-UsQvLfchh16tiwjjiG2WOA2JQ2SLPYWWvgTy5+ERCvQ=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-yneef33ZoumWMBK4I1y6wqEG3/eF9b7o8hRZFSLAVC8=' 'sha256-AQcSL6qePbvzzT/y3NkO0TLNQBgdXX/9LY9Dt5ceOU8=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-gnOb/wimBdSlvP5WJTnoD3cpzqlu+ytOdPIz8+PniNE=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-UsQvLfchh16tiwjjiG2WOA2JQ2SLPYWWvgTy5+ERCvQ=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -9016,6 +9016,9 @@ function sceneClicker(data) {
 
             // ── State ──────────────────────────────────────────────────────────
             let _pts    = 0;   // current score / currency
+        // Test hook: the Clicker score lives in this closure; the browser test
+        // uses this setter to reach the existing 100k win check.
+        this._testSetPoints = (v) => { _pts = Math.max(0, Number(v) || 0); };
             let _cps    = 0;   // coins per second (auto)
             let _mult   = 1;   // click power multiplier
             let _crit   = 0;   // critical hit chance (0-1)
@@ -9268,6 +9271,9 @@ function sceneMemory(data) {
             let flipped = [], matched = [], _moves = 0, _locked = false;
             let _streak = 0, _streakBonus = 0;
             let cardObjs = [];
+        // Test hook: expose the card list so the browser test can play a full
+        // matching set through the same pointerdown handlers a learner uses.
+        this._testCards = cardObjs;
             // Time-based scoring
             const _startTime = Date.now();
             let _elapsedSec = 0;

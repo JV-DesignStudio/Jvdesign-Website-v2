@@ -23,7 +23,7 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 let failures = 0;
 function check(name, ok, detail) { console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' , ' + detail : '')); if (!ok) failures++; }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const SCENE_KEYS = { WAVESURVIVAL:'WaveSurvivalScene', BREAKER:'BreakerScene', PONG:'PongScene', SNAKE:'SnakeScene', RACING:'RacingScene', HOPPER:'HopperScene', BEAT:'BeatScene', PUZZLE:'PuzzleScene', RHYTHM:'RhythmScene', DEFENSE:'TDScene', PINBALL:'PinballScene', PAPERTOSS:'PaperTossScene' };
+const SCENE_KEYS = { WAVESURVIVAL:'WaveSurvivalScene', BREAKER:'BreakerScene', PONG:'PongScene', SNAKE:'SnakeScene', RACING:'RacingScene', HOPPER:'HopperScene', BEAT:'BeatScene', PUZZLE:'PuzzleScene', RHYTHM:'RhythmScene', DEFENSE:'TDScene', PINBALL:'PinballScene', PAPERTOSS:'PaperTossScene', CLICKER:'ClickerScene', MEMORY:'MemoryScene' };
 
 const TRIGGERS = {
   BREAKER: {
@@ -118,6 +118,23 @@ const TRIGGERS = {
   },
   PINBALL: {
     lose: () => { const sc = window._phaserGame.scene.getScene('PinballScene'); sc._lives = 1; sc._drainCooldown = 0; sc.ball.y = (typeof GH === 'number' ? GH : 400) + 40; sc.ball.setVelocity(0, 0); },
+  },
+  CLICKER: {
+    win: () => {
+      const sc = window._phaserGame.scene.getScene('ClickerScene');
+      if (typeof sc._testSetPoints === 'function') sc._testSetPoints(100000);
+    },
+  },
+  MEMORY: {
+    win: () => {
+      const sc = window._phaserGame.scene.getScene('MemoryScene');
+      const cards = sc._testCards || [];
+      const groups = {};
+      cards.forEach(c => { (groups[c.emoji] = groups[c.emoji] || []).push(c); });
+      Object.keys(groups).forEach(emoji => {
+        groups[emoji].forEach(c => { if (c.bg) c.bg.emit('pointerdown'); });
+      });
+    },
   },
 };
 
