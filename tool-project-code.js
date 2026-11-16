@@ -79,6 +79,39 @@
     return names.length;
   }
 
+  function stamp() {
+    var d = new Date();
+    return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+  }
+  function download() {
+    var code = toCode();
+    var name = 'jvds-' + TOOL + '-' + stamp() + '.jvproj.txt';
+    var blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    return { name: name, bytes: blob.size, code: code };
+  }
+  function openFile(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file) { reject(new Error('Choose a handoff file first.')); return; }
+      if (file.size > 2 * 1024 * 1024) { reject(new Error('That file is too big to be a handoff file.')); return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        try { resolve(load(String(reader.result || ''))); }
+        catch (e) { reject(e); }
+      };
+      reader.onerror = function () { reject(new Error('That file could not be read.')); };
+      reader.readAsText(file);
+    });
+  }
+
   function toast(text) {
     var t = document.createElement('div');
     t.setAttribute('role', 'status');
@@ -162,6 +195,11 @@
       '<p class="jp-status" id="jvds-project-status"></p>' +
       '<div class="jp-row"><button type="button" class="jp" id="jvds-project-copy">Copy code</button>' +
       '<span class="jp-msg" id="jvds-project-copied" role="status"></span></div>' +
+      '<div class="jp-row"><button type="button" class="jp" id="jvds-project-download">Save to a file</button>' +
+      '<button type="button" class="jp jp-ghost" id="jvds-project-file-btn">Open a file</button>' +
+      '<input type="file" id="jvds-project-file" accept=".jvproj,.txt,text/plain" style="display:none">' +
+      '<span class="jp-msg" id="jvds-project-file-msg" role="status"></span></div>' +
+      '<p>Keep the file private. It holds the same saved work as the code.</p>' +
       '<label for="jvds-project-input">Paste a code to load work</label>' +
       '<textarea id="jvds-project-input" rows="3" spellcheck="false" placeholder="JVPROJ1: ..."></textarea>' +
       '<div class="jp-row"><button type="button" class="jp" id="jvds-project-load">Load code</button>' +
@@ -189,6 +227,35 @@
     });
 
     var msg = document.getElementById('jvds-project-msg');
+    var fileMsg = document.getElementById('jvds-project-file-msg');
+    document.getElementById('jvds-project-download').addEventListener('click', function () {
+      try {
+        var saved = download();
+        fileMsg.textContent = 'Saved ' + saved.name;
+        fileMsg.setAttribute('data-ok', '1');
+      } catch (e) {
+        fileMsg.textContent = 'Could not save the file. Use Copy code instead.';
+        fileMsg.setAttribute('data-ok', '0');
+      }
+      setTimeout(function () { fileMsg.textContent = ''; }, 5000);
+    });
+    var fileInput = document.getElementById('jvds-project-file');
+    document.getElementById('jvds-project-file-btn').addEventListener('click', function () {
+      fileInput.value = '';
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      openFile(file).then(function (n) {
+        fileMsg.textContent = 'Loaded ' + n + ' item' + (n === 1 ? '' : 's') + '. Reloading...';
+        fileMsg.setAttribute('data-ok', '1');
+        setTimeout(function () { location.reload(); }, 900);
+      }).catch(function (e) {
+        fileMsg.textContent = e.message || 'That file could not be loaded.';
+        fileMsg.setAttribute('data-ok', '0');
+      });
+    });
     document.getElementById('jvds-project-load').addEventListener('click', function () {
       var code = document.getElementById('jvds-project-input').value;
       try {
@@ -239,5 +306,8 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();
 
-  window.JVDSToolProject = { toCode: toCode, load: load, parse: parse, hasSaved: hasSaved, tool: TOOL };
+  window.JVDSToolProject = {
+    toCode: toCode, load: load, parse: parse, hasSaved: hasSaved,
+    tool: TOOL, open: open, download: download, openFile: openFile
+  };
 })();

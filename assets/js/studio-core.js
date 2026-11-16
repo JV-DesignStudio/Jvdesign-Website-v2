@@ -1384,6 +1384,17 @@
         ]),
         h('p', { class: 'jvs-hint', text: 'The link is compressed and lives in the URL. Very large projects should travel as a bundle instead.' })
       ]),
+      section('Take your work to another device', [
+        h('p', { class: 'jvs-hint', text: 'Save a project file or a short code, then open it on another computer. No account, and nothing is uploaded.' }),
+        h('button', { type: 'button', class: 'jvs-btn-primary', text: 'Move to another device', onclick: function () {
+          if (window.JVDSToolProject && typeof window.JVDSToolProject.open === 'function') {
+            S.panel.close();
+            window.JVDSToolProject.open();
+          } else {
+            S.toast('The device handoff is still loading. Try again in a moment.', { tone: 'warn' });
+          }
+        } })
+      ]),
       section('Print or save a PDF', [
         h('p', { class: 'jvs-hint', text: 'Print styles hide the toolbars and keep your writing and images on the page.' }),
         h('button', { type: 'button', text: 'Print this page', onclick: function () { S.print(); } })
