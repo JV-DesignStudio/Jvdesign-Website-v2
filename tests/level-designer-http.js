@@ -112,8 +112,12 @@ const server = http.createServer((req, res) => {
     dt.items.add(new File([bytes], 'drop-test.png', { type: 'image/png' }));
     const drop = document.getElementById('tilesetDrop');
     drop.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true }));
-    drop.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
-    await new Promise(r => setTimeout(r, 400));
+  drop.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  await new Promise(r => setTimeout(r, 900));
+  for (let i = 0; i < 60; i++) {
+      if (tilesetImage && tilesetCols === 2 && document.querySelectorAll('#tilePalette .tile-btn').length >= 4) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
     ok('drag-drop tileset populates palette', !!tilesetImage && tilesetCols === 2 && document.querySelectorAll('#tilePalette .tile-btn').length >= 4);
     setTool('draw');
 
