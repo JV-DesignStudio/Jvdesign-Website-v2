@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v61 - A3067: Tabletop Studio export, print, SVG,
+// version and backup tools load on demand; the play runtime is also precached.
 // JVDesignStudio Service Worker v60 - A2968: Tabletop Studio SVG export for 3D
 // printing, including hex boards and a piece sheet.
 // JVDesignStudio Service Worker v59 - A2967: Tabletop Studio characters, custom
@@ -58,7 +60,7 @@
 // v63 - A3061: precache the remaining learner makers (Minecraft Skin Editor, Game
 // Planner, Launch Studio, Game Logo Maker, Screenshot Mode) so the toolbox opens
 // offline on a school network after one online visit.
-const CACHE='jvds-v63';
+const CACHE='jvds-v64';
 const CORE=[
   '/',
   '/offline.html',
@@ -119,6 +121,8 @@ const CORE=[
   '/tools/tabletop-studio.html',
   '/style-tool-tabletop-studio.css',
   '/assets/js/inline/tabletop-studio-1.js',
+  '/tabletop-advanced.js',
+  '/tabletop-play-runtime.js',
   '/assets/css/studio-shell.css?v=1',
   // A2320: shared Studio Core (drawer, storage guard, share, templates).
   '/assets/css/studio-core.css',
