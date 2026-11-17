@@ -610,7 +610,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#6366f1",
-      "cover": "/GamesUpdatePromo.png",
+      "cover": "/GamesUpdatePromo.webp",
       "url": "/workshops/build-a-game-15-min.html"
     },
     {
@@ -5641,7 +5641,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-16T21:50:48.000Z",
+    "generated": "2026-11-17T16:20:35.000Z",
     "workshops": 283,
     "games": 16,
     "tools": 50,
