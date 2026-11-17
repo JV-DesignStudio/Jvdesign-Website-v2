@@ -35,6 +35,5 @@
       if (start) start.hidden = true;
     } catch (e) { /* storage blocked or malformed */ }
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  init();
 })();
