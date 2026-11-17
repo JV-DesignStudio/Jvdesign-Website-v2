@@ -21,7 +21,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Wgku0GcNQtKmavcY2/4v1VIsGkq0GsQKl26yTxIy2zQ=' 'sha256-uamrAXo/8iVlNeHNPf/yA5UGldpqiy30cYXArD7wcas=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Wgku0GcNQtKmavcY2/4v1VIsGkq0GsQKl26yTxIy2zQ=' 'sha256-uamrAXo/8iVlNeHNPf/yA5UGldpqiy30cYXArD7wcas=' 'sha256-m2xmok/AC4bqiEsorZY+sQkyzZpiqpSe/aS8wl8p2pU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -34,6 +34,7 @@
 
     <link rel="stylesheet" href="../style-book-Pip_and_the_night_sky.css?v=17">
 <noscript><link rel="stylesheet" href="../style-book-Pip_and_the_night_sky.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-books-reader.css?v=1">
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/books/Pip_and_the_night_sky.html">
     <meta property="og:title"       content="Pip & The Great Dark | JVDesignStudio">
@@ -321,6 +322,63 @@
 
     </div>
 </section>
+
+<!-- ══ READ ALOUD PLAYER ══ -->
+<section class="book-read-aloud" aria-labelledby="read-aloud-heading">
+  <div class="book-read-aloud-inner">
+    <p class="book-read-aloud-label">✦ Read Aloud</p>
+    <h2 class="book-read-aloud-title" id="read-aloud-heading">🏮 Listen to Pip's story</h2>
+    <p class="book-read-aloud-desc">A read-aloud recording of <em>Pip & The Great Dark</em> is coming when the book launches.</p>
+    <audio id="pipAudio" aria-label="Pip & The Great Dark read-aloud" preload="none" hidden>
+      <!-- src added when audio is ready -->
+    </audio>
+    <div class="book-audio-player" role="group" aria-label="Read-aloud controls">
+      <button class="book-audio-btn" id="pipAudioBack"
+              aria-label="Skip back 10 seconds" title="−10s" disabled>⏮</button>
+      <button class="book-audio-btn book-audio-btn--play" id="pipAudioPlay"
+              aria-label="Play" aria-pressed="false" disabled>▶</button>
+      <button class="book-audio-btn" id="pipAudioFwd"
+              aria-label="Skip forward 10 seconds" title="+10s" disabled>⏭</button>
+      <input class="book-audio-progress" id="pipAudioSeek"
+             type="range" min="0" max="100" value="0" step="0.1"
+             aria-label="Playback position" aria-valuetext="0%" disabled>
+      <span class="book-audio-time" id="pipAudioTime" aria-live="off">0:00 / 0:00</span>
+    </div>
+    <p class="book-audio-coming-soon" role="status">
+      Audio coming soon - follow us on <a href="https://www.instagram.com/jv_design.studio/" rel="noopener noreferrer" target="_blank">Instagram</a> for the launch.
+    </p>
+  </div>
+</section>
+<script>
+(function(){
+  /* Read-aloud player - wires up once an audio src is set */
+  const audio = document.getElementById('pipAudio');
+  if (!audio || !audio.src) return; /* no src yet - controls stay disabled */
+  const play  = document.getElementById('pipAudioPlay');
+  const back  = document.getElementById('pipAudioBack');
+  const fwd   = document.getElementById('pipAudioFwd');
+  const seek  = document.getElementById('pipAudioSeek');
+  const time  = document.getElementById('pipAudioTime');
+  const fmt = s => { const m=Math.floor(s/60); return m+':'+(Math.floor(s%60)+'').padStart(2,'0'); };
+  [play,back,fwd,seek].forEach(el => { el.disabled = false; });
+  play.addEventListener('click', () => {
+    if (audio.paused) { audio.play(); play.setAttribute('aria-label','Pause'); play.setAttribute('aria-pressed','true'); play.textContent='⏸'; }
+    else { audio.pause(); play.setAttribute('aria-label','Play'); play.setAttribute('aria-pressed','false'); play.textContent='▶'; }
+  });
+  back.addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+  fwd.addEventListener('click', () => { audio.currentTime = Math.min(audio.duration||0, audio.currentTime + 10); });
+  seek.addEventListener('input', () => { audio.currentTime = (seek.value / 100) * (audio.duration || 0); });
+  audio.addEventListener('timeupdate', () => {
+    const d = audio.duration || 0;
+    seek.value = d ? (audio.currentTime / d * 100) : 0;
+    seek.setAttribute('aria-valuetext', Math.round(seek.value) + '%');
+    time.textContent = fmt(audio.currentTime) + ' / ' + fmt(d);
+  });
+  audio.addEventListener('ended', () => {
+    play.setAttribute('aria-label','Play'); play.setAttribute('aria-pressed','false'); play.textContent='▶';
+  });
+})();
+</script>
 
 <!-- ══ THEMES ══ -->
 <section class="themes-section">
