@@ -91,7 +91,7 @@
   var MIN_ROWS = 2;
   var MAX_ROWS = 30;
   var PLAYER_COLORS = ['#BC4749', '#3f6e71', '#c98a2e', '#7a5aa8'];
-  var EFFECT_TYPES = { forward: 1, back: 1, goTo: 1, skip: 1, again: 1, card: 1, money: 1, swap: 1, toStart: 1, collect: 1, nearest: 1 };
+  var EFFECT_TYPES = { forward: 1, back: 1, goTo: 1, skip: 1, again: 1, card: 1, money: 1, swap: 1, toStart: 1, collect: 1, nearest: 1, jail: 1, rollDie: 1 };
   var TEACH = {
     snakes: {
       steps: { paint: 'Number the track', piece: 'Add snakes and ladders', roll: 'Roll and climb' },
@@ -343,11 +343,23 @@
   var diceActionBtn = document.getElementById('ttDiceAction');
   var actionFacesInput = document.getElementById('ttActionFaces');
   var actionSaveBtn = document.getElementById('ttActionSave');
+  var tileTooltipEl = document.getElementById('ttTileTooltip');
+  var tapModeBtn = document.getElementById('ttTapMode');
+  var pieceColorInput = document.getElementById('ttPieceColor');
+  var pieceHpInput = document.getElementById('ttPieceHp');
+  var pieceAtkInput = document.getElementById('ttPieceAtk');
+  var copyLinkBtn = document.getElementById('ttCopyLink');
+  var shortcutStrip = document.getElementById('ttShortcutStrip');
+  var customTerrainColorInput = document.getElementById('ttCustomTerrainColor');
+  var customTerrainNameInput = document.getElementById('ttCustomTerrainName');
+  var customTerrainAddBtn = document.getElementById('ttCustomTerrainAdd');
 
   var S = blankState();
   var bgImg = null;
   var soundMuted = false;
   var audioCtx = null;
+  var tapPickMode = false;
+  var tapPickTarget = null;
   var emptyDismissed = false;
   var hover = null;
   var kbCursor = { col: 0, row: 0 };
@@ -417,6 +429,7 @@
   function byId(id) {
     return document.getElementById(id);
   }
+
 
   function clamp(value, low, high) {
     return Math.min(high, Math.max(low, value));
@@ -935,6 +948,24 @@
         g2.gain.setValueAtTime(0.09, ctx.currentTime);
         g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
         osc2.connect(g2); g2.connect(ctx.destination); osc2.start(); osc2.stop(ctx.currentTime + 0.09);
+      } else if (type === 'card') {
+        var osc4 = ctx.createOscillator();
+        var g4 = ctx.createGain();
+        osc4.type = 'triangle';
+        osc4.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc4.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.06);
+        g4.gain.setValueAtTime(0.08, ctx.currentTime);
+        g4.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc4.connect(g4); g4.connect(ctx.destination); osc4.start(); osc4.stop(ctx.currentTime + 0.09);
+      } else if (type === 'land') {
+        var osc5 = ctx.createOscillator();
+        var g5 = ctx.createGain();
+        osc5.type = 'sine';
+        osc5.frequency.setValueAtTime(440, ctx.currentTime);
+        osc5.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+        g5.gain.setValueAtTime(0.1, ctx.currentTime);
+        g5.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc5.connect(g5); g5.connect(ctx.destination); osc5.start(); osc5.stop(ctx.currentTime + 0.13);
       } else if (type === 'win') {
         [523, 659, 784, 1047].forEach(function (freq, i) {
           var osc3 = ctx.createOscillator();
@@ -1448,7 +1479,7 @@
     var row;
     var c;
     var meta;
-    var effectGlyph = { forward: '↑', back: '↓', goTo: '→', skip: '⏸', again: '↻', card: '🃏', money: '💰', swap: '⇄', toStart: '⌂', collect: '🧾', nearest: '🎯' };
+    var effectGlyph = { forward: '↑', back: '↓', goTo: '→', skip: '⏸', again: '↻', card: '🃏', money: '💰', swap: '⇄', toStart: '⌂', collect: '🧾', nearest: '🎯', jail: '🔒', rollDie: '🎲' };
 
     for (row = 0; row < S.rows; row++) {
       for (col = 0; col < S.cols; col++) {
@@ -1980,6 +2011,7 @@
     selectToken(t.id);
     markStep('piece');
     var prefix = lastDrawReshuffled ? 'Deck reshuffled. ' : '';
+    playSound('card');
     toast(prefix + 'You drew the ' + cardLabel(t) + '.');
     announce(prefix + 'Drew the ' + cardLabel(t) + '.');
   }
@@ -2005,6 +2037,7 @@
     pieceBar.hidden = !t;
     var def = t && t.type === 'piece' ? pieceDef(t.kind) : null;
     var isCounter = !!(def && def.counter);
+    var isPiece = !!(t && t.type === 'piece');
     if (t) flipBtn.hidden = t.type !== 'card';
     if (valueDownBtn) valueDownBtn.hidden = !isCounter;
     if (valueUpBtn) valueUpBtn.hidden = !isCounter;
@@ -2012,6 +2045,18 @@
     if (pieceNoteEl) {
       pieceNoteEl.hidden = !t || t.type === 'card';
       if (t && t.type !== 'card') pieceNoteEl.value = t.note || '';
+    }
+    if (pieceColorInput) {
+      pieceColorInput.hidden = !isPiece;
+      if (isPiece) pieceColorInput.value = t.color || (def && def.color) || '#BC4749';
+    }
+    if (pieceHpInput) {
+      pieceHpInput.hidden = !isPiece || isCounter;
+      if (isPiece && !isCounter) pieceHpInput.value = t.hp != null ? t.hp : '';
+    }
+    if (pieceAtkInput) {
+      pieceAtkInput.hidden = !isPiece || isCounter;
+      if (isPiece && !isCounter) pieceAtkInput.value = t.atk != null ? t.atk : '';
     }
   }
 
@@ -3508,6 +3553,7 @@
       return;
     }
     var effect = meta.effect;
+    if (depth === 0) playSound('land');
     var value = effect.value || 0;
     if (effect.type === 'forward' && value) {
       toast('Move forward ' + Math.abs(value) + '.');
@@ -3610,6 +3656,19 @@
       S.players[player - 1].money += value;
       toast((value > 0 ? 'Collect ' : 'Pay ') + Math.abs(value) + '.');
       renderPlayers();
+    } else if (effect.type === 'jail') {
+      var turns = Math.max(1, Math.abs(value) || 1);
+      S.players[player - 1].jailTurns = (S.players[player - 1].jailTurns || 0) + turns;
+      toast('Trapped! Miss ' + turns + ' turn' + (turns > 1 ? 's' : '') + '.');
+      announce('Trapped for ' + turns + ' turn' + (turns > 1 ? 's' : '') + '.');
+      playtestLog(activePlayerName() + ' is trapped for ' + turns + ' turn(s).');
+    } else if (effect.type === 'rollDie') {
+      var dieFaces = Math.max(2, Math.abs(value) || 6);
+      var rolled = Math.floor(Math.random() * dieFaces) + 1;
+      playSound('roll');
+      toast('Tile die: rolled ' + rolled + ' on a d' + dieFaces + '!');
+      announce('Tile die rolled ' + rolled + '.');
+      playtestLog(activePlayerName() + ' rolled a d' + dieFaces + ' on the tile and got ' + rolled + '.');
     }
     if (done) done({ again: againFlag });
   }
@@ -3619,8 +3678,13 @@
     if (!againFlag) {
       var next = (S.turn % S.players.length) + 1;
       var guard = 0;
-      while (S.players[next - 1] && S.players[next - 1].skip && guard < 4) {
-        S.players[next - 1].skip = false;
+      while (S.players[next - 1] && (S.players[next - 1].skip || (S.players[next - 1].jailTurns || 0) > 0) && guard < 4) {
+        if ((S.players[next - 1].jailTurns || 0) > 0) {
+          S.players[next - 1].jailTurns -= 1;
+          toast('Player ' + next + ' is trapped - skipped! ' + S.players[next - 1].jailTurns + ' turn(s) left.');
+        } else {
+          S.players[next - 1].skip = false;
+        }
         next = (next % S.players.length) + 1;
         guard++;
       }
@@ -5610,6 +5674,7 @@
     } else {
       announce('Build mode. Paint tiles and snap pieces to the grid.');
     }
+    if (shortcutStrip) shortcutStrip.hidden = S.mode !== 'play';
   }
 
   function updateStatus() {
@@ -5978,6 +6043,61 @@
     S.round = 1;
   }
 
+  function buildTicTacToeTemplate() {
+    resetGridTo(3, 3, 'square');
+    fillTiles('snow');
+    for (var r = 0; r < 3; r++) {
+      for (var c = 0; c < 3; c++) {
+        setTemplateMeta(c, r, { label: (r * 3 + c + 1) + '' });
+      }
+    }
+    S.name = 'Noughts & Crosses';
+    S.rules = 'Take turns placing X and O pieces. First to get three in a row (across, down or diagonally) wins. Use the ❌ and ⭕ counter pieces.';
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildBattleshipsTemplate() {
+    resetGridTo(10, 10, 'square');
+    fillTiles('water');
+    var letters = ['A','B','C','D','E','F','G','H','I','J'];
+    for (var r = 0; r < 10; r++) {
+      for (var c = 0; c < 10; c++) {
+        setTemplateMeta(c, r, { label: letters[r] + (c + 1) });
+      }
+    }
+    S.name = 'Battleships';
+    S.rules = 'Each player sets up their fleet on a hidden copy of this board. Take turns calling out grid squares. Mark hits and misses. Sink all enemy ships to win.';
+    S.turn = 1;
+    S.round = 1;
+  }
+
+  function buildHexDungeonTemplate() {
+    resetGridTo(9, 9, 'hex');
+    fillTiles('stone');
+    var midC = 4;
+    var midR = 4;
+    for (var r = 0; r < 9; r++) {
+      for (var c = 0; c < 9; c++) {
+        var dist = Math.abs(c - midC) + Math.abs(r - midR) + Math.abs((c + r) - (midC + midR));
+        if (dist <= 4) setTileAt(c, r, 'dungeon');
+      }
+    }
+    setTileAt(midC, midR, 'magic');
+    setTemplateMeta(midC, midR, { icon: '🏆', label: 'Goal' });
+    var spawnPts = [[0, 0], [8, 0], [0, 8], [8, 8]];
+    for (var i = 0; i < Math.min(S.players.length, spawnPts.length); i++) {
+      var sp = spawnPts[i];
+      var tk = addPieceAtCell('meeple', sp[0], sp[1]);
+      if (tk) { tk.color = PLAYER_COLORS[i]; tk.player = i + 1; tk.pawn = true; }
+    }
+    S.name = 'Hex Dungeon';
+    S.rules = 'Explore the dungeon. Each turn roll a die and move your hero that many tiles. Reach the golden goal tile to win. Build traps and treasures in the editor!';
+    S.settings.snapPath = false;
+    S.turn = 1;
+    S.round = 1;
+  }
+
   function buildSnakesTemplate() {
     resetGridTo(10, 10, 'square');
     fillTiles('sand');
@@ -6325,7 +6445,10 @@
       go: 'Go Board',
       race: 'Fast Race',
       gems: 'Gem Hunt',
-      coop: 'Co-op Escape'
+      coop: 'Co-op Escape',
+      tictactoe: 'Noughts & Crosses',
+      battleships: 'Battleships',
+      hexdungeon: 'Hex Dungeon'
     };
     var hadContent = !!(S.bg || S.tokens.length || S.tiles.some(function (t) { return !!t; }));
     if (window.ToolAnalytics) {
@@ -6355,6 +6478,9 @@
     else if (id === 'race') buildRaceTemplate();
     else if (id === 'gems') buildGemsTemplate();
     else if (id === 'coop') buildCoopTemplate();
+    else if (id === 'tictactoe') buildTicTacToeTemplate();
+    else if (id === 'battleships') buildBattleshipsTemplate();
+    else if (id === 'hexdungeon') buildHexDungeonTemplate();
     S.deck = makeDeck();
     if (id === 'property') seedPropertyDecks();
     if (/^(snakes|ludo|property|life|race|gems|coop)$/.test(id)) dieSides = 6;
@@ -6674,6 +6800,24 @@
     });
   }
 
+  function copyBoardLink() {
+    encodeShareCode().then(function (code) {
+      var url = location.href.split('?')[0] + '?board=' + encodeURIComponent(code);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+          toast('Board link copied!');
+          announce('Board link copied to the clipboard.');
+        }).catch(function () {
+          toast('Could not copy. Code: ' + code);
+        });
+      } else {
+        toast('Copy the URL: ' + url);
+      }
+    }).catch(function () {
+      toast('Could not make a link for this board.');
+    });
+  }
+
   function loadShareCode() {
     if (!shareCodeInput) return;
     decodeShareCode(shareCodeInput.value).then(function (data) {
@@ -6741,8 +6885,14 @@
   function buildPieces() {
     var host = byId('ttPieces');
     host.textContent = '';
-    var frag = document.createDocumentFragment();
-    function addPieceButton(p, custom) {
+    var categoryOrder = ['Players', 'Props', 'Fantasy', 'Chess & Go'];
+    var categories = {
+      'Players':     ['meeple','meeple-2','meeple-3','meeple-4','stardust','lumo','ember','pip','echo','barnaby'],
+      'Props':       ['counter','treasure','flag','tree','rock','star','castle','coin','cottage','monster'],
+      'Fantasy':     ['sword','shield','dragon','skull','crown','wizard'],
+      'Chess & Go':  ['chess-wk','chess-wq','chess-wr','chess-wb','chess-wn','chess-wp','chess-bk','chess-bq','chess-br','chess-bb','chess-bn','chess-bp','go-black','go-white']
+    };
+    function makePieceButton(p, custom) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'tt-piece-btn' + (p.img ? ' tt-piece-btn--char' : '') + (custom ? ' tt-piece-btn--custom' : '');
@@ -6762,13 +6912,45 @@
         glyph.textContent = p.glyph;
       }
       b.appendChild(glyph);
-      var label = document.createElement('span');
-      label.textContent = p.label;
-      b.appendChild(label);
-      frag.appendChild(b);
+      var lbl = document.createElement('span');
+      lbl.textContent = p.label;
+      b.appendChild(lbl);
+      return b;
     }
-    PIECE_DEFS.forEach(function (p) { addPieceButton(p, false); });
-    (S.customPieces || []).forEach(function (piece) { addPieceButton(pieceDef(piece.id), true); });
+    var frag = document.createDocumentFragment();
+    var pieceById = {};
+    PIECE_DEFS.forEach(function (p) { pieceById[p.id] = p; });
+    categoryOrder.forEach(function (catName, idx) {
+      var ids = categories[catName];
+      var details = document.createElement('details');
+      details.className = 'tt-piece-category';
+      if (idx === 0) details.open = true;
+      var summary = document.createElement('summary');
+      summary.textContent = catName;
+      details.appendChild(summary);
+      var grid = document.createElement('div');
+      grid.className = 'tt-piece-grid';
+      ids.forEach(function (id) {
+        var p = pieceById[id];
+        if (p) grid.appendChild(makePieceButton(p, false));
+      });
+      details.appendChild(grid);
+      frag.appendChild(details);
+    });
+    var customs = S.customPieces || [];
+    if (customs.length) {
+      var customDetails = document.createElement('details');
+      customDetails.className = 'tt-piece-category';
+      customDetails.open = true;
+      var customSummary = document.createElement('summary');
+      customSummary.textContent = 'Custom';
+      customDetails.appendChild(customSummary);
+      var customGrid = document.createElement('div');
+      customGrid.className = 'tt-piece-grid';
+      customs.forEach(function (piece) { customGrid.appendChild(makePieceButton(pieceDef(piece.id), true)); });
+      customDetails.appendChild(customGrid);
+      frag.appendChild(customDetails);
+    }
     host.appendChild(frag);
   }
 
@@ -7440,7 +7622,9 @@
       swap: 'No amount needed',
       toStart: 'No amount needed',
       collect: 'Money each player pays',
-      nearest: 'No amount needed'
+      nearest: 'No amount needed',
+      jail: 'Turns trapped',
+      rollDie: 'Die faces (e.g. 6 = d6)'
     };
     tileEffectLabel.textContent = labels[type] || 'Amount';
     tileEffectValueInput.disabled = type === 'again' || type === 'card' || type === 'none' ||
@@ -7462,6 +7646,8 @@
     if (effect.type === 'toStart') return 'Go back to the start';
     if (effect.type === 'collect') return 'Collect £' + (value || 25) + ' from each player';
     if (effect.type === 'nearest') return 'Take the nearest snake or ladder';
+    if (effect.type === 'jail') return 'Trapped - miss ' + (Math.abs(value) || 1) + ' turn(s)';
+    if (effect.type === 'rollDie') return 'Roll a d' + (Math.abs(value) || 6) + ' on this tile';
     return '';
   }
 
@@ -7880,6 +8066,26 @@
   }
 
   function handleTap(t) {
+    if (tapPickMode && S.mode === 'play') {
+      var pickEl;
+      if (!tapPickTarget) {
+        tapPickTarget = t;
+        pickEl = tokensLayer && tokensLayer.querySelector('.tt-token[data-id="' + t.id + '"]');
+        if (pickEl) pickEl.classList.add('tt-token--picked');
+        toast('Picked ' + (t.note || t.kind) + '. Tap a tile to place it.');
+      } else if (tapPickTarget.id === t.id) {
+        pickEl = tokensLayer && tokensLayer.querySelector('.tt-token[data-id="' + t.id + '"]');
+        if (pickEl) pickEl.classList.remove('tt-token--picked');
+        tapPickTarget = null;
+        toast('Deselected.');
+      } else {
+        pickEl = tokensLayer && tokensLayer.querySelector('.tt-token[data-id="' + tapPickTarget.id + '"]');
+        if (pickEl) pickEl.classList.remove('tt-token--picked');
+        tapPickTarget = null;
+        selectToken(t.id);
+      }
+      return;
+    }
     selectToken(t.id);
     if (t.type === 'card' && S.mode === 'play') flipToken(t);
   }
@@ -7918,6 +8124,26 @@
     clearBoard();
   }
 
+  function updateTileTooltip(cell, event) {
+    if (!tileTooltipEl) return;
+    var meta = metaAt(cell.col, cell.row);
+    var parts = [];
+    if (meta && meta.label) parts.push(meta.label);
+    if (meta && meta.effect) parts.push(tileEffectText(meta.effect));
+    if (meta && meta.note) parts.push(meta.note);
+    if (meta && meta.price) parts.push('£' + meta.price);
+    if (!parts.length) { tileTooltipEl.hidden = true; return; }
+    tileTooltipEl.textContent = parts.join(' · ');
+    tileTooltipEl.hidden = false;
+    if (event) {
+      var rect = cv.getBoundingClientRect();
+      var ex = event.clientX - rect.left;
+      var ey = event.clientY - rect.top;
+      tileTooltipEl.style.left = clamp(ex + 14, 0, rect.width - 160) + 'px';
+      tileTooltipEl.style.top = Math.max(0, ey - 32) + 'px';
+    }
+  }
+
   function onBackgroundFile(event) {
     var file = event.target.files && event.target.files[0];
     event.target.value = '';
@@ -7950,6 +8176,22 @@
 
   function onCanvasPointerDown(event) {
     try { cv.focus({ preventScroll: true }); } catch (err) { cv.focus(); }
+    if (tapPickMode && S.mode === 'play' && tapPickTarget) {
+      var cell = pointerCell(event);
+      if (cell) {
+        pushUndo();
+        var centre = centerOf(cell.col, cell.row);
+        tapPickTarget.x = centre.x;
+        tapPickTarget.y = centre.y;
+        updateTokenElement(tapPickTarget);
+        var pickedEl = tokensLayer && tokensLayer.querySelector('.tt-token[data-id="' + tapPickTarget.id + '"]');
+        if (pickedEl) pickedEl.classList.remove('tt-token--picked');
+        tapPickTarget = null;
+        markDirty();
+        renderAll();
+      }
+      return;
+    }
     if (S.mode !== 'build') return;
     if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
     event.preventDefault();
@@ -8031,11 +8273,16 @@
     if (!hover || hover.col !== cell.col || hover.row !== cell.row) {
       hover = cell;
       scheduleDraw();
+      updateTileTooltip(cell, event);
     }
     if (painting) {
       applyPaint(cell, eraseStroke);
       markDirty();
     }
+  }
+
+  function hideTileTooltip() {
+    if (tileTooltipEl) tileTooltipEl.hidden = true;
   }
 
   function endPaint() {
@@ -8483,6 +8730,30 @@
     if (byId('ttTakeHome')) byId('ttTakeHome').addEventListener('click', takeItHome);
     if (shareCopyBtn) shareCopyBtn.addEventListener('click', copyShareCode);
     if (shareLoadBtn) shareLoadBtn.addEventListener('click', loadShareCode);
+    if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyBoardLink);
+
+    if (customTerrainAddBtn) customTerrainAddBtn.addEventListener('click', function () {
+      var color = customTerrainColorInput ? customTerrainColorInput.value : '#ff9999';
+      var rawName = customTerrainNameInput ? customTerrainNameInput.value.trim() : '';
+      var name = rawName || 'Custom';
+      var key = 'custom_' + name.toLowerCase().replace(/\W+/g, '_').slice(0, 12) + '_' + Date.now().toString(36);
+      TERRAIN[key] = { name: name.slice(0, 16), color: color, icon: '🎨' };
+      buildTerrainPalette();
+      toast('Added terrain: ' + name + '.');
+      announce('Custom terrain ' + name + ' added to the palette.');
+    });
+
+    if (tapModeBtn) tapModeBtn.addEventListener('click', function () {
+      tapPickMode = !tapPickMode;
+      if (!tapPickMode && tapPickTarget) {
+        var clearEl = tokensLayer && tokensLayer.querySelector('.tt-token[data-id="' + tapPickTarget.id + '"]');
+        if (clearEl) clearEl.classList.remove('tt-token--picked');
+        tapPickTarget = null;
+      }
+      tapModeBtn.setAttribute('aria-pressed', tapPickMode ? 'true' : 'false');
+      tapModeBtn.classList.toggle('is-active', tapPickMode);
+      toast(tapPickMode ? 'Tap mode on. Tap a piece then a tile.' : 'Tap mode off.');
+    });
     byId('ttExportSvg').addEventListener('click', exportBoardSVG);
     byId('ttExportPiecesSvg').addEventListener('click', exportPiecesSVG);
     if (turnChip) turnChip.addEventListener('click', function () {
@@ -8950,6 +9221,30 @@
       markDirty();
     });
 
+    if (pieceColorInput) pieceColorInput.addEventListener('input', function () {
+      var t = tokenById(S.selectedId);
+      if (!t || t.type !== 'piece') return;
+      t.color = pieceColorInput.value;
+      updateTokenElement(t);
+      markDirty();
+    });
+
+    if (pieceHpInput) pieceHpInput.addEventListener('change', function () {
+      var t = tokenById(S.selectedId);
+      if (!t || t.type !== 'piece') return;
+      t.hp = pieceHpInput.value !== '' ? parseInt(pieceHpInput.value, 10) : null;
+      updateTokenElement(t);
+      markDirty();
+    });
+
+    if (pieceAtkInput) pieceAtkInput.addEventListener('change', function () {
+      var t = tokenById(S.selectedId);
+      if (!t || t.type !== 'piece') return;
+      t.atk = pieceAtkInput.value !== '' ? parseInt(pieceAtkInput.value, 10) : null;
+      updateTokenElement(t);
+      markDirty();
+    });
+
     var soundMuteBtn = byId('ttSoundMute');
     if (soundMuteBtn) soundMuteBtn.addEventListener('click', function () {
       soundMuted = !soundMuted;
@@ -9366,6 +9661,43 @@
       library.boards.push({ id: id, name: 'My board', updated: Date.now(), data: boardPayload() });
       writeLibrary();
     }
+    var urlParams = new URLSearchParams(location.search);
+    var urlCode = urlParams.get('board');
+    if (urlCode) {
+      try {
+        var urlData = await decodeShareCode(urlCode);
+        if (urlData) {
+          applyBoardData(urlData);
+          history.replaceState(null, '', location.pathname);
+          firstSteps.dismissed = true;
+          inferSimpleProgress();
+          preloadSprites();
+          buildTerrainPalette();
+          buildPieces();
+          buildDiceTypes();
+          wireEvents();
+          wireSectionMemory();
+          restoreSectionStates();
+          setupWideRail();
+          wireAdvancedPreload();
+          window.addEventListener('resize', function () {
+            if (!autoFit) return;
+            if (fitTimer) clearTimeout(fitTimer);
+            fitTimer = setTimeout(function () { fitTimer = null; if (autoFit) fitBoardView(); }, 150);
+          });
+          ensureDecks();
+          if (S.bg) setBgImage(S.bg);
+          syncControls();
+          renderAll();
+          fitBoardView();
+          updateSaveState('Not saved yet', false);
+          renderLibrary();
+          toast('Board loaded from link!');
+          return;
+        }
+      } catch (err) { /* fall through to normal load */ }
+    }
+
     var loaded = existing ? loadBoard() : false;
     firstSteps.dismissed = loaded;
     inferSimpleProgress();
