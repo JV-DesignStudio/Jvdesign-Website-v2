@@ -34,6 +34,12 @@
   function loadGtag(){
     if(window._gtagLoaded) return;
     window._gtagLoaded=true;
+    // Preconnects added here (after consent) so they don't fire on page load.
+    // Static preconnect hints in HTML should be removed once build.js is updated.
+    ['https://www.googletagmanager.com','https://www.google-analytics.com'].forEach(function(u){
+      var l=document.createElement('link'); l.rel='preconnect'; l.href=u;
+      document.head.appendChild(l);
+    });
     gtag('config', GA_MEASUREMENT_ID, { anonymize_ip: true });
     var s=document.createElement('script');
     s.async=true;
