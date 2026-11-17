@@ -232,6 +232,7 @@ async function bootWorkspace() {
       } else {
         showBanner(`Quest Complete! +${node.xp ?? 50} XP ⚡`);
       }
+      setTimeout(() => showSharePrompt(node.title ?? nodeId, node.xp ?? 50), 1800);
     } else if (results.some(r => !r.passed)) {
       SoundFX.playFailure();
       showHint(results, logs, track?.mascotId ?? 'lumo');
@@ -277,6 +278,75 @@ function evalCondition(condition, state) {
       `return (${condition});`
     )(state.completedNodes, state.streak, state.unlockedBadges, completedTracks);
   } catch { return false; }
+}
+
+/* ── Share prompt after quest completion ── */
+function showSharePrompt(nodeTitle, xpEarned) {
+  document.getElementById('jvds-share-modal')?.remove();
+
+  const shareText = `I just completed "${nodeTitle}" on JVDesignStudio and earned ${xpEarned} XP! 🎮✨`;
+  const shareUrl  = 'https://jvdesignstudio.co.uk/jvdesignstudio/';
+
+  const modal = document.createElement('div');
+  modal.id = 'jvds-share-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:12000;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.7);font-family:var(--font-body,sans-serif);
+  `;
+  modal.innerHTML = `
+    <div style="
+      background:#1a1a1a;border:1px solid #70A3A7;border-radius:14px;
+      padding:1.5rem 1.75rem;max-width:360px;width:90%;text-align:center;position:relative;
+    " role="dialog" aria-modal="true" aria-label="Share your achievement">
+      <button id="jvds-share-close" aria-label="Close" style="
+        position:absolute;top:.6rem;right:.8rem;background:none;border:none;
+        color:#F0EAD6;font-size:1.1rem;cursor:pointer;
+      ">✕</button>
+      <div style="font-size:2.2rem;margin-bottom:.5rem">🎉</div>
+      <h3 style="color:#F0EAD6;margin:0 0 .4rem;font-size:1.05rem">${nodeTitle} complete!</h3>
+      <p style="color:#70A3A7;font-size:.82rem;margin:.25rem 0 1rem">+${xpEarned} XP earned</p>
+      <p style="color:#b0a898;font-size:.82rem;line-height:1.5;margin:0 0 1rem">${shareText}</p>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <button id="jvds-share-copy" style="
+          background:#70A3A7;color:#000;border:none;border-radius:7px;
+          padding:.55rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;
+        ">Copy message</button>
+        <button id="jvds-share-native" style="
+          background:rgba(255,255,255,.07);color:#F0EAD6;border:1px solid #524c42;
+          border-radius:7px;padding:.55rem 1rem;font-size:.85rem;cursor:pointer;
+          display:none;
+        ">Share…</button>
+        <button id="jvds-share-dismiss" style="
+          background:none;color:#524c42;border:none;font-size:.8rem;cursor:pointer;padding:.35rem;
+        ">No thanks</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  document.getElementById('jvds-share-close').onclick  = close;
+  document.getElementById('jvds-share-dismiss').onclick = close;
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+
+  const copyBtn = document.getElementById('jvds-share-copy');
+  copyBtn.onclick = () => {
+    navigator.clipboard?.writeText(`${shareText}\n${shareUrl}`).then(() => {
+      copyBtn.textContent = 'Copied! ✓';
+      setTimeout(close, 1200);
+    }).catch(() => {
+      copyBtn.textContent = 'Could not copy';
+    });
+  };
+
+  const nativeBtn = document.getElementById('jvds-share-native');
+  if (navigator.share) {
+    nativeBtn.style.display = '';
+    nativeBtn.onclick = () => {
+      navigator.share({ title: 'JVDesignStudio', text: shareText, url: shareUrl }).catch(() => {});
+      close();
+    };
+  }
 }
 
 /* ── Toast banner ── */

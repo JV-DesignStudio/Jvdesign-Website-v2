@@ -39,8 +39,6 @@
 <script defer src="/assets/js/tool-kit.js"></script>
 <!-- /BUILD:head-icons -->
 
-<link rel="preconnect" href="https://www.googletagmanager.com">
-<link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
@@ -128,6 +126,7 @@
     <div class="tt-head-tools">
       <button type="button" id="ttSimpleToggle" class="tt-btn tt-btn--quiet" aria-pressed="true" title="Switch between simple and advanced tools">Simple mode</button>
       <button type="button" id="ttTapMode" class="tt-btn tt-btn--quiet" aria-pressed="false" title="Tap to pick up and place pieces - better on touchscreens">👆 Tap mode</button>
+      <button type="button" id="ttSyncBtn" class="tt-btn tt-btn--quiet" aria-pressed="false" title="Share board live with other tabs on this device">🔗 Sync</button>
       <div class="tt-mode" role="group" aria-label="Build or play">
         <button type="button" class="tt-mode-btn" data-mode="build" aria-pressed="true">🔨 Build</button>
         <button type="button" class="tt-mode-btn" data-mode="play" aria-pressed="false">🎲 Play</button>
@@ -305,6 +304,10 @@
                     <option value="money">Collect or pay money</option>
                     <option value="skip">Miss a turn</option>
                     <option value="again">Roll again</option>
+                    <option value="jail">Trapped (miss N turns)</option>
+                    <option value="rollDie">Roll a custom die</option>
+                    <option value="skip">Miss a turn</option>
+                    <option value="again">Roll again</option>
                     <option value="collect">Collect from every player</option>
                     <option value="toStart">Go back to the start</option>
                   </select>
@@ -382,6 +385,13 @@
             </div>
             <div class="tt-row" style="margin-top:8px">
               <button type="button" id="ttSoundMute" aria-pressed="false" class="tt-btn tt-btn--quiet tt-btn--wide">🔊 Sound on</button>
+              <div class="tt-field" style="margin-top:8px">
+                <label class="tt-label" for="ttTimerSecs">Turn timer (seconds, 0 = off)</label>
+                <div class="tt-row" style="gap:8px;align-items:center">
+                  <input type="number" id="ttTimerSecs" class="tt-input" min="0" max="300" step="5" value="0" inputmode="numeric" style="max-width:80px">
+                  <span id="ttTimerDisplay" class="tt-timer-display" hidden aria-live="assertive">--</span>
+                </div>
+              </div>
             </div>
           </div>
         </details>
@@ -421,8 +431,15 @@
                 <option value="finish">First to the finish</option>
                 <option value="allPawns">Bring every pawn home</option>
                 <option value="mostMoney">Most money when you stop</option>
+                <option value="collectTarget">First to reach a money target</option>
+                <option value="eliminate">Last player with money wins</option>
+                <option value="controlTiles">First to own N tiles</option>
                 <option value="manual">I'll decide</option>
               </select>
+              <div class="tt-row" id="ttWinTargetRow" hidden>
+                <label class="tt-label" for="ttWinTarget">Target</label>
+                <input type="number" id="ttWinTarget" class="tt-input" min="1" max="99999" step="1" value="500" inputmode="numeric" style="max-width:100px">
+              </div>
               <p class="tt-help">The win rule shows in Play mode and on the win screen.</p>
             </div>
             <p class="tt-help tt-money-leader" id="ttMoneyLeader" hidden></p>
@@ -573,7 +590,13 @@
                 <input type="number" id="ttRows" class="tt-input tt-size-num" min="2" max="30" step="1" value="9" inputmode="numeric">
                 <button type="button" id="ttSizeApply" class="tt-btn tt-btn--quiet">Apply</button>
               </div>
-              <p class="tt-help">Any size from 2 x 2 up to 40 x 30.</p>
+              <p class="tt-help">Any size from 2 x 2 up to 40 x 30. Tiles are kept when you resize.</p>
+              <div class="tt-row tt-edge-btns" style="gap:4px;flex-wrap:wrap">
+                <button type="button" class="tt-btn tt-btn--quiet tt-edge-btn" data-edge="col+1">+ Col</button>
+                <button type="button" class="tt-btn tt-btn--quiet tt-edge-btn" data-edge="col-1">- Col</button>
+                <button type="button" class="tt-btn tt-btn--quiet tt-edge-btn" data-edge="row+1">+ Row</button>
+                <button type="button" class="tt-btn tt-btn--quiet tt-edge-btn" data-edge="row-1">- Row</button>
+              </div>
             </div>
             <button type="button" id="ttRotateBoard" class="tt-btn tt-btn--wide tt-btn--quiet">↻ Rotate board 90°</button>
             <div class="tt-field">
@@ -587,6 +610,7 @@
               <span class="tt-label">Accessibility</span>
               <label class="tt-check"><input type="checkbox" id="ttPatterns"> Colour-blind terrain patterns</label>
               <label class="tt-check"><input type="checkbox" id="ttHighContrast"> High-contrast tile labels</label>
+              <label class="tt-check"><input type="checkbox" id="ttFogOfWar"> Fog of war (hide unexplored tiles)</label>
               <button type="button" id="ttBoardListBtn" class="tt-btn tt-btn--wide tt-btn--quiet">📋 Board list for screen readers</button>
               <button type="button" id="ttTableEditorBtn" class="tt-btn tt-btn--wide tt-btn--quiet">⌨️ Edit board as a table</button>
             </div>
@@ -606,6 +630,7 @@
                 <button type="button" id="ttShareCopy" class="tt-btn tt-btn--quiet">Copy share code</button>
                 <button type="button" id="ttShareLoad" class="tt-btn tt-btn--secondary">Load share code</button>
                 <button type="button" id="ttCopyLink" class="tt-btn tt-btn--quiet" title="Copy a link that opens this board directly">🔗 Copy link</button>
+                <button type="button" id="ttQrBtn" class="tt-btn tt-btn--quiet" title="Show a QR code for this board">QR</button>
               </div>
             </div>
           </div>
@@ -627,6 +652,15 @@
               <button type="button" id="ttDupCol" class="tt-btn tt-btn--quiet">Duplicate column</button>
             </div>
             <p class="tt-help" id="ttSelectHint">No area selected. Tap Select an area, then two corners.</p>
+            <div class="tt-field" style="margin-top:10px">
+              <span class="tt-label">Find and replace terrain</span>
+              <div class="tt-row" style="gap:6px;align-items:center;flex-wrap:wrap">
+                <select id="ttFindTerrain" class="tt-select" style="flex:1;min-width:0"></select>
+                <span aria-hidden="true">→</span>
+                <select id="ttReplaceTerrain" class="tt-select" style="flex:1;min-width:0"></select>
+                <button type="button" id="ttFindReplaceBtn" class="tt-btn tt-btn--quiet">Replace all</button>
+              </div>
+            </div>
           </div>
         </details>
 
@@ -790,6 +824,7 @@
           <input type="text" id="ttPieceNote" class="tt-piecenote" maxlength="20" placeholder="Name…" aria-label="Piece name label" hidden>
           <input type="number" id="ttPieceHp" class="tt-piecenote tt-piecenote--stat" min="0" max="99" placeholder="HP" aria-label="Hit points" hidden>
           <input type="number" id="ttPieceAtk" class="tt-piecenote tt-piecenote--stat" min="0" max="99" placeholder="ATK" aria-label="Attack" hidden>
+          <button type="button" id="ttCombatBtn" class="tt-btn tt-btn--quiet" hidden title="Roll combat against a nearby rival piece">⚔️ Combat</button>
           <button type="button" data-piece-act="remove" class="tt-danger-text" aria-label="Remove piece">Remove</button>
         </div>
       </div>
@@ -813,6 +848,8 @@
 
       <div class="tt-shortcut-strip" id="ttShortcutStrip" hidden aria-hidden="true">R = roll &middot; E = end turn &middot; Z = undo &middot; arrows = move cursor</div>
       <div class="tt-tile-tooltip" id="ttTileTooltip" hidden aria-live="polite"></div>
+      <div class="tt-undo-strip" id="ttUndoStrip" hidden aria-label="Undo history" role="list"></div>
+      <div class="tt-stat-block" id="ttStatBlock" hidden role="status" aria-live="polite"></div>
       <p class="tt-sr" id="ttBoardHelp">Paint tiles with the terrain colours. In Play mode, drag pieces anywhere on the board.</p>
     </section>
 
@@ -931,6 +968,37 @@
       <div class="tt-row tt-row--between">
         <button type="button" id="ttTileRemove" class="tt-btn tt-btn--danger">Remove details</button>
         <button type="button" id="ttTileSave" class="tt-btn tt-btn--primary">Save tile</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="tt-modal" id="ttQrModal" hidden>
+    <div class="tt-modal-backdrop" id="ttQrBackdrop"></div>
+    <section class="tt-modal-card" role="dialog" aria-modal="true" aria-labelledby="ttQrTitle">
+      <div class="tt-modal-head">
+        <h2 id="ttQrTitle">Share this board</h2>
+        <button type="button" class="tt-icon-btn" id="ttQrClose" aria-label="Close QR code">&#x2715;</button>
+      </div>
+      <div class="tt-modal-body" style="text-align:center">
+        <canvas id="ttQrCanvas" width="200" height="200" style="display:block;margin:0 auto 12px;image-rendering:pixelated"></canvas>
+        <p class="tt-help" id="ttQrUrl" style="word-break:break-all;font-size:.78rem"></p>
+        <button type="button" id="ttQrCopyUrl" class="tt-btn tt-btn--secondary">Copy link</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="tt-modal" id="ttCombatModal" hidden>
+    <div class="tt-modal-backdrop" id="ttCombatBackdrop"></div>
+    <section class="tt-modal-card" role="dialog" aria-modal="true" aria-labelledby="ttCombatTitle">
+      <div class="tt-modal-head">
+        <h2 id="ttCombatTitle">&#x2694;&#xFE0F; Combat</h2>
+        <button type="button" class="tt-icon-btn" id="ttCombatClose" aria-label="Close combat">&#x2715;</button>
+      </div>
+      <div class="tt-modal-body" id="ttCombatBody">
+        <p class="tt-help">Select a defender, then roll.</p>
+        <div id="ttCombatDefenders" class="tt-seg" role="group" aria-label="Pick a defender"></div>
+        <button type="button" id="ttCombatRoll" class="tt-btn tt-btn--primary tt-btn--wide" style="margin-top:10px">Roll d20 + ATK</button>
+        <p id="ttCombatResult" class="tt-dice-result" style="margin-top:8px"></p>
       </div>
     </section>
   </div>

@@ -353,6 +353,33 @@
   var customTerrainColorInput = document.getElementById('ttCustomTerrainColor');
   var customTerrainNameInput = document.getElementById('ttCustomTerrainName');
   var customTerrainAddBtn = document.getElementById('ttCustomTerrainAdd');
+  var winTargetInput = document.getElementById('ttWinTarget');
+  var winTargetRow = document.getElementById('ttWinTargetRow');
+  var fogOfWarInput = document.getElementById('ttFogOfWar');
+  var timerSecsInput = document.getElementById('ttTimerSecs');
+  var timerDisplay = document.getElementById('ttTimerDisplay');
+  var combatBtn = document.getElementById('ttCombatBtn');
+  var combatModal = document.getElementById('ttCombatModal');
+  var combatClose = document.getElementById('ttCombatClose');
+  var combatBackdrop = document.getElementById('ttCombatBackdrop');
+  var combatDefenders = document.getElementById('ttCombatDefenders');
+  var combatRollBtn = document.getElementById('ttCombatRoll');
+  var combatResult = document.getElementById('ttCombatResult');
+  var qrBtn = document.getElementById('ttQrBtn');
+  var qrModal = document.getElementById('ttQrModal');
+  var qrClose = document.getElementById('ttQrClose');
+  var qrBackdrop = document.getElementById('ttQrBackdrop');
+  var qrCanvas = document.getElementById('ttQrCanvas');
+  var qrUrlEl = document.getElementById('ttQrUrl');
+  var qrCopyUrl = document.getElementById('ttQrCopyUrl');
+  var syncBtn = document.getElementById('ttSyncBtn');
+  var undoStrip = document.getElementById('ttUndoStrip');
+  var statBlock = document.getElementById('ttStatBlock');
+  var findTerrainSel = document.getElementById('ttFindTerrain');
+  var replaceTerrainSel = document.getElementById('ttReplaceTerrain');
+  var findReplaceBtn = document.getElementById('ttFindReplaceBtn');
+  var findTerrainSel2 = findTerrainSel;
+  var replaceTerrainSel2 = replaceTerrainSel;
 
   var S = blankState();
   var bgImg = null;
@@ -360,6 +387,12 @@
   var audioCtx = null;
   var tapPickMode = false;
   var tapPickTarget = null;
+  var turnTimerInterval = null;
+  var turnTimerLeft = 0;
+  var syncChannel = null;
+  var syncEnabled = false;
+  var undoThumbs = [];
+  var combatDefenderToken = null;
   var emptyDismissed = false;
   var hover = null;
   var kbCursor = { col: 0, row: 0 };
@@ -619,10 +652,12 @@
     out.snapPath = !!raw.snapPath;
     out.pawnsPerPlayer = clamp(Math.round(Number(raw.pawnsPerPlayer) || 1), 1, 4);
     out.allPawnsWin = !!raw.allPawnsWin;
-    out.winMode = ['finish', 'allPawns', 'mostMoney', 'manual'].indexOf(raw.winMode) >= 0
+    out.winMode = ['finish', 'allPawns', 'mostMoney', 'manual', 'collectTarget', 'eliminate', 'controlTiles'].indexOf(raw.winMode) >= 0
       ? raw.winMode
       : (out.allPawnsWin ? 'allPawns' : 'finish');
     if (out.winMode !== 'allPawns') out.allPawnsWin = false;
+    out.winTarget = clamp(Math.round(Number(raw.winTarget) || 20), 1, 999999);
+    out.fogOfWar = !!raw.fogOfWar;
     out.patterns = !!raw.patterns;
     out.highContrastLabels = !!raw.highContrastLabels;
     out.useHomeLanes = !!raw.useHomeLanes;
@@ -657,6 +692,8 @@
       pawnsPerPlayer: 1,
       allPawnsWin: false,
       winMode: 'finish',
+      winTarget: 20,
+      fogOfWar: false,
       patterns: false,
       highContrastLabels: false,
       useHomeLanes: false,
@@ -1172,6 +1209,24 @@
       if (S.mode === 'build' && pendingLink) outlineCell(context, pendingLink.c, pendingLink.r, '#c98a2e', 4, []);
       if (kbActive) outlineCell(context, kbCursor.col, kbCursor.row, '#BC4749', 3, [7, 5]);
       else if (hover && S.mode === 'build') outlineCell(context, hover.col, hover.row, 'rgba(64,59,51,.55)', 2, []);
+    }
+
+    if (S.settings && S.settings.fogOfWar && S.fogVisited) {
+      context.fillStyle = 'rgba(0,0,0,0.65)';
+      for (var fr = 0; fr < S.rows; fr++) {
+        for (var fc = 0; fc < S.cols; fc++) {
+          if (!S.fogVisited[fr + '_' + fc]) {
+            var fc2 = centerOf(fc, fr);
+            if (S.shape === 'square') {
+              context.fillRect(fc2.x - CELL / 2 + 1, fc2.y - CELL / 2 + 1, CELL - 2, CELL - 2);
+            } else {
+              var hm = hexMetrics();
+              hexPath(context, fc2.x, fc2.y, hm.r - 1);
+              context.fill();
+            }
+          }
+        }
+      }
     }
 
     context.strokeStyle = 'rgba(64,59,51,.26)';
@@ -2058,6 +2113,7 @@
       pieceAtkInput.hidden = !isPiece || isCounter;
       if (isPiece && !isCounter) pieceAtkInput.value = t.atk != null ? t.atk : '';
     }
+    if (combatBtn) combatBtn.hidden = !(isPiece && t.atk != null && t.atk > 0 && S.mode === 'play');
   }
 
   function flipToken(t) {
@@ -2315,10 +2371,13 @@
       skip: 'No amount needed',
       again: 'No amount needed',
       collect: 'Money each player pays',
-      toStart: 'No amount needed'
+      toStart: 'No amount needed',
+      jail: 'Turns trapped (0 = 1 turn)',
+      rollDie: 'No amount needed'
     };
     cardEffectLabel.textContent = labels[type] || 'Amount';
-    cardEffectValueInput.disabled = type === 'none' || type === 'skip' || type === 'again' || type === 'toStart';
+    var noAmount = ['none', 'skip', 'again', 'toStart', 'rollDie'].indexOf(type) >= 0;
+    cardEffectValueInput.disabled = noAmount;
     if (type === 'collect' && Number(cardEffectValueInput.value) < 1) cardEffectValueInput.value = '25';
   }
 
@@ -3251,6 +3310,10 @@
     token.pathIndex = pathIndex;
     token.x = centre.x + off.x;
     token.y = centre.y + off.y;
+    if (S.settings && S.settings.fogOfWar) {
+      if (!S.fogVisited) S.fogVisited = {};
+      S.fogVisited[pathCell.r + '_' + pathCell.c] = true;
+    }
     var el = tokensLayer.querySelector('.tt-token[data-id="' + token.id + '"]');
     if (el) {
       if (!instant && !reduceMotion()) {
@@ -3696,6 +3759,8 @@
     renderPlayers();
     updatePlayAids();
     updateStatus();
+    checkWinAfterTurn(S.turn);
+    startTurnTimer();
     markDirty();
   }
 
@@ -7309,6 +7374,10 @@
     if (ruleRentInput) ruleRentInput.checked = !!S.settings.rent;
     if (winModeInput) winModeInput.value = S.settings.winMode || 'finish';
     if (ruleAllPawnsInput) ruleAllPawnsInput.checked = S.settings.winMode === 'allPawns';
+    var needsTarget = ['collectTarget', 'controlTiles', 'mostMoney'].indexOf(S.settings.winMode) >= 0;
+    if (winTargetRow) winTargetRow.hidden = !needsTarget;
+    if (winTargetInput && document.activeElement !== winTargetInput) winTargetInput.value = String(S.settings.winTarget || 20);
+    if (fogOfWarInput) fogOfWarInput.checked = !!S.settings.fogOfWar;
     if (patternsInput) patternsInput.checked = !!S.settings.patterns;
     if (highContrastInput) highContrastInput.checked = !!S.settings.highContrastLabels;
     if (startingMoneyInput && document.activeElement !== startingMoneyInput) {
@@ -7997,9 +8066,12 @@
     var player = S.players[playerIndex - 1] || S.players[0];
     var name = player && player.name ? player.name : 'Player ' + playerIndex;
     var winMode = S.settings.winMode || 'finish';
-    var why = winMode === 'mostMoney'
-      ? 'had the most money'
-      : (winMode === 'manual' ? 'is the winner' : 'reached the finish');
+    var why = winMode === 'mostMoney' ? 'had the most money'
+      : winMode === 'collectTarget' ? 'collected the target money'
+      : winMode === 'eliminate' ? 'was the last standing'
+      : winMode === 'controlTiles' ? 'controlled enough tiles'
+      : winMode === 'manual' ? 'is the winner'
+      : 'reached the finish';
     S.winner = playerIndex;
     winTitle.textContent = name + ' wins!';
     winText.textContent = 'Pip says: ' + name + ' ' + why + '. Play again, or change the board and make it your own.';
@@ -8027,8 +8099,128 @@
       finish: 'first to the finish',
       allPawns: 'every pawn home',
       mostMoney: 'most money',
-      manual: 'you decide'
+      manual: 'you decide',
+      collectTarget: 'collect target money',
+      eliminate: 'last player standing',
+      controlTiles: 'control enough tiles'
     }[mode] || 'first to the finish';
+  }
+
+  function checkWinAfterTurn(playerIndex) {
+    var mode = S.settings.winMode || 'finish';
+    if (mode === 'finish' || mode === 'allPawns' || mode === 'manual') return;
+    var player = S.players[playerIndex - 1];
+    if (!player) return;
+    var target = S.settings.winTarget || 20;
+    if (mode === 'collectTarget') {
+      if ((player.money || 0) >= target) showWinner(playerIndex);
+    } else if (mode === 'eliminate') {
+      var alive = S.players.filter(function (p) { return (p.money || 0) > 0; });
+      if (alive.length === 1) {
+        var winIdx = S.players.indexOf(alive[0]);
+        showWinner(winIdx + 1);
+      }
+    } else if (mode === 'controlTiles') {
+      var owned = S.tiles ? Object.values(S.tiles).filter(function (t) { return t && t.owner === playerIndex; }).length : 0;
+      if (owned >= target) showWinner(playerIndex);
+    } else if (mode === 'mostMoney') {
+      var richest = S.players.reduce(function (best, p, i) {
+        return (p.money || 0) > (S.players[best].money || 0) ? i : best;
+      }, 0);
+      if ((S.players[richest].money || 0) >= target) showWinner(richest + 1);
+    }
+  }
+
+  function showQrModal() {
+    var url = window.location.href;
+    if (qrUrlEl) qrUrlEl.textContent = url;
+    if (qrModal) qrModal.hidden = false;
+    if (!qrCanvas) return;
+    function renderQr(QRCode) {
+      var qr = QRCode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      var cells = qr.modules;
+      var n = cells.length;
+      var size = Math.min(240, Math.floor(240 / n) * n);
+      var cell = size / n;
+      qrCanvas.width = size + 16;
+      qrCanvas.height = size + 16;
+      var qctx = qrCanvas.getContext('2d');
+      qctx.fillStyle = '#fff';
+      qctx.fillRect(0, 0, qrCanvas.width, qrCanvas.height);
+      qctx.fillStyle = '#000';
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (cells[r][c]) qctx.fillRect(8 + c * cell, 8 + r * cell, cell, cell);
+        }
+      }
+    }
+    if (window.qrcode) {
+      renderQr(window.qrcode);
+    } else {
+      var sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+      sc.onload = function () { if (window.qrcode) renderQr(window.qrcode); };
+      document.head.appendChild(sc);
+    }
+  }
+
+  function showCombatModal() {
+    var attacker = tokenById(S.selectedId);
+    if (!attacker || attacker.type !== 'piece') return;
+    combatDefenderToken = null;
+    var rivals = (S.tokens || []).filter(function (tk) {
+      return tk.type === 'piece' && tk.player !== attacker.player && tk.hp != null;
+    });
+    if (combatDefenders) {
+      combatDefenders.textContent = '';
+      if (!rivals.length) {
+        combatDefenders.textContent = 'No rival pieces with HP on the board.';
+      } else {
+        rivals.forEach(function (tk) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = (tk.label || tk.kind || 'Piece') + ' (HP: ' + tk.hp + ', P' + tk.player + ')';
+          btn.addEventListener('click', function () {
+            combatDefenderToken = tk;
+            if (combatDefenders) {
+              var btns = combatDefenders.querySelectorAll('button');
+              btns.forEach(function (b) { b.classList.remove('is-selected'); });
+            }
+            btn.classList.add('is-selected');
+          });
+          combatDefenders.appendChild(btn);
+        });
+      }
+    }
+    if (combatResult) combatResult.textContent = '';
+    if (combatModal) combatModal.hidden = false;
+  }
+
+  function clearTurnTimer() {
+    if (turnTimerInterval) { clearInterval(turnTimerInterval); turnTimerInterval = null; }
+    turnTimerLeft = 0;
+    if (timerDisplay) timerDisplay.textContent = '';
+  }
+
+  function startTurnTimer() {
+    clearTurnTimer();
+    var secs = parseInt(timerSecsInput ? timerSecsInput.value : '0', 10) || 0;
+    if (!secs || S.mode !== 'play') return;
+    turnTimerLeft = secs;
+    function tick() {
+      turnTimerLeft -= 1;
+      if (timerDisplay) timerDisplay.textContent = turnTimerLeft > 0 ? turnTimerLeft + 's' : '';
+      if (turnTimerLeft <= 0) {
+        clearTurnTimer();
+        playSound('click');
+        toast('Time is up - turn passes.');
+        advanceTurn(false);
+      }
+    }
+    if (timerDisplay) timerDisplay.textContent = turnTimerLeft + 's';
+    turnTimerInterval = setInterval(tick, 1000);
   }
 
   function improveAfterGame() {
@@ -9008,15 +9200,28 @@
     if (winImproveBtn) winImproveBtn.addEventListener('click', improveAfterGame);
     if (echoImproveBtn) echoImproveBtn.addEventListener('click', improveAfterGame);
     if (winModeInput) winModeInput.addEventListener('change', function () {
-      var mode = ['finish', 'allPawns', 'mostMoney', 'manual'].indexOf(winModeInput.value) >= 0 ? winModeInput.value : 'finish';
+      var allModes = ['finish', 'allPawns', 'mostMoney', 'manual', 'collectTarget', 'eliminate', 'controlTiles'];
+      var mode = allModes.indexOf(winModeInput.value) >= 0 ? winModeInput.value : 'finish';
       S.settings.winMode = mode;
       S.settings.allPawnsWin = mode === 'allPawns';
       if (ruleAllPawnsInput) ruleAllPawnsInput.checked = S.settings.allPawnsWin;
+      var needsTarget = mode === 'collectTarget' || mode === 'controlTiles' || mode === 'mostMoney';
+      if (winTargetRow) winTargetRow.hidden = !needsTarget;
       markDirty();
       updatePlayAids();
       updatePlayableExportNote();
       announce('Win condition: ' + winModeLabel(mode) + '.');
       toast('Win condition: ' + winModeLabel(mode) + '.');
+    });
+    if (winTargetInput) winTargetInput.addEventListener('change', function () {
+      S.settings.winTarget = clamp(Math.round(Number(winTargetInput.value) || 20), 1, 999999);
+      markDirty();
+    });
+    if (fogOfWarInput) fogOfWarInput.addEventListener('change', function () {
+      S.settings.fogOfWar = fogOfWarInput.checked;
+      if (!S.fogVisited) S.fogVisited = {};
+      markDirty();
+      scheduleDraw();
     });
     if (declareWinEl) declareWinEl.addEventListener('click', function (event) {
       var btn = event.target.closest('[data-win-player]');
@@ -9243,6 +9448,23 @@
       t.atk = pieceAtkInput.value !== '' ? parseInt(pieceAtkInput.value, 10) : null;
       updateTokenElement(t);
       markDirty();
+      updatePieceBar();
+    });
+
+    if (combatBtn) combatBtn.addEventListener('click', showCombatModal);
+    function closeCombatModal() { if (combatModal) combatModal.hidden = true; combatDefenderToken = null; }
+    if (combatClose) combatClose.addEventListener('click', closeCombatModal);
+    if (combatBackdrop) combatBackdrop.addEventListener('click', closeCombatModal);
+    if (combatRollBtn) combatRollBtn.addEventListener('click', function () {
+      var attacker = tokenById(S.selectedId);
+      if (!attacker || !combatDefenderToken || combatResult == null) return;
+      var atk = attacker.atk || 0;
+      var roll = Math.floor(Math.random() * 20) + 1;
+      var total = roll + atk;
+      var defHp = combatDefenderToken.hp || 0;
+      var hit = total >= defHp;
+      combatResult.textContent = 'Rolled ' + roll + ' + ATK ' + atk + ' = ' + total + ' vs HP ' + defHp + '. ' + (hit ? 'HIT! Defeat the defender.' : 'Miss!');
+      playSound(hit ? 'land' : 'click');
     });
 
     var soundMuteBtn = byId('ttSoundMute');
