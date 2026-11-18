@@ -76,17 +76,75 @@ function weekLabel(k){
 }
 function buildHtml(posts, weekStr){
   const label=weekLabel(weekStr)||'This week';
-  return `<!doctype html><html><body style="font-family:Inter,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#1a1612;color:#F0EAD6;">
-<h1 style="font-family:Fredoka,cursive;">JVDesignStudio - Weekly Dev Log Digest</h1>
-<p style="color:rgba(240,234,214,.6);">${label} - ${posts.length} note${posts.length===1?'':'s'} from the dev log. One email per week max.</p>
-${posts.map(p=> `<div style="background:#211d18;border:1px solid rgba(240,234,214,.08);border-radius:16px;padding:20px;margin:14px 0;">
-${p.image?`<img src="${p.image}" alt="" width="560" style="width:100%;max-width:560px;height:auto;border-radius:10px;display:block;margin:0 0 14px;">`:''}
-<div style="font-size:.7rem;color:#70A3A7;text-transform:uppercase;letter-spacing:.08em;">${p.tag} - ${p.date}</div>
-<h2 style="margin:6px 0;">${p.emoji} ${p.title}</h2>
-<p style="color:rgba(240,234,214,.7);">${p.excerpt}</p>
-<p style="margin:14px 0 0;">${p.hasLink?`<a href="${p.url}" style="display:inline-block;background:#4e7d80;color:#fff;font-weight:700;padding:10px 20px;border-radius:999px;text-decoration:none;">Open what this is about</a> `:''}<a href="https://jvdesignstudio.co.uk/devlog#post-${p.id}" style="color:#70A3A7;font-weight:700;margin-left:8px;">Read the note -></a></p>
-</div>`).join('\n')}
-<p style="font-size:.75rem;color:rgba(240,234,214,.4);text-align:center;margin-top:24px;">You received this because you subscribed at <a href="https://jvdesignstudio.co.uk/newsletter.html" style="color:#70A3A7;">jvdesignstudio.co.uk/newsletter</a> via Formspree. Weekly on Friday, one email per week max. Unsubscribe via the link in your Formspree confirmation email. <a href="https://jvdesignstudio.co.uk/devlog" style="color:#70A3A7;">Dev Log -></a></p>
+  const topTitle = posts[0] ? posts[0].title : 'Studio update';
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Studio Dev Log — ${label}</title></head>
+<body style="margin:0;padding:0;background:#0f0d0b;font-family:Inter,Arial,sans-serif;color:#F0EAD6;">
+
+<!-- wrapper -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0d0b;">
+<tr><td align="center" style="padding:24px 16px 0;">
+
+<!-- email card -->
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#1a1612;border-radius:20px;overflow:hidden;">
+
+<!-- HEADER -->
+<tr><td style="background:linear-gradient(160deg,#1f1309 0%,#1a1612 100%);padding:36px 32px 28px;border-bottom:1px solid rgba(188,71,73,.25);">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td>
+      <div style="font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.02em;line-height:1;">JV<span style="color:#BC4749;">Design</span>Studio</div>
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#70A3A7;margin-top:5px;">Weekly Dev Log</div>
+    </td>
+    <td align="right" style="vertical-align:top;">
+      <div style="font-size:.7rem;color:rgba(240,234,214,.4);text-align:right;line-height:1.5;">${label}</div>
+    </td>
+  </tr></table>
+</td></tr>
+
+<!-- INTRO -->
+<tr><td style="padding:28px 32px 20px;">
+  <p style="margin:0;font-size:.95rem;color:rgba(240,234,214,.75);line-height:1.7;">Hey — here's what's been happening in the studio this week. ${posts.length} note${posts.length===1?'':'s'} from the dev log below.</p>
+</td></tr>
+
+<!-- POSTS -->
+<tr><td style="padding:0 24px 24px;">
+${posts.map((p,i)=> `
+<!-- post card -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#211d18;border:1px solid rgba(240,234,214,.08);border-radius:16px;overflow:hidden;margin-bottom:14px;border-top:3px solid ${['#BC4749','#D2B48C','#70A3A7','#9b6bff'][i%4]};">
+<tr><td style="padding:20px 22px;">
+${p.image?`<img src="${p.image}" alt="" width="556" style="width:100%;max-width:556px;height:auto;border-radius:10px;display:block;margin:0 0 16px;">`:''}
+<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#70A3A7;margin-bottom:6px;">${p.tag}  ·  ${p.date}</div>
+<div style="font-size:1.15rem;font-weight:800;color:#fff;line-height:1.3;margin-bottom:10px;">${p.emoji} ${p.title}</div>
+<p style="margin:0 0 16px;font-size:.88rem;color:rgba(240,234,214,.65);line-height:1.7;">${p.excerpt}</p>
+<table cellpadding="0" cellspacing="0"><tr>
+${p.hasLink?`<td style="padding-right:12px;"><a href="${p.url}" style="display:inline-block;background:#BC4749;color:#fff;font-weight:700;font-size:.82rem;padding:9px 20px;border-radius:999px;text-decoration:none;letter-spacing:.02em;">Try it →</a></td>`:''}
+<td><a href="https://jvdesignstudio.co.uk/devlog#post-${p.id}" style="display:inline-block;color:#70A3A7;font-weight:700;font-size:.82rem;text-decoration:none;border:1.5px solid rgba(112,163,167,.35);padding:9px 18px;border-radius:999px;">Read note →</a></td>
+</tr></table>
+</td></tr></table>`).join('\n')}
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#120f0c;padding:28px 32px;border-top:1px solid rgba(240,234,214,.06);">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="vertical-align:top;">
+      <div style="font-size:.85rem;font-weight:900;color:rgba(240,234,214,.5);letter-spacing:-.01em;">JV<span style="color:rgba(188,71,73,.6);">Design</span>Studio</div>
+      <div style="font-size:.7rem;color:rgba(240,234,214,.3);margin-top:4px;line-height:1.6;">Made with ☕ in the studio.<br>One email a week, no spam.</div>
+    </td>
+    <td align="right" style="vertical-align:top;">
+      <a href="https://jvdesignstudio.co.uk/devlog" style="font-size:.72rem;color:#70A3A7;text-decoration:none;display:block;text-align:right;margin-bottom:6px;">Dev Log →</a>
+      <a href="https://jvdesignstudio.co.uk/newsletter.html" style="font-size:.72rem;color:rgba(240,234,214,.3);text-decoration:none;display:block;text-align:right;">Manage subscription</a>
+    </td>
+  </tr></table>
+  <p style="margin:20px 0 0;font-size:.65rem;color:rgba(240,234,214,.2);text-align:center;line-height:1.7;">You received this because you subscribed at jvdesignstudio.co.uk/newsletter · Unsubscribe via the link in your confirmation email</p>
+</td></tr>
+
+</table>
+<!-- /email card -->
+
+</td></tr></table>
+<!-- /wrapper -->
+
 </body></html>`;
 }
 function ensureBoardTask(posts, weekStr, queueFile){

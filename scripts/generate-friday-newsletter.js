@@ -43,10 +43,10 @@ function main() {
     '',
     `Target send: ${friday}`,
     '',
-    'Subject idea: This week at JVDesignStudio',
+    `Subject idea: 🎮 Studio log: ${approved[0] ? titleOf(approved[0]) : 'What we shipped this week'}`,
     '',
     'Opening:',
-    'A quick studio update for young creators, families and classrooms. Here is what is ready to try, read or share this week.',
+    'Hey — here is what has been happening in the studio this week. New things to try, read and play with below.',
     '',
     '## Main Updates',
     ''
