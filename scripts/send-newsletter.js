@@ -80,7 +80,7 @@ function buildHtml(posts, weekStr){
   const topTitle = posts[0] ? posts[0].title : 'Studio update';
   return `<!doctype html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Studio Dev Log — ${label}</title></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Studio Dev Log - ${label}</title></head>
 <body style="margin:0;padding:0;background:#0f0d0b;font-family:Inter,Arial,sans-serif;color:#F0EAD6;">
 
 <!-- wrapper -->
@@ -101,11 +101,19 @@ function buildHtml(posts, weekStr){
       <div style="font-size:.7rem;color:rgba(240,234,214,.4);text-align:right;line-height:1.5;">${label}</div>
     </td>
   </tr></table>
+  <!-- crew badges -->
+  <div style="margin-top:20px;">
+    <img src="https://jvdesignstudio.co.uk/assets/mascots/stardust-badge.webp" alt="Stardust" width="36" height="36" style="width:36px;height:36px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid rgba(240,234,214,.15);">
+    <img src="https://jvdesignstudio.co.uk/assets/mascots/lumo-badge.webp" alt="Lumo" width="36" height="36" style="width:36px;height:36px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid rgba(240,234,214,.15);">
+    <img src="https://jvdesignstudio.co.uk/assets/mascots/ember-badge.webp" alt="Ember" width="36" height="36" style="width:36px;height:36px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid rgba(240,234,214,.15);">
+    <img src="https://jvdesignstudio.co.uk/assets/mascots/pip-badge.webp" alt="Pip" width="36" height="36" style="width:36px;height:36px;border-radius:50%;margin-right:6px;vertical-align:middle;border:2px solid rgba(240,234,214,.15);">
+    <img src="https://jvdesignstudio.co.uk/assets/mascots/echo-badge.webp" alt="Echo" width="36" height="36" style="width:36px;height:36px;border-radius:50%;vertical-align:middle;border:2px solid rgba(240,234,214,.15);">
+  </div>
 </td></tr>
 
 <!-- INTRO -->
 <tr><td style="padding:28px 32px 20px;">
-  <p style="margin:0;font-size:.95rem;color:rgba(240,234,214,.75);line-height:1.7;">Hey — here's what's been happening in the studio this week. ${posts.length} note${posts.length===1?'':'s'} from the dev log below.</p>
+  <p style="margin:0;font-size:.95rem;color:rgba(240,234,214,.75);line-height:1.7;">Here is what has been happening in the studio this week. ${posts.length} note${posts.length===1?'':'s'} from the dev log below.</p>
 </td></tr>
 
 <!-- POSTS -->
