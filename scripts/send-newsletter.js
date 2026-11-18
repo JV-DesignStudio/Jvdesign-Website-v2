@@ -158,10 +158,11 @@ async function createBeehiivDraft(subject, html){
   try{
     const https=require('https');
     const body=JSON.stringify({
+      title: subject,
       subject,
-      content: { free: { web: html, email: html } },
+      body_content: html,
+      body_content_type: 'raw_html',
       status: 'draft',
-      send_at: null,
     });
     return await new Promise((resolve,reject)=>{
       const req=https.request({
