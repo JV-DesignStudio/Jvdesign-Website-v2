@@ -3,8 +3,9 @@
 // Dev Log is source: POSTS in devlog-data.js. Every Friday a digest of that week's dev logs is drafted.
 // Draft goes to social-posts/queue/newsletter-week-YYYY-Www.html + board task human_review for edit before release.
 // With BEEHIIV_API_KEY + BEEHIIV_PUBLICATION_ID set, also creates a Beehiiv broadcast draft (not published).
-// Usage: node scripts/send-newsletter.js [--check]   // Friday weekly check, 3-post threshold
-//        node scripts/send-newsletter.js --force       // force draft regardless of day/threshold
+// Usage: npm run newsletter:draft                      // Friday weekly check (loads .env automatically)
+//        npm run newsletter:check                      // preview only, no file written
+//        node --env-file=.env scripts/send-newsletter.js --force  // force draft any day
 const fs=require('fs'), path=require('path');
 const vm=require('vm');
 const ROOT=path.resolve(__dirname,'..');
