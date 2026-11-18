@@ -105,14 +105,14 @@ const AUTOPILOT = async (want) => {
         const b = document.getElementById('pauseBtn');
         b.click();
         const s = window.__echoSwim.state();
-        return { text: b.textContent, paused: s.paused, live: document.getElementById('a11yStatus').textContent };
+        return { text: b.textContent, paused: s.paused, live: (document.getElementById('jvds-announce')||document.getElementById('a11yStatus')||{textContent:''}).textContent };
       });
       ok(vp.name + ': pause freezes the run', paused.paused === true && /Resume/i.test(paused.text), JSON.stringify(paused));
       const resumed = await page.evaluate(() => {
         const b = document.getElementById('pauseBtn');
         b.click();
         const s = window.__echoSwim.state();
-        return { text: b.textContent, paused: s.paused, live: document.getElementById('a11yStatus').textContent };
+        return { text: b.textContent, paused: s.paused, live: (document.getElementById('jvds-announce')||document.getElementById('a11yStatus')||{textContent:''}).textContent };
       });
       ok(vp.name + ': resume continues the run', resumed.paused === false && /Pause/i.test(resumed.text), JSON.stringify(resumed));
       ok(vp.name + ': pause and resume are announced', /Paused/i.test(paused.live) && /Resumed/i.test(resumed.live), paused.live + ' / ' + resumed.live);
@@ -197,7 +197,7 @@ const AUTOPILOT = async (want) => {
     const html = fs.readFileSync(path.join(ROOT, 'games', 'echos-flight.html'), 'utf8');
     ok('rebuild drops the story-run overlay that ended the old run', !/story-run\.js/.test(html) && !/StoryRun/.test(html));
     ok('rebuild is one tap with two overlays (start + end), no extra layers', (html.match(/class="overlay/g) || []).length === 2);
-    ok('a11y: pause button and live status region exist', /id="pauseBtn"/.test(html) && /id="a11yStatus"[^>]*aria-live="polite"/.test(html));
+    ok('a11y: pause button and live status region exist', /id="pauseBtn"/.test(html) && (/id="jvds-announce"[^>]*aria-live="polite"/.test(html) || /id="a11yStatus"[^>]*aria-live="polite"/.test(html)));
     ok('a11y: canvas has a play-field label', /<canvas[^>]*aria-label="[^"]*play field"/i.test(html));
   } finally {
     await browser.close();

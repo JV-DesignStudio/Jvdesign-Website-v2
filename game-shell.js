@@ -146,6 +146,27 @@
     }, true);
   }
 
+  // Provide JVDS.announce on game pages that don't load nav.js.
+  // nav.js defines the full queued version; this fallback just posts to #jvds-announce.
+  window.JVDS = window.JVDS || {};
+  if (!window.JVDS.announce) {
+    window.JVDS.announce = function (msg) {
+      if (!msg) return;
+      var el = document.getElementById('jvds-announce');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'jvds-announce';
+        el.className = 'sr-only';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-live', 'polite');
+        el.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(el);
+      }
+      el.textContent = '';
+      setTimeout(function () { el.textContent = String(msg); }, 60);
+    };
+  }
+
   window.JVDSGameShell = { enter: enter, exit: exit };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();

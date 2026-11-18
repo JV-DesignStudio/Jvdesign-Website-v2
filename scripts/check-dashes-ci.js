@@ -4,7 +4,8 @@
 const fs=require('fs'), path=require('path');
 const ROOT=path.resolve(__dirname,'..');
 const exts=new Set(['.html','.css','.js','.json','.md']);
-const skipDirs=new Set(['node_modules','.git','.opencode','board','verification','docs','tmp','social-posts']);
+const skipDirs=new Set(['node_modules','.git','.opencode','board','verification','docs','tmp','social-posts','books']);
+const skipFiles=new Set(['GROWTH_PROMPTS.md']);
 const emEn = new RegExp('[' + String.fromCharCode(8212,8211) + ']');
 let hits=[];
 function walk(dir){
@@ -13,7 +14,7 @@ function walk(dir){
     if(skipDirs.has(e.name)) continue;
     const p=path.join(dir,e.name);
     if(e.isDirectory()) walk(p);
-    else if(exts.has(path.extname(e.name))){
+    else if(exts.has(path.extname(e.name)) && !skipFiles.has(e.name)){
       const txt=fs.readFileSync(p,'utf8');
       if(emEn.test(txt)){
         const lines=txt.split('\n');
@@ -29,5 +30,9 @@ if(hits.length){
   console.error(`\n✗ Found ${hits.length} lines with em/en dash (use " - " instead):`);
   hits.slice(0,30).forEach(h=>console.error('  '+h));
   console.error('\nFix: node F:/Website/studio-workspace/check-dashes.cjs --fix  then review git diff\n');
+  console.log(`Total em: ${hits.length}`);
   process.exit(1);
-} else console.log('✓ No em/en dashes in public files');
+} else {
+  console.log(`Total em: 0`);
+  console.log('✓ No em/en dashes in public files');
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Release Gate — JVDS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;font-size:14px}
+header{background:#1e293b;border-bottom:1px solid #334155;padding:14px 20px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.1rem;font-weight:800}
+header .badge{font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:999px;background:#1e3a5f;color:#93c5fd}
+main{max-width:1100px;margin:0 auto;padding:20px 16px}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.toolbar input{flex:1;min-width:200px;background:#1e293b;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:7px 12px;font-size:.85rem}
+.toolbar select{background:#1e293b;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:7px 12px;font-size:.85rem}
+.toolbar button{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:700;font-size:.82rem}
+.toolbar button:hover{background:#1d4ed8}
+.stats{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stat{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 16px;min-width:100px}
+.stat-num{font-size:1.4rem;font-weight:800}
+.stat-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-top:2px}
+.stat.published .stat-num{color:#4ade80}
+.stat.draft .stat-num{color:#94a3b8}
+.stat.needs-testing .stat-num{color:#fbbf24}
+.stat.needs-repair .stat-num{color:#f87171}
+.stat.ready .stat-num{color:#60a5fa}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:8px 10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;border-bottom:1px solid #334155;position:sticky;top:0;background:#0f172a;z-index:1}
+td{padding:7px 10px;border-bottom:1px solid #1e293b;vertical-align:middle;font-size:.82rem}
+tr:hover td{background:#1e293b}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.status-published{background:#14532d;color:#4ade80}
+.status-draft{background:#1e293b;color:#94a3b8}
+.status-needs-testing{background:#78350f;color:#fbbf24}
+.status-needs-repair{background:#7f1d1d;color:#f87171}
+.status-ready{background:#1e3a5f;color:#60a5fa}
+.type-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.type-game{background:#3b1a6e;color:#c4b5fd}
+.type-tool{background:#1a3a1a;color:#86efac}
+.type-workshop{background:#1a2a3a;color:#93c5fd}
+.action-btn{background:none;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.7rem;font-weight:700}
+.action-btn:hover{background:#334155;color:#f1f5f9}
+.action-btn.sign{border-color:#166534;color:#4ade80}
+.action-btn.sign:hover{background:#166534}
+.action-btn.flag{border-color:#7f1d1d;color:#f87171}
+.action-btn.flag:hover{background:#7f1d1d}
+.tested-cell{font-size:.7rem;color:#64748b}
+.tested-cell.signed{color:#4ade80}
+.path-cell{font-family:monospace;font-size:.72rem;color:#64748b}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;min-width:360px;max-width:480px}
+.modal-box h2{font-size:1rem;font-weight:800;margin-bottom:16px}
+.modal-box label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:4px}
+.modal-box input,.modal-box textarea{width:100%;background:#0f172a;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:8px 12px;font-size:.85rem;margin-bottom:14px}
+.modal-box textarea{height:60px;resize:vertical}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.modal-actions button{padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;border:none;font-size:.82rem}
+.btn-confirm{background:#2563eb;color:#fff}
+.btn-cancel{background:#334155;color:#f1f5f9}
+.empty{text-align:center;padding:40px;color:#475569}
+.checklist-mini{display:flex;gap:4px}
+.check-dot{width:8px;height:8px;border-radius:50%;background:#334155}
+.check-dot.pass{background:#4ade80}
+.check-dot.fail{background:#f87171}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Release Gate</h1>
+  <span class="badge">JVDS Private</span>
+  <span id="lastUpdated" style="margin-left:auto;font-size:.72rem;color:#64748b"></span>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input type="search" id="filterInput" placeholder="Filter by name or path…" aria-label="Filter items">
+    <select id="filterType" aria-label="Filter by type">
+      <option value="">All types</option>
+      <option value="game">Games</option>
+      <option value="tool">Tools</option>
+      <option value="workshop">Workshops</option>
+    </select>
+    <select id="filterStatus" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="published">Published</option>
+      <option value="needs-testing">Needs testing</option>
+      <option value="needs-repair">Needs repair</option>
+      <option value="ready">Ready</option>
+      <option value="draft">Draft</option>
+    </select>
+    <select id="filterTested" aria-label="Filter by test record">
+      <option value="">Any test record</option>
+      <option value="untested">No test record</option>
+      <option value="tested">Has test record</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Tested</th>
+        <th>Checks</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div id="emptyMsg" class="empty" style="display:none">No items match the current filter.</div>
+</main>
+
+<!-- Sign-off modal -->
+<div class="modal" id="signModal" role="dialog" aria-modal="true" aria-labelledby="signModalTitle">
+  <div class="modal-box">
+    <h2 id="signModalTitle">Sign off: <span id="signItemId"></span></h2>
+    <label>Tester name</label>
+    <input type="text" id="signTester" placeholder="Your name" autocomplete="off">
+    <label>Notes (optional)</label>
+    <textarea id="signNote" placeholder="e.g. Tested on Chrome 130 + Android 14, keyboard nav PASS, contrast PASS"></textarea>
+    <div class="checklist-labels" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="chkKeyboard"> Keyboard nav</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="chkContrast"> Contrast</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="chkTouch"> Touch controls</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="chkPrivacy"> Privacy check</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="chkRegression"> Regression</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="signCancel">Cancel</button>
+      <button class="btn-confirm" id="signConfirm">Sign off</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flag modal -->
+<div class="modal" id="flagModal" role="dialog" aria-modal="true" aria-labelledby="flagModalTitle">
+  <div class="modal-box">
+    <h2 id="flagModalTitle">Flag for repair: <span id="flagItemId"></span></h2>
+    <label>Reason</label>
+    <textarea id="flagReason" placeholder="e.g. Quiz answers broken after shared quiz update, needs re-test"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="flagCancel">Cancel</button>
+      <button class="btn-confirm" id="flagConfirm" style="background:#dc2626">Flag as needs-repair</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA_PATH = '/content/release-status.json';
+let allItems = [];
+let activeSignId = null;
+let activeFlagId = null;
+
+async function loadData() {
+  const r = await fetch(DATA_PATH);
+  const data = await r.json();
+  allItems = data.items || [];
+  document.getElementById('lastUpdated').textContent = 'Updated ' + (data._updated || '');
+  renderStats();
+  renderTable();
+}
+
+function renderStats() {
+  const counts = {};
+  for (const item of allItems) counts[item.status] = (counts[item.status] || 0) + 1;
+  const statuses = ['published', 'ready', 'needs-testing', 'needs-repair', 'draft'];
+  const labels = { published: 'Published', ready: 'Ready', 'needs-testing': 'Needs testing', 'needs-repair': 'Needs repair', draft: 'Draft' };
+  const el = document.getElementById('stats');
+  el.innerHTML = statuses.map(s =>
+    `<div class="stat ${s.replace('needs-','needs-')}"><div class="stat-num">${counts[s] || 0}</div><div class="stat-label">${labels[s]}</div></div>`
+  ).join('');
+  const noRecord = allItems.filter(i => i.status === 'published' && !i.testedAt).length;
+  el.innerHTML += `<div class="stat"><div class="stat-num" style="color:${noRecord > 0 ? '#f87171':'#4ade80'}">${noRecord}</div><div class="stat-label">Published, no record</div></div>`;
+}
+
+function getFiltered() {
+  const q = document.getElementById('filterInput').value.toLowerCase();
+  const type = document.getElementById('filterType').value;
+  const status = document.getElementById('filterStatus').value;
+  const tested = document.getElementById('filterTested').value;
+  return allItems.filter(item => {
+    if (q && !item.id.toLowerCase().includes(q) && !item.path.toLowerCase().includes(q)) return false;
+    if (type && item.type !== type) return false;
+    if (status && item.status !== status) return false;
+    if (tested === 'untested' && item.testedAt) return false;
+    if (tested === 'tested' && !item.testedAt) return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const items = getFiltered();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyMsg');
+  empty.style.display = items.length ? 'none' : 'block';
+  tbody.innerHTML = items.map(item => {
+    const checks = item.checklist || {};
+    const dots = ['keyboard','contrast','touch','privacy','regression'].map(k =>
+      `<span class="check-dot ${checks[k] === true ? 'pass' : checks[k] === false ? 'fail' : ''}" title="${k}"></span>`
+    ).join('');
+    const testedHtml = item.testedAt
+      ? `<span class="tested-cell signed">${item.testedAt}<br><span style="color:#64748b">${item.testedBy || ''}</span></span>`
+      : `<span class="tested-cell">—</span>`;
+    return `<tr>
+      <td><a href="/${item.path}" target="_blank" style="color:#93c5fd;text-decoration:none;font-weight:600">${item.id.split('/').pop()}</a><div class="path-cell">${item.path}</div></td>
+      <td><span class="type-badge type-${item.type}">${item.type}</span></td>
+      <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+      <td>${testedHtml}</td>
+      <td><div class="checklist-mini">${dots}</div></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="action-btn sign" onclick="openSign('${item.id}')">Sign off</button>
+        <button class="action-btn flag" onclick="openFlag('${item.id}')">Flag</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+['filterInput','filterType','filterStatus','filterTested'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderTable);
+});
+
+function openSign(id) {
+  activeSignId = id;
+  document.getElementById('signItemId').textContent = id;
+  document.getElementById('signTester').value = '';
+  document.getElementById('signNote').value = '';
+  ['chkKeyboard','chkContrast','chkTouch','chkPrivacy','chkRegression'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  document.getElementById('signModal').classList.add('open');
+  document.getElementById('signTester').focus();
+}
+function openFlag(id) {
+  activeFlagId = id;
+  document.getElementById('flagItemId').textContent = id;
+  document.getElementById('flagReason').value = '';
+  document.getElementById('flagModal').classList.add('open');
+  document.getElementById('flagReason').focus();
+}
+
+document.getElementById('signCancel').onclick = () => document.getElementById('signModal').classList.remove('open');
+document.getElementById('flagCancel').onclick = () => document.getElementById('flagModal').classList.remove('open');
+
+document.getElementById('signConfirm').onclick = () => {
+  const item = allItems.find(i => i.id === activeSignId);
+  if (!item) return;
+  const tester = document.getElementById('signTester').value.trim() || 'unknown';
+  const note = document.getElementById('signNote').value.trim();
+  item.testedAt = new Date().toISOString().slice(0, 10);
+  item.testedBy = tester;
+  item.checklist = {
+    keyboard: document.getElementById('chkKeyboard').checked,
+    contrast: document.getElementById('chkContrast').checked,
+    touch: document.getElementById('chkTouch').checked,
+    privacy: document.getElementById('chkPrivacy').checked,
+    regression: document.getElementById('chkRegression').checked
+  };
+  if (note) item.notes = note;
+  if (item.status === 'needs-testing' || item.status === 'draft') item.status = 'ready';
+  if (item.status === 'needs-repair') item.status = 'published';
+  document.getElementById('signModal').classList.remove('open');
+  renderStats();
+  renderTable();
+  showSaveBanner(activeSignId + ' signed off');
+};
+
+document.getElementById('flagConfirm').onclick = () => {
+  const item = allItems.find(i => i.id === activeFlagId);
+  if (!item) return;
+  item.status = 'needs-repair';
+  item.notes = document.getElementById('flagReason').value.trim();
+  document.getElementById('flagModal').classList.remove('open');
+  renderStats();
+  renderTable();
+  showSaveBanner(activeFlagId + ' flagged for repair');
+};
+
+function showSaveBanner(msg) {
+  const el = document.createElement('div');
+  el.textContent = msg + ' — changes are local only. Download the JSON to persist.';
+  el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:#93c5fd;padding:10px 20px;border-radius:10px;font-weight:700;font-size:.82rem;z-index:200;white-space:nowrap';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+loadData();
+</script>
+</body>
+</html>

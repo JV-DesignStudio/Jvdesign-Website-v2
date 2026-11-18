@@ -289,10 +289,14 @@ const server = http.createServer((req, res) => {
   // local scripts it loads so these static checks still see the real code.
   const pageBundle = (rel) => {
     const pageHtml = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    const pageDir = path.dirname(path.join(ROOT, rel));
     let all = pageHtml;
-    const re = /<script[^>]*\bsrc=["'](\/[^"']+\.js)["']/gi; let m;
+    const re = /<script[^>]*\bsrc=["']([^"']+\.js)["']/gi; let m;
     while ((m = re.exec(pageHtml))) {
-      try { all += '\n' + fs.readFileSync(path.join(ROOT, m[1].replace(/^\//, '')), 'utf8'); } catch (e) {}
+      try {
+        const resolved = m[1].startsWith('/') ? path.join(ROOT, m[1].replace(/^\//, '')) : path.resolve(pageDir, m[1]);
+        all += '\n' + fs.readFileSync(resolved, 'utf8');
+      } catch (e) {}
     }
     return all;
   };

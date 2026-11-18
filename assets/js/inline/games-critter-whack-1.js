@@ -39,7 +39,7 @@
   const feedback = $('feedback');
   const overlay = $('overlay');
   const pauseOverlay = $('pauseOverlay');
-  const a11y = $('a11yStatus');
+  const a11y = $('jvds-announce');
 
   const TOTAL_TIME = 45;
   const WAVE_EVERY = 10;

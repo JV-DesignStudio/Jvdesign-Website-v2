@@ -244,13 +244,21 @@ async function workshopJourney(browser, origin) {
   let completed = 0;
   const stuck = [];
   for (const step of steps) {
+    // Show Solution only appears after 2+ failed attempts; trigger them first.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (!(await isCw(page, 'checkStep', step.num))) await tabToCw(page, 'checkStep', step.num);
+      if (await isCw(page, 'checkStep', step.num)) {
+        await page.keyboard.press('Enter');
+        await sleep(250);
+      }
+    }
+
     const show = await tabToCw(page, 'showSolution', step.num);
     if (!show.ok) { stuck.push('step ' + step.num + ': Show Solution unreachable'); continue; }
     await page.keyboard.press('Enter');
+    await sleep(200);
 
-    await page.keyboard.down('Shift');
-    await page.keyboard.press('Tab');
-    await page.keyboard.up('Shift');
+    // After showSolution re-renders the DOM, re-find checkStep
     if (!(await isCw(page, 'checkStep', step.num))) {
       const apply = await tabToCw(page, 'checkStep', step.num);
       if (!apply.ok) { stuck.push('step ' + step.num + ': Check my code unreachable'); continue; }
@@ -353,6 +361,11 @@ async function zoomJourney(browser, origin) {
     check('zoom 200% ' + url + ': no sideways scrolling', scroll.width <= scroll.view + 2, scroll.width + ' > ' + scroll.view);
     await skipLink(page, 'zoom 200% ' + url);
     if (url === PAGES.workshop) {
+      // Trigger 2 failed attempts to unlock Show Solution for step 1
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (!(await isCw(page, 'checkStep', 1))) await tabToCw(page, 'checkStep', 1, null, 60);
+        if (await isCw(page, 'checkStep', 1)) { await page.keyboard.press('Enter'); await sleep(200); }
+      }
       const show = await tabToCw(page, 'showSolution', 1, null, 120);
       check('zoom 200% workshop: first step controls reachable', show.ok, show.ok ? 'after ' + show.tabs + ' tabs' : 'not reached');
     }

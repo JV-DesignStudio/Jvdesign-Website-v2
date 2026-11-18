@@ -537,7 +537,7 @@ async function followups(browser, base) {
   check('perf: background gradients are cached, not rebuilt every frame', (g2 - g1) <= 3, g1 + '->' + g2);
 
   // A1629 a11y: a polite live region announces the live run state.
-  const live = await page.evaluate(() => { const e = document.getElementById('a11yStatus'); return { present: !!e, role: e ? e.getAttribute('role') : null, text: e ? e.textContent : '' }; });
+  const live = await page.evaluate(() => { const e = document.getElementById('jvds-announce'); return { present: !!e, role: e ? e.getAttribute('role') : null, text: e ? e.textContent : '' }; });
   check('access: an aria-live status region announces score/health', live.present && live.role === 'status' && /Score/.test(live.text), JSON.stringify(live));
 
   // A1629 a11y: the colourblind bullet-shape toggle flips and updates aria-pressed.

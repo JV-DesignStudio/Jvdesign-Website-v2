@@ -10,7 +10,7 @@ if (motionQuery) {
   else if (motionQuery.addListener) motionQuery.addListener(onMotionChange);
 }
 function announce(msg) {
-  const el = $('a11yStatus');
+  const el = $('jvds-announce');
   if (!el) return;
   el.textContent = msg;
 }

@@ -6,7 +6,7 @@ const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 if (localStorage.getItem('soundEnabled') === 'false' && audio) audio.setMasterVolume(0);
 const sys = window.GameSystem ? new GameSystem('echo-flight', "Echo's Swim", 'echo') : null;
 const KEY = 'echo_swim_flappy_v1';
-const a11y = document.getElementById('a11yStatus');
+const a11y = document.getElementById('jvds-announce');
 function announce(text){ if (a11y) a11y.textContent = text; }
 
 // ---- state -------------------------------------------------------------

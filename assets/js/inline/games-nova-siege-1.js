@@ -926,14 +926,14 @@ function drawIntro(){
 function ptextW(str,s){return Math.max(0,String(str).length*6*s-s);}
 function pnumW(v,s){return String(v).length*6*s}
 /* Update: event announcements take priority over the once-a-second state read. */
-function announce(t){try{var ae=document.getElementById('a11yStatus');if(ae)ae.textContent=t;if(run)run.a11yHold=100;}catch(e){}}
+function announce(t){try{var ae=document.getElementById('jvds-announce');if(ae)ae.textContent=t;if(run)run.a11yHold=100;}catch(e){}}
 var _hudCache={};
 function hud(){
   var set=function(id,v){var el=document.getElementById(id);if(!el)return;if(_hudCache[id]===v)return;_hudCache[id]=v;el.textContent=v;};
   set('hScore',run.score.toLocaleString());set('hStage',run.stage);set('hWave',run.wave);set('hLives',run.health);set('hCredits',run.credits);set('hBest',(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString());storyScore();
   /* A1629 screen readers: a throttled polite announcement of the live run state. */
   if(run.a11yHold>0)run.a11yHold-=1;
-  else{a11yT-=1;if(a11yT<=0){a11yT=60;var ae=document.getElementById('a11yStatus');if(ae)ae.textContent='Score '+run.score+'. Health '+run.health+'. Wave '+run.wave+'. Stage '+run.stage+'.';}}
+  else{a11yT-=1;if(a11yT<=0){a11yT=60;var ae=document.getElementById('jvds-announce');if(ae)ae.textContent='Score '+run.score+'. Health '+run.health+'. Wave '+run.wave+'. Stage '+run.stage+'.';}}
 }
 /* ============================ UI ============================ */
 document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('active')});t.classList.add('active');document.getElementById('pane-'+t.dataset.tab).classList.add('active');if(t.dataset.tab==='up')renderUpgrades();if(t.dataset.tab==='quest')renderQuests();if(t.dataset.tab==='skin')renderSkins();sfx('tap');}});

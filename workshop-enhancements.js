@@ -193,6 +193,67 @@
       .report-issue-fab { bottom: 16px; right: 16px; font-size: .72rem; padding: 8px 12px; }
     }
 
+    /* Per-step stuck help */
+    .step-stuck-inject { margin: 14px 0 0; }
+    .step-stuck-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(248,113,113,.06);
+      border: 1px solid rgba(248,113,113,.2);
+      color: rgba(248,113,113,.75);
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 7px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'Inter',sans-serif;
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .step-stuck-toggle:hover, .step-stuck-toggle.open {
+      background: rgba(248,113,113,.12);
+      border-color: rgba(248,113,113,.35);
+      color: #f87171;
+    }
+    .step-stuck-toggle.open::after { content: ' ▲'; font-size: .65rem; margin-left: auto; }
+    .step-stuck-toggle:not(.open)::after { content: ' ▼'; font-size: .65rem; margin-left: auto; }
+    .step-stuck-panel {
+      background: rgba(248,113,113,.04);
+      border: 1px solid rgba(248,113,113,.14);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 14px 15px;
+      margin-top: -1px;
+    }
+    .step-stuck-panel-title {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: rgba(248,113,113,.7);
+      margin: 0 0 8px;
+    }
+    .step-stuck-steps {
+      margin: 0 0 10px;
+      padding-left: 1.3em;
+      font-size: .83rem;
+      line-height: 1.65;
+      color: rgba(232,234,242,.78);
+    }
+    .step-stuck-steps li { margin-bottom: 6px; }
+    .step-stuck-steps strong { color: #fff; }
+    .step-stuck-link {
+      display: block;
+      font-size: .8rem;
+      color: rgba(248,113,113,.8);
+      text-decoration: none;
+      margin-top: 7px;
+      transition: color .15s;
+    }
+    .step-stuck-link:hover { color: #f87171; text-decoration: underline; }
+
     /* Interactive improvements */
     .quiz-feedback.show, .cc-feedback.show, .cf-feedback.show, .tf-feedback.show {
       animation: feedbackSlide .3s ease-out;
@@ -248,6 +309,41 @@
     .order-item:hover:not(.locked) {
       transform: translateX(4px);
     }
+
+    /* Fast-track mode toggle */
+    .fast-track-btn {
+      background: rgba(56,189,248,.07);
+      border: 1px solid rgba(56,189,248,.2);
+      color: rgba(56,189,248,.7);
+      font-size: .73rem;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: 'Inter',sans-serif;
+    }
+    .fast-track-btn:hover,
+    .fast-track-btn.active { background: rgba(56,189,248,.14); border-color: rgba(56,189,248,.4); color: #38bdf8; }
+    @media(max-width:860px){ .fast-track-btn { display: none !important; } }
+
+    /* Elements hidden in fast-track mode */
+    body.fast-track-mode .box,
+    body.fast-track-mode .callout,
+    body.fast-track-mode .callout-box,
+    body.fast-track-mode .info-box,
+    body.fast-track-mode .tip-box,
+    body.fast-track-mode .note-box,
+    body.fast-track-mode .explain-box,
+    body.fast-track-mode .lesson-map,
+    body.fast-track-mode .blueprint-coach,
+    body.fast-track-mode .step-stuck-inject {
+      display: none !important;
+    }
+    body.fast-track-mode .step-nav {
+      margin-top: 10px !important;
+    }
   `;
 
   const styleEl = document.createElement('style');
@@ -259,34 +355,143 @@
   const storageKey = 'wkp_' + location.pathname.replace(/\W+/g, '_').replace(/^_|_$/g, '');
 
   // ── COPY BUTTONS ────────────────────────────────────────────────────────────
-  function initCopyButtons() {
-    document.querySelectorAll('.code-wrap').forEach(function (wrap) {
+  function makeCopyBtn(getTextFn) {
+    var btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    btn.onclick = function (e) {
+      e.stopPropagation();
+      var text = getTextFn();
+      var done = function () {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    };
+    return btn;
+  }
+
+  function attachCopyButtons(root) {
+    root = root || document;
+    // Pattern 1: .code-wrap (Minecraft / Roblox / Godot workshops)
+    root.querySelectorAll('.code-wrap').forEach(function (wrap) {
       var label = wrap.querySelector('.code-label');
       var body = wrap.querySelector('.code-body');
       if (!label || !body) return;
-
-      var btn = document.createElement('button');
-      btn.className = 'copy-btn';
-      btn.textContent = 'Copy';
-      btn.setAttribute('aria-label', 'Copy code to clipboard');
-
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        var text = body.innerText || body.textContent || '';
-        var done = function () {
-          btn.textContent = 'Copied!';
-          btn.classList.add('copied');
-          setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
-        } else {
-          fallbackCopy(text, done);
-        }
-      };
-
-      label.appendChild(btn);
+      if (label.querySelector('.copy-btn')) return;
+      label.appendChild(makeCopyBtn(function () { return body.innerText || body.textContent || ''; }));
     });
+
+    // Pattern 2: .code-block (Unity / Unreal / Stardew / OpenRCT2 workshops)
+    root.querySelectorAll('.code-block').forEach(function (block) {
+      var header = block.querySelector('.code-block-header');
+      var pre = block.querySelector('.code-pre');
+      if (!header || !pre) return;
+      if (header.querySelector('.copy-btn')) return;
+      header.style.justifyContent = 'space-between';
+      header.appendChild(makeCopyBtn(function () { return pre.innerText || pre.textContent || ''; }));
+    });
+  }
+
+  // ── PER-STEP STUCK HELP ──────────────────────────────────────────────────────
+  function makeStuckEl() {
+    var stuckAnchor = document.getElementById('ws-stuck-title');
+    var cheatsheet = document.querySelector('a[href*="cheatsheet"]');
+
+    var wrap = document.createElement('div');
+    wrap.className = 'step-stuck-inject';
+
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'step-stuck-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML = '<span aria-hidden="true">❓</span> Stuck on this step?';
+
+    var panel = document.createElement('div');
+    panel.className = 'step-stuck-panel';
+    panel.hidden = true;
+    panel.setAttribute('role', 'region');
+
+    var html =
+      '<p class="step-stuck-panel-title">Try this before giving up</p>' +
+      '<ol class="step-stuck-steps">' +
+        '<li>Read any error message in the console exactly — the first line is the clue.</li>' +
+        '<li>Compare your code with the block above character by character. One wrong capital or missing bracket breaks it.</li>' +
+        '<li>Click <strong>Apply</strong> again after re-reading the step from the top.</li>' +
+      '</ol>';
+
+    if (stuckAnchor) {
+      html += '<a class="step-stuck-link" href="#ws-stuck-title">→ Full troubleshooting for this workshop</a>';
+    }
+    if (cheatsheet) {
+      html += '<a class="step-stuck-link" href="' + cheatsheet.href + '" target="_blank" rel="noopener noreferrer">→ Open the cheatsheet in a new tab</a>';
+    }
+
+    panel.innerHTML = html;
+
+    toggle.onclick = function () {
+      var nowOpen = panel.hidden;
+      panel.hidden = !nowOpen;
+      toggle.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+      toggle.classList.toggle('open', nowOpen);
+      if (nowOpen) panel.querySelector('a, li') && panel.querySelector('a, li').focus && panel.focus();
+    };
+
+    wrap.appendChild(toggle);
+    wrap.appendChild(panel);
+    return wrap;
+  }
+
+  function attachStuckHelp(root) {
+    root = root || document;
+
+    // Pattern A: dynamic #stepBody
+    var dynamicBody = (root && root.id === 'stepBody') ? root
+      : (root === document ? document.getElementById('stepBody') : null);
+    if (dynamicBody && !dynamicBody.querySelector('.step-stuck-inject')) {
+      var nav = dynamicBody.querySelector('.step-nav');
+      var el = makeStuckEl();
+      if (nav && nav.parentElement) {
+        // Insert before nav using its actual parent (may be nested due to unclosed tags)
+        nav.parentElement.insertBefore(el, nav);
+      } else {
+        dynamicBody.appendChild(el);
+      }
+    }
+
+    // Pattern B: static .step-card pages
+    if (root.querySelectorAll) {
+      root.querySelectorAll('.step-card .step-body').forEach(function (body) {
+        if (body.querySelector('.step-stuck-inject')) return;
+        var quizGate = body.querySelector('.quiz-gate');
+        var el = makeStuckEl();
+        if (quizGate) body.insertBefore(el, quizGate);
+        else body.appendChild(el);
+      });
+    }
+  }
+
+  // ── COMBINED STEP ENHANCEMENTS (copy + stuck help) ────────────────────────
+  function attachStepEnhancements(root) {
+    attachCopyButtons(root);
+    attachStuckHelp(root);
+  }
+
+  function initCopyButtons() {
+    attachStepEnhancements(document);
+
+    // Re-run whenever step content is swapped in (dynamic step builders)
+    var stepBody = document.getElementById('stepBody');
+    if (stepBody && typeof MutationObserver !== 'undefined') {
+      var obs = new MutationObserver(function () { attachStepEnhancements(stepBody); });
+      obs.observe(stepBody, { childList: true, subtree: true });
+    }
   }
 
   function fallbackCopy(text, cb) {
@@ -302,26 +507,10 @@
 
   // ── TEACHER MODE ─────────────────────────────────────────────────────────────
   function initTeacherMode() {
+    // No header button — teacher notes are opt-in via body.teacher-mode only
     if (siteChrome()) return;
     var active = localStorage.getItem('teacher_mode') === '1';
     if (active) document.body.classList.add('teacher-mode');
-
-    var btn = document.createElement('button');
-    btn.className = 'teacher-toggle-btn' + (active ? ' active' : '');
-    btn.textContent = active ? '🎓 Teacher ON' : '🎓 Teacher';
-    btn.title = 'Toggle teacher notes for each step';
-
-    btn.onclick = function () {
-      var on = document.body.classList.toggle('teacher-mode');
-      localStorage.setItem('teacher_mode', on ? '1' : '0');
-      btn.textContent = on ? '🎓 Teacher ON' : '🎓 Teacher';
-      btn.classList.toggle('active', on);
-    };
-
-    var header = document.querySelector('.header-inner');
-    var navToggle = document.getElementById('navToggle');
-    if (header && navToggle) header.insertBefore(btn, navToggle);
-    else if (header) header.appendChild(btn);
   }
 
 
@@ -749,6 +938,61 @@
     setTimeout(function () { container.remove(); }, 2200);
   }
 
+  // ── FAST-TRACK MODE ──────────────────────────────────────────────────────────
+  function initFastTrackMode() {
+    if (siteChrome()) return;
+    // Only show on pages that have a step-based layout
+    var hasSteps = !!(document.getElementById('stepsTabs') || document.getElementById('stepBody') || document.querySelector('.step-card'));
+    if (!hasSteps) return;
+
+    var active = localStorage.getItem('fast_track_mode') === '1';
+    if (active) document.body.classList.add('fast-track-mode');
+
+    var btn = document.createElement('button');
+    btn.className = 'fast-track-btn' + (active ? ' active' : '');
+    btn.textContent = active ? '⚡ Code Only ON' : '⚡ Code Only';
+    btn.title = 'Hide explanations and show just code blocks';
+
+    btn.onclick = function () {
+      var on = document.body.classList.toggle('fast-track-mode');
+      localStorage.setItem('fast_track_mode', on ? '1' : '0');
+      btn.textContent = on ? '⚡ Code Only ON' : '⚡ Code Only';
+      btn.classList.toggle('active', on);
+    };
+
+    var header = document.querySelector('.header-inner');
+    var navToggle = document.getElementById('navToggle');
+    if (header && navToggle) header.insertBefore(btn, navToggle);
+    else if (header) header.appendChild(btn);
+  }
+
+  // ── KEYBOARD NAVIGATION ──────────────────────────────────────────────────────
+  function initKeyboardNav() {
+    var stepsTabs = document.getElementById('stepsTabs');
+    if (!stepsTabs) return;
+
+    document.addEventListener('keydown', function (e) {
+      // Skip if focus is inside a text input, textarea, or interactive element
+      var tag = document.activeElement && document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (document.activeElement && document.activeElement.isContentEditable) return;
+
+      var active = stepsTabs.querySelector('.tab-btn.active');
+      if (!active) return;
+
+      var allTabs = Array.prototype.slice.call(stepsTabs.querySelectorAll('.tab-btn'));
+      var idx = allTabs.indexOf(active);
+
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey) {
+        var next = allTabs[idx + 1];
+        if (next) { e.preventDefault(); next.click(); next.scrollIntoView({inline:'nearest',behavior:'smooth'}); }
+      } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && !e.ctrlKey && !e.metaKey) {
+        var prev = allTabs[idx - 1];
+        if (prev) { e.preventDefault(); prev.click(); prev.scrollIntoView({inline:'nearest',behavior:'smooth'}); }
+      }
+    });
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
   function init() {
     initCopyButtons();
@@ -762,6 +1006,8 @@
     patchCompleteStep();
     initReportButton();
     patchInteractives();
+    initKeyboardNav();
+    initFastTrackMode();
     // Restore after buildDots() has run (it's called at DOMContentLoaded inline)
     setTimeout(restoreProgress, 80);
   }

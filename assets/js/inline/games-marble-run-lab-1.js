@@ -25,7 +25,7 @@ function readShared(){try{const p=new URLSearchParams(location.search).get('run'
 function rollStart(){try{rollAudio=rollAudio||new (window.AudioContext||window.webkitAudioContext)();if(rollAudio.state==='suspended'){const r=rollAudio.resume();if(r&&r.catch)r.catch(()=>{})}const o=rollAudio.createOscillator(),g=rollAudio.createGain();o.type='triangle';o.frequency.value=150;g.gain.value=0;o.connect(g);g.connect(rollAudio.destination);o.start();rollAudio.__o=o;rollAudio.__g=g}catch(e){rollAudio=null}}
 function rollUpdate(speed){try{if(rollAudio&&rollAudio.__o){rollAudio.__o.frequency.value=120+speed*1500;rollAudio.__g.gain.value=.045}}catch(e){}}
 function rollStop(){try{if(rollAudio&&rollAudio.__o){rollAudio.__g.gain.value=0;rollAudio.__o.stop();rollAudio.__o=null}}catch(e){}}
-function announce(m){const el=document.getElementById('a11yStatus');if(el)el.textContent=m}
+function announce(m){const el=document.getElementById('jvds-announce');if(el)el.textContent=m}
 function autosave(){try{localStorage.setItem(AUTOSAVE,JSON.stringify({board:board,mission:mission,usedHint:usedHint}))}catch(e){}}
 function restoreAuto(){try{const o=JSON.parse(localStorage.getItem(AUTOSAVE));if(o&&Array.isArray(o.board))return o}catch(e){}return null}
 function goalMet(g,s){if(!s)return false;if(g.k==='parts')return s.parts<=g.n;if(g.k==='turn')return s.turns>=g.n;if(g.k==='boost')return s.boosts>=g.n;if(g.k==='drop')return s.drops>=g.n||s.levels>=g.n;return false}

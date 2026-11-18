@@ -254,10 +254,21 @@ export function openProfileModal() {
         </div>
         <hr class="modal-divider">
         <div class="modal-actions">
-          <button class="btn-teal" id="btn-export">⬇ Export Profile</button>
-          <button class="btn-ghost" id="btn-import">⬆ Import Profile</button>
+          <button class="btn-teal" id="btn-export">⬇ Export File</button>
+          <button class="btn-ghost" id="btn-import">⬆ Import File</button>
+          <button class="btn-ghost" id="btn-copy-code">📋 Copy Code</button>
           <button class="btn-danger" id="btn-reset">Reset Progress</button>
         </div>
+        <details style="margin-top:.75rem">
+          <summary style="cursor:pointer;font-size:.82rem;color:var(--teal,#70A3A7)">Paste code from another device</summary>
+          <div style="margin-top:.5rem;display:flex;gap:.4rem">
+            <input id="modal-paste-input" type="text" placeholder="Paste your code here…" style="
+              flex:1;background:#111;border:1px solid #524c42;border-radius:5px;
+              color:#F0EAD6;padding:.4rem .6rem;font-size:.8rem;min-width:0;
+            ">
+            <button class="btn-teal" id="btn-paste-code" style="font-size:.8rem;padding:.4rem .7rem;white-space:nowrap">Apply</button>
+          </div>
+        </details>
         <p id="modal-msg" class="modal-msg"></p>
       </div>
     </div>`;
@@ -286,6 +297,35 @@ export function openProfileModal() {
       (err) => msg(err, true)
     );
   };
+
+  // Copy-code: base64 of the save JSON — pasteable on any device
+  document.getElementById('btn-copy-code').onclick = () => {
+    try {
+      const code = btoa(unescape(encodeURIComponent(GameState.exportSave())));
+      navigator.clipboard?.writeText(code).then(() => {
+        msg('Code copied! Paste it on your other device.');
+      }).catch(() => {
+        msg('Could not copy — try Export File instead.', true);
+      });
+    } catch {
+      msg('Could not generate code.', true);
+    }
+  };
+
+  // Paste-code: base64 → importSave
+  document.getElementById('btn-paste-code').onclick = () => {
+    const raw = document.getElementById('modal-paste-input').value.trim();
+    if (!raw) { msg('Paste a code first.', true); return; }
+    try {
+      const json = decodeURIComponent(escape(atob(raw)));
+      const ok = GameState.importSave(json);
+      if (ok) { msg('Profile restored! Reloading...'); setTimeout(() => location.reload(), 800); }
+      else     { msg('Invalid code. Make sure you copied the whole thing.', true); }
+    } catch {
+      msg('Could not read that code.', true);
+    }
+  };
+
   document.getElementById('btn-reset').onclick = () => {
     if (confirm('Reset all progress? This cannot be undone.')) {
       GameState.reset();
