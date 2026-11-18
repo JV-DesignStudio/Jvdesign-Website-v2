@@ -356,6 +356,44 @@
     setTimeout(refreshCard, 200);
   });
 
+  // Share prompt shown once after marking complete
+  function showSharePrompt(workshopKey) {
+    if (document.getElementById('jvhud-share-prompt')) return;
+    const storageKey = 'jvhud-shared-' + workshopKey;
+    try { if (localStorage.getItem(storageKey)) return; } catch (_) {}
+
+    // Strip separators (en dash, em dash, middle dot) from the page title
+    const title = document.title.split(" | ")[0].trim() || "a JVDesignStudio workshop";
+    const text = encodeURIComponent('Just finished ' + title + '! 🎮 Learning game dev with @JVDesignStudio');
+    const url = encodeURIComponent(location.href);
+    const tweetHref = 'https://twitter.com/intent/tweet?text=' + text + '&url=' + url;
+    const bskyHref = 'https://bsky.app/intent/compose?text=' + text + '%20' + url;
+
+    const bar = document.createElement('div');
+    bar.id = 'jvhud-share-prompt';
+    bar.setAttribute('role', 'status');
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a1612;color:#F0EAD6;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;box-shadow:0 -2px 12px rgba(0,0,0,.35)';
+
+    bar.innerHTML = '<span style="font-weight:700;font-size:.9rem">🎉 You finished it! Share the news?</span>'
+      + '<a href="' + tweetHref + '" target="_blank" rel="noopener noreferrer" style="background:#000;color:#fff;font-weight:700;font-size:.82rem;padding:8px 14px;border-radius:999px;text-decoration:none">Share on X</a>'
+      + '<a href="' + bskyHref + '" target="_blank" rel="noopener noreferrer" style="background:#0085FF;color:#fff;font-weight:700;font-size:.82rem;padding:8px 14px;border-radius:999px;text-decoration:none">Bluesky</a>'
+      + '<button type="button" aria-label="Dismiss" style="background:none;border:none;color:#F0EAD6;opacity:.6;font-size:1.2rem;cursor:pointer;padding:4px 8px;line-height:1">✕</button>';
+
+    bar.querySelector('button').addEventListener('click', () => {
+      bar.remove();
+      try { localStorage.setItem(storageKey, '1'); } catch (_) {}
+    });
+    ['[href*="twitter"]', '[href*="bsky"]'].forEach(sel => {
+      const a = bar.querySelector(sel);
+      if (a) a.addEventListener('click', () => {
+        setTimeout(() => { bar.remove(); }, 300);
+        try { localStorage.setItem(storageKey, '1'); } catch (_) {}
+      });
+    });
+
+    document.body.appendChild(bar);
+  }
+
   // ── MARK-COMPLETE BUTTON ─────────────────────────────────────────────
   function injectMarkBtn() {
     const bd = document.body;
@@ -397,6 +435,7 @@
         burst(r.left + r.width / 2, r.top + r.height / 2);
         showToast('✅', 'Workshop Complete!', 'Your progress is saved · Keep going!', markBtn);
         setTimeout(refreshCard, 200);
+        setTimeout(() => showSharePrompt(key), 800);
       });
     }
 
