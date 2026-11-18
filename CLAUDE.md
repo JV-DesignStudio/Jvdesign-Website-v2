@@ -42,7 +42,7 @@ node F:/Website/studio-workspace/board-keeper.cjs --release A46 --status backlog
 
 Rules: one task at a time, update `evidence` before `--sync`, never mark `done` until published/verified, keep `historical-shipped.json` intact.
 
-Snapshot (2026-09-08): **In Progress (3)** A01, A12, A47; **Verified (6)** A02-A04 etc; **Backlog (32)** A05…
+**Never trust a written count - run `node F:/Website/studio-workspace/board-keeper.cjs --next` to see the current backlog and suggested next task.**
 
 ## 4) The Watcher AI (Board Keeper)
 
