@@ -157,8 +157,7 @@ function schedulerLinks() {
     ['Buffer', 'https://publish.buffer.com/'],
     ['Later', 'https://app.later.com/'],
     ['Metricool', 'https://app.metricool.com/'],
-    ['Mailchimp', 'https://mailchimp.com/'],
-    ['Brevo', 'https://app.brevo.com/']
+    ['Beehiiv', 'https://app.beehiiv.com/']
   ];
 }
 function proofTemplate(t, p) {

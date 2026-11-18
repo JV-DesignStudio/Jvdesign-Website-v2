@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// send-newsletter.js - weekly digest draft from devlog-data.js (Formspree signup, draft-only review gate)
+// send-newsletter.js - weekly digest draft from devlog-data.js, with optional Beehiiv broadcast draft creation.
 // Dev Log is source: POSTS in devlog-data.js. Every Friday a digest of that week's dev logs is drafted.
 // Draft goes to social-posts/queue/newsletter-week-YYYY-Www.html + board task human_review for edit before release.
-// Tick never sends, no BREVO_API_KEY used - you copy-paste HTML to Formspree/Brevo manually after approve.
-// Usage: node scripts/send-newsletter.js [--check]  // Friday weekly check, 3-post threshold (you chose 3)
-//        node scripts/send-newsletter.js --force      // force draft regardless of day/threshold
+// With BEEHIIV_API_KEY + BEEHIIV_PUBLICATION_ID set, also creates a Beehiiv broadcast draft (not published).
+// Usage: node scripts/send-newsletter.js [--check]   // Friday weekly check, 3-post threshold
+//        node scripts/send-newsletter.js --force       // force draft regardless of day/threshold
 const fs=require('fs'), path=require('path');
 const vm=require('vm');
 const ROOT=path.resolve(__dirname,'..');
@@ -136,7 +136,7 @@ ${p.hasLink?`<td style="padding-right:12px;"><a href="${p.url}" style="display:i
       <a href="https://jvdesignstudio.co.uk/newsletter.html" style="font-size:.72rem;color:rgba(240,234,214,.3);text-decoration:none;display:block;text-align:right;">Manage subscription</a>
     </td>
   </tr></table>
-  <p style="margin:20px 0 0;font-size:.65rem;color:rgba(240,234,214,.2);text-align:center;line-height:1.7;">You received this because you subscribed at jvdesignstudio.co.uk/newsletter · Unsubscribe via the link in your confirmation email</p>
+  <p style="margin:20px 0 0;font-size:.65rem;color:rgba(240,234,214,.2);text-align:center;line-height:1.7;">You received this because you subscribed at jvdesignstudio.co.uk/newsletter via Beehiiv · Unsubscribe via the link at the bottom of this email</p>
 </td></tr>
 
 </table>
@@ -147,10 +147,50 @@ ${p.hasLink?`<td style="padding-right:12px;"><a href="${p.url}" style="display:i
 
 </body></html>`;
 }
+async function createBeehiivDraft(subject, html){
+  const apiKey=process.env.BEEHIIV_API_KEY;
+  const pubId=process.env.BEEHIIV_PUBLICATION_ID;
+  if(!apiKey || !pubId){
+    console.log('[beehiiv] BEEHIIV_API_KEY or BEEHIIV_PUBLICATION_ID not set - skipping broadcast draft creation.');
+    return null;
+  }
+  try{
+    const https=require('https');
+    const body=JSON.stringify({
+      subject,
+      content: { free: { web: html, email: html } },
+      status: 'draft',
+      send_at: null,
+    });
+    return await new Promise((resolve,reject)=>{
+      const req=https.request({
+        hostname:'api.beehiiv.com',
+        path:`/v2/publications/${pubId}/posts`,
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`,'Content-Length':Buffer.byteLength(body)},
+      },res=>{
+        let data='';
+        res.on('data',c=>data+=c);
+        res.on('end',()=>{
+          if(res.statusCode>=200 && res.statusCode<300){
+            const r=JSON.parse(data);
+            resolve(r?.data?.id||null);
+          } else {
+            console.error(`[beehiiv] API error ${res.statusCode}: ${data.slice(0,200)}`);
+            resolve(null);
+          }
+        });
+      });
+      req.on('error',e=>{ console.error('[beehiiv] request error:', e.message); resolve(null); });
+      req.write(body);
+      req.end();
+    });
+  }catch(e){ console.error('[beehiiv] unexpected error:', e.message); return null; }
+}
 function ensureBoardTask(posts, weekStr, queueFile){
   const title=`Newsletter: ${weekStr} (${posts.map(p=>p.id).join(',')})`;
-  const desc=`Weekly newsletter digest for ${weekStr}: ${posts.length} dev log post(s) ${posts.map(p=>`#${p.id} ${p.title.slice(0,40)}`).join('; ')}. File: ${queueFile}. Must pass same board review before manual send via Formspree/Brevo copy-paste. Threshold ${MIN_POSTS} posts.`;
-  const done=`Queue file ${queueFile} exists at 390/1440 no overflow, validate:public PASS, board task human_review->done via --approve, then manually copy HTML to Formspree/Brevo broadcast (draft-only, tick never sends).`;
+  const desc=`Weekly newsletter digest for ${weekStr}: ${posts.length} dev log post(s) ${posts.map(p=>`#${p.id} ${p.title.slice(0,40)}`).join('; ')}. File: ${queueFile}. Must pass board review before publishing Beehiiv broadcast draft. Threshold ${MIN_POSTS} posts.`;
+  const done=`Queue file ${queueFile} exists, validate:public PASS, board task human_review->done via --approve, then publish Beehiiv broadcast draft from app.beehiiv.com.`;
   try{
     const {execSync}=require('child_process');
     const boardKeeper='F:/Website/studio-workspace/board-keeper.cjs';
@@ -184,5 +224,10 @@ require('fs').mkdirSync(OUT_DIR,{recursive:true});
 const existed=require('fs').existsSync(outPath);
 require('fs').writeFileSync(outPath, html);
 console.log(`${existed?'updated':'draft'}: ${path.relative(ROOT,outPath)} for ${targetKey} (${targetPosts.length} posts: ${targetPosts.map(p=>`#${p.id}`).join(', ')})`);
-console.log('[draft-only] Tick never sends - copy HTML to Formspree/Brevo manually after board approve. Weekly Friday, one email per week max.');
-if(!existed) ensureBoardTask(targetPosts, targetKey, `social-posts/queue/${fname}`);
+const subject=`Studio log: ${targetPosts[0]?.title||'Weekly digest'} (${weekLabel(targetKey)})`;
+(async()=>{
+  const draftId=await createBeehiivDraft(subject, html);
+  if(draftId) console.log(`[beehiiv] broadcast draft created: ${draftId} - review and publish at app.beehiiv.com`);
+  else console.log('[beehiiv] no draft created - open app.beehiiv.com and paste the HTML from '+path.relative(ROOT,outPath));
+  if(!existed) ensureBoardTask(targetPosts, targetKey, `social-posts/queue/${fname}`);
+})();

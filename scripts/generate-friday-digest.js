@@ -7,7 +7,7 @@
  * picks the newest ones that fit, ranked so releases lead over small fixes, and
  * writes a ready-to-send draft.
  *
- * Draft-only by design: it never sends. Copy the HTML into Brevo/Formspree.
+ * Draft-only by design: it never sends. Paste the HTML into a Beehiiv broadcast draft at app.beehiiv.com.
  *
  * Usage:
  *   node scripts/generate-friday-digest.js            write the draft
@@ -152,7 +152,7 @@ function main() {
   md.push('## Send checklist');
   md.push('- Read it once out loud.');
   md.push('- Check every link opens.');
-  md.push('- Copy the HTML below into Brevo/Formspree and send Friday morning.');
+  md.push('- Paste the HTML below into a Beehiiv broadcast draft at app.beehiiv.com and send Friday morning.');
   md.push('- Record the send date in FRIDAY_DIGEST.json (sentAt) so next week knows what is new.');
   md.push('');
   md.push('## HTML');
@@ -173,7 +173,7 @@ function main() {
   fs.writeFileSync(OUT_HTML, buildHtml(picked), 'utf8');
   console.log(`Friday digest built: ${path.relative(ROOT, OUT_MD)} (${picked.length} item(s), cap ${cap})`);
   if (lastSent) console.log(`[digest] last sent ${lastSent}; review what is new before sending.`);
-  console.log('[draft-only] Never sends. Copy the HTML into Brevo/Formspree after your read-through.');
+  console.log('[draft-only] Never sends. Paste the HTML into a Beehiiv broadcast draft at app.beehiiv.com after your read-through.');
 }
 
 main();
