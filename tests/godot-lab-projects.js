@@ -42,6 +42,10 @@ function check(name, ok, detail = '') {
     const scene = sceneMatch ? sceneMatch[1] : '';
     check('main scene ' + p.id, !!scene && names.includes(scene), scene || 'missing');
     check('no Windows separators ' + p.id, names.every((n) => n.indexOf('\\') === -1), names.find((n) => n.indexOf('\\') !== -1) || '');
+    const dirs = new Set(Object.keys(zip.files).filter((n) => zip.files[n].dir).map((n) => n.replace(/\/+$/, '')));
+    const nested = [...new Set(names.filter((n) => n.indexOf('/') !== -1).map((n) => n.slice(0, n.lastIndexOf('/'))))];
+    const noDir = nested.filter((d) => !dirs.has(d));
+    check('folder entries ' + p.id, noDir.length === 0, noDir.join(', ') || nested.join(', '));
     if (p.workshop) {
       const workshopFile = p.workshop.split('#')[0].split('?')[0].replace(/^\//, '');
       check('workshop page ' + p.id, fs.existsSync(path.join(ROOT, workshopFile)), p.workshop);

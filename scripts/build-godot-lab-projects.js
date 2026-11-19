@@ -109,13 +109,26 @@ function crc32(buf) {
 function u16(v) { return Buffer.from([v & 0xFF, (v >> 8) & 0xFF]); }
 function u32(v) { return Buffer.from([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF]); }
 function makeZip(files) {
+  /* The Godot web editor extracts a project ZIP into /home/web_user/preload
+     and does not create missing folders. A ZIP that only lists files (e.g.
+     scenes/main.tscn) fails on every nested path, so add the explicit folder
+     entries the official demo.zip ships as well. */
+  const entries = files.map((f) => ({ name: f.name, data: Buffer.from(f.data), dir: false }));
+  const dirs = new Set();
+  for (const f of files) {
+    const parts = f.name.split('/');
+    for (let i = 1; i < parts.length; i++) dirs.add(parts.slice(0, i).join('/') + '/');
+  }
+  for (const d of dirs) entries.push({ name: d, data: Buffer.alloc(0), dir: true });
+  entries.sort((a, b) => a.name.localeCompare(b.name));
   const local = [];
   const central = [];
   let offset = 0;
-  for (const file of files.slice().sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const file of entries) {
     const name = Buffer.from(file.name, 'utf8');
-    const data = Buffer.from(file.data);
-    const crc = crc32(data);
+    const data = file.data;
+    const crc = file.dir ? 0 : crc32(data);
+    const external = file.dir ? 0x10 : 0;
     const lh = Buffer.concat([
       Buffer.from([0x50, 0x4B, 0x03, 0x04]), u16(20), u16(0), u16(0), u16(0), u16(0),
       u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0)
@@ -124,14 +137,14 @@ function makeZip(files) {
     const cd = Buffer.concat([
       Buffer.from([0x50, 0x4B, 0x01, 0x02]), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
       u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0),
-      u16(0), u32(0), u32(offset)
+      u16(0), u32(external), u32(offset)
     ]);
     central.push(cd, name);
     offset += lh.length + name.length + data.length;
   }
   const centralSize = central.reduce((sum, part) => sum + part.length, 0);
   const eocd = Buffer.concat([
-    Buffer.from([0x50, 0x4B, 0x05, 0x06]), u16(0), u16(0), u16(files.length), u16(files.length),
+    Buffer.from([0x50, 0x4B, 0x05, 0x06]), u16(0), u16(0), u16(entries.length), u16(entries.length),
     u32(centralSize), u32(offset), u16(0)
   ]);
   return Buffer.concat([...local, ...central, eocd]);
