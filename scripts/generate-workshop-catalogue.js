@@ -103,7 +103,69 @@ function needsFor(entry, isStudio) {
 }
 
 const LEVEL_LABEL = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
-const NEEDS_LABEL = {
+
+// A1979: the parent check. One plain line per card so a grown-up can decide
+// before the learner starts: reading, typing, grown-up help and software.
+const APP_TEXT = {
+  'Godot': 'Free Godot 4',
+  'Unity': 'Free Unity',
+  'Unreal': 'Free Unreal Engine',
+  'Blender': 'Free Blender',
+  'Minecraft': 'Minecraft Java, plus free mod tools',
+  'MUGEN': 'Free MUGEN',
+  'Stardew Valley': 'Stardew Valley, plus free SMAPI',
+  'Terraria': 'Terraria, plus free tModLoader',
+  'OpenRCT2': 'Free OpenRCT2',
+  'PICO-8': 'PICO-8 (paid once)',
+  'Python': 'Free Python',
+  'C++': 'A free C++ compiler',
+  'Java': 'Free Java',
+  'GML/GameMaker': 'Free GameMaker',
+  'Defold': 'Free Defold',
+  'GDevelop': 'Free GDevelop',
+  'Roblox': 'Free Roblox Studio'
+};
+const CODE_ENGINES = new Set(['Godot', 'JavaScript', 'Python', 'C++', 'Java', 'GML/GameMaker', 'PICO-8', 'Unity', 'Unreal']);
+const DRAG_ENGINES = new Set(['Scratch', 'TinkerCAD']);
+
+function fitFor(e, needs) {
+  const engine = e.engine || 'General';
+  const level = String(e.difficulty || 'beginner').toLowerCase();
+  const install = needs === 'install';
+  const account = needs === 'account';
+  const reading = DRAG_ENGINES.has(engine)
+    ? 'Pictures and short words'
+    : (level === 'advanced' || ['C++', 'Unreal', 'Java', 'Unity'].includes(engine))
+      ? 'Reads some code'
+      : 'Short sentences';
+  const typing = DRAG_ENGINES.has(engine)
+    ? 'No typing'
+    : CODE_ENGINES.has(engine)
+      ? 'Types code'
+      : 'A few words and numbers';
+  const adult = install
+    ? 'A grown-up helps with the install'
+    : account
+      ? 'A grown-up may help with the account'
+      : 'No grown-up needed';
+  const software = install
+    ? (APP_TEXT[engine] || ('Free ' + engine)) + (e.alternative ? ', or the browser build' : '')
+    : account
+      ? 'Browser and a free account'
+      : 'Browser only';
+  return { reading, typing, adult, software };
+}
+
+function fitRow(e, needs) {
+  const f = fitFor(e, needs);
+  const item = (label, value) => '          <span class="course-fit-item"><b>' + label + '</b> ' + esc(value) + '</span>\n';
+  return '        <div class="course-fit" data-reading="' + esc(f.reading) + '" data-typing="' + esc(f.typing) + '" data-adult="' + esc(f.adult) + '" data-software="' + esc(f.software) + '">\n'
+    + item('Reading', f.reading)
+    + item('Typing', f.typing)
+    + item('Grown-up', f.adult)
+    + item('Software', f.software)
+    + '        </div>\n';
+}const NEEDS_LABEL = {
   browser: { text: 'Runs in browser', title: 'No install. Opens in a normal browser.' },
   install: { text: 'Needs install', title: 'Needs a free app on a desktop or laptop.' },
   account: { text: 'Needs login', title: 'Opens in a browser, but you sign in first.' }
@@ -167,6 +229,7 @@ function card(e, outcomes, courses) {
     + '        <div class="course-title">' + esc(e.title) + '</div>\n'
     + '        <div class="course-desc">' + esc(desc) + '</div>\n'
     + metaRow(e, isStudio)
+    + fitRow(e, needsFor(e, isStudio))
     + prereqRow(e, courses)
     + outcomeLine
     + '      </div>\n'
@@ -182,6 +245,9 @@ function section(entries, outcomes, courses) {
     + '      <div class="ws-section-sub">Every workshop in one place. Use the finder above to narrow it down by tool, level or age.</div>\n'
     + '    </div>\n'
     + '    <span class="ws-section-count">' + entries.length + ' Workshops</span>\n'
+    + '  </div>\n'
+    + '  <div class="ws-fit-legend" role="note">\n'
+    + '    <p><strong>For grown-ups:</strong> every card says the reading, typing, grown-up help and software it needs. Ages are guidance, not a rule. A workshop that needs an install also shows the browser build when one exists, and every card links to the next step in its course.</p>\n'
     + '  </div>\n'
     + '  <div class="courses-grid" id="catalogueGrid">\n'
     + entries.map((e) => card(e, outcomes, courses)).join('\n')
@@ -251,7 +317,8 @@ function needsManifest(entries) {
   return entries.map((e) => {
     const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
     const needs = needsFor(e, isStudio);
-    const alt = needs === 'install' ? studios.get(e.engine) : null;
+    const explicitAlt = e.alternative && e.alternative.url ? e.alternative : null;
+    const alt = needs === 'install' ? (explicitAlt || studios.get(e.engine)) : null;
     return {
       url: e.url,
       id: e.id,

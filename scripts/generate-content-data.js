@@ -108,6 +108,11 @@ function generateWorkshops() {
        install. The page declares that explicitly so the catalogue and the needs
        banner do not tell a learner to install the app before they start. */
     const needs = extract(html, /<meta\s+name=["']jvds-needs["']\s+content=["']([^"']+)["']/);
+    /* A3100: an install workshop can name the browser page a school learner can
+       use for the same step. The catalogue and kit read this instead of guessing
+       from an engine studio that may not exist. */
+    const alternative = extract(html, /<meta\s+name=["']jvds-alternative["']\s+content=["']([^"']+)["']/);
+    const alternativeTitle = extract(html, /<meta\s+name=["']jvds-alternative-title["']\s+content=["']([^"']+)["']/);
 
     // Determine engine from filename prefix
     let engine = 'General';
@@ -192,7 +197,8 @@ function generateWorkshops() {
       themeColor: tc,
       cover: cover,
       url: `/workshops/${rel}`,
-      ...(needs ? { needs } : {})
+      ...(needs ? { needs } : {}),
+      ...(alternative ? { alternative: { title: alternativeTitle || 'the browser studio', url: alternative } } : {})
     });
 
     if (!engines[engine]) engines[engine] = 0;

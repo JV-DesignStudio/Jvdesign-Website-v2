@@ -1487,7 +1487,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#c98a2e",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-autoclicker-canvas.html"
+      "url": "/workshops/godot-autoclicker-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-autoclicker-workshop",
@@ -1520,7 +1521,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#ff6b35",
       "cover": "/godot-teaser.webp",
-      "url": "/workshops/godot-racing-workshop.html"
+      "url": "/workshops/godot-racing-workshop.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Godot Racing Build Canvas",
+        "url": "/workshops/godot-racing-2-canvas.html"
+      }
     },
     {
       "id": "godot_templates",
@@ -1534,7 +1540,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "/godot-templates.webp",
-      "url": "/workshops/godot_templates.html"
+      "url": "/workshops/godot_templates.html",
+      "needs": "browser"
     },
     {
       "id": "godot-gdscript-essentials-canvas",
@@ -1548,7 +1555,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-gdscript-essentials-canvas.html"
+      "url": "/workshops/godot-gdscript-essentials-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-gdscript-essentials",
@@ -1562,7 +1570,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#478cbf",
       "cover": "/og/godot-gdscript-essentials.webp",
-      "url": "/workshops/godot-gdscript-essentials.html"
+      "url": "/workshops/godot-gdscript-essentials.html",
+      "needs": "install",
+      "alternative": {
+        "title": "GDScript Essentials Build Canvas",
+        "url": "/workshops/godot-gdscript-essentials-canvas.html"
+      }
     },
     {
       "id": "godot-tutorial-canvas",
@@ -1576,7 +1589,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-tutorial-canvas.html"
+      "url": "/workshops/godot-tutorial-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-gatekeeper-3d-part1-canvas",
@@ -1592,7 +1606,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-gatekeeper-3d-part1-canvas.html"
+      "url": "/workshops/godot-gatekeeper-3d-part1-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-gatekeeper-3d-part2-canvas",
@@ -1608,7 +1623,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html"
+      "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-platformer-canvas",
@@ -1624,7 +1640,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-platformer-canvas.html"
+      "url": "/workshops/godot-platformer-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-puzzle-canvas",
@@ -1640,7 +1657,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-puzzle-canvas.html"
+      "url": "/workshops/godot-puzzle-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-racing-2-canvas",
@@ -1656,7 +1674,8 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/godot-racing-2-canvas.html"
+      "url": "/workshops/godot-racing-2-canvas.html",
+      "needs": "browser"
     },
     {
       "id": "godot-world-workshop",
@@ -1674,7 +1693,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#478cbf",
       "cover": "/og/godot-world-workshop.png",
-      "url": "/workshops/godot-world-workshop.html"
+      "url": "/workshops/godot-world-workshop.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Godot Basics Build Canvas",
+        "url": "/workshops/godot-tutorial-canvas.html"
+      }
     },
     {
       "id": "godot_tutorial",
@@ -1691,7 +1715,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#BC4749",
       "cover": "/how-to-godot.webp",
-      "url": "/workshops/godot_tutorial.html"
+      "url": "/workshops/godot_tutorial.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Godot Basics Build Canvas",
+        "url": "/workshops/godot-tutorial-canvas.html"
+      }
     },
     {
       "id": "godot-rally-workshop",
@@ -1708,7 +1737,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#d9480f",
       "cover": "/og/learn.webp",
-      "url": "/workshops/godot-rally-workshop.html"
+      "url": "/workshops/godot-rally-workshop.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Godot Racing Build Canvas",
+        "url": "/workshops/godot-racing-2-canvas.html"
+      }
     },
     {
       "id": "godot-gatekeeper-3d-part1",
@@ -1724,7 +1758,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#0f1117",
       "cover": "/godot-teaser.webp",
-      "url": "/workshops/godot-gatekeeper-3d-part1.html"
+      "url": "/workshops/godot-gatekeeper-3d-part1.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Gatekeeper 3D Part 1 Build Canvas",
+        "url": "/workshops/godot-gatekeeper-3d-part1-canvas.html"
+      }
     },
     {
       "id": "godot-gatekeeper-3d-part2",
@@ -1738,7 +1777,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#0f1117",
       "cover": "/godot-teaser.webp",
-      "url": "/workshops/godot-gatekeeper-3d-part2.html"
+      "url": "/workshops/godot-gatekeeper-3d-part2.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Gatekeeper 3D Part 2 Build Canvas",
+        "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html"
+      }
     },
     {
       "id": "godot-racing-workshop-2",
@@ -1754,7 +1798,12 @@ window.JVDS_CONTENT = {
       "steps": 6,
       "themeColor": "#ff6b35",
       "cover": "/godot-teaser.webp",
-      "url": "/workshops/godot-racing-workshop-2.html"
+      "url": "/workshops/godot-racing-workshop-2.html",
+      "needs": "install",
+      "alternative": {
+        "title": "Godot Racing Part 2 Build Canvas",
+        "url": "/workshops/godot-racing-2-canvas.html"
+      }
     },
     {
       "id": "java-breakout-workshop",
@@ -5660,7 +5709,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-19T16:58:34.000Z",
+    "generated": "2026-11-19T17:22:25.000Z",
     "workshops": 284,
     "games": 16,
     "tools": 50,
