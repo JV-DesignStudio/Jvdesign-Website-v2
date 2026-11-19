@@ -39,6 +39,55 @@
   var workshopEl = document.querySelector('[data-gl-workshop]');
   var levelEl = document.querySelector('[data-gl-level]');
   var noteEl = document.querySelector('[data-gl-project-note]');
+  var mobileEl = document.querySelector('[data-gl-mobile]');
+  var mobileLinkEl = document.querySelector('[data-gl-mobile-link]');
+  var mobileWorkshopEl = document.querySelector('[data-gl-mobile-workshop]');
+  var copyBtn = document.querySelector('[data-gl-copy]');
+  var anywayBtn = document.querySelector('[data-gl-anyway]');
+  var preflightEl = document.querySelector('[data-gl-preflight]');
+  var isSmall = false;
+  var mobileDismissed = false;
+  try { isSmall = window.matchMedia('(max-width: 820px)').matches; } catch (e) {}
+
+  function mobileUrl() {
+    var base = location.origin && location.origin !== 'null'
+      ? location.origin + location.pathname
+      : location.href.split('?')[0];
+    return base + '?project=' + encodeURIComponent(project.id || 'starter');
+  }
+
+  function showMobile() {
+    if (mobileDismissed) return;
+    if (mobileEl) mobileEl.hidden = false;
+    if (preflightEl) preflightEl.hidden = true;
+    if (loadBtn) loadBtn.hidden = true;
+    setStatus('You are on a small screen. Copy the project link above and open it on a computer.');
+    setCheck(checkIso, 'Phone or tablet: read first', 'warn');
+    setCheck(checkFrame, 'Editor not loaded', 'warn');
+    setCheck(checkNet, 'Use a computer for the editor', 'warn');
+  }
+
+  function copyLink() {
+    var url = mobileUrl();
+    var done = function () {
+      if (!copyBtn) return;
+      copyBtn.textContent = 'Copied';
+      setTimeout(function () { copyBtn.textContent = 'Copy project link'; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(done);
+      return;
+    }
+    try {
+      var field = document.createElement('textarea');
+      field.value = url;
+      document.body.appendChild(field);
+      field.select();
+      document.execCommand('copy');
+      field.remove();
+    } catch (e) {}
+    done();
+  }
 
   function shortProject(p) {
     return p.id === 'starter' ? 'starter project' : (p.title || 'project');
@@ -60,6 +109,8 @@
       else { workshopEl.hidden = true; }
     }
     if (noteEl) noteEl.textContent = project.note || 'Pick any template or workshop. The Lab loads its real Godot project.';
+    if (mobileLinkEl) mobileLinkEl.textContent = mobileUrl();
+    if (mobileWorkshopEl) mobileWorkshopEl.setAttribute('href', project.workshop || '/workshops/engine-godot.html#godot-path');
     if (picker && project.id) picker.value = project.id;
   }
 
@@ -131,6 +182,10 @@
 
   function updateNetwork() {
     if (!checkNet) return;
+    if (isSmall && !mobileDismissed) {
+      setCheck(checkNet, 'Use a computer for the editor', 'warn');
+      return;
+    }
     if (navigator.onLine === false) {
       setCheck(checkNet, 'Offline: use the practice editor', 'warn');
     } else {
@@ -138,7 +193,11 @@
     }
   }
 
-  function reveal() {
+  function reveal(force) {
+    if (isSmall && !force) { showMobile(); return; }
+    if (mobileEl) mobileEl.hidden = true;
+    if (preflightEl) preflightEl.hidden = false;
+    if (loadBtn) loadBtn.hidden = false;
     if (!window.crossOriginIsolated) {
       setCheck(checkIso, 'Browser blocked isolation', 'bad');
       setStatus('Preparing the lab. If this stays, your browser or network is blocking service workers.');
@@ -228,6 +287,13 @@
   }
 
   if (loadBtn) loadBtn.addEventListener('click', loadStarter);
+  if (copyBtn) copyBtn.addEventListener('click', copyLink);
+  if (anywayBtn) anywayBtn.addEventListener('click', function () {
+    mobileDismissed = true;
+    if (mobileEl) mobileEl.hidden = true;
+    if (preflightEl) preflightEl.hidden = false;
+    reveal(true);
+  });
 
   if (frame) {
     frame.addEventListener('load', function () {
@@ -257,4 +323,5 @@
       else if (frame && !frame.getAttribute('src')) reveal();
     }, 4000);
   }
+  if (isSmall) showMobile();
 })();

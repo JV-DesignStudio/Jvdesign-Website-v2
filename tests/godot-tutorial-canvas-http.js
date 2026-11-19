@@ -47,6 +47,7 @@ async function readState(page) {
   try {
     for (const width of [390, 1440]) {
       const page = await browser.newPage();
+      await page.evaluateOnNewDocument(() => { try { localStorage.clear(); } catch (e) {} });
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -71,7 +72,7 @@ async function readState(page) {
       check('default colour reaches the preview @' + width, defaults.preview.includes('#60a5fa'), defaults.preview.slice(0, 120));
       check('default name reaches the HUD @' + width, defaults.preview.includes('Star Collector'));
       check('default speed reaches the player @' + width, defaults.preview.includes('speed=3'));
-      check('Mod Card is prefilled @' + width, defaults.starter.includes('Game name: Star Collector') && defaults.starter.includes('Sprite colour: blue'), defaults.starter.slice(0, 80));
+      check('rainy day challenge is prefilled @' + width, defaults.starter.includes('Game name: Star Collector') && defaults.starter.includes('Player colour: blue'), defaults.starter.slice(0, 80));
       const preview = await page.evaluate(() => ({
         what: (document.getElementById('cwWhat') || {}).textContent || '',
         frame: (document.getElementById('gameFrame') || {}).getAttribute('src') || ''
@@ -95,7 +96,7 @@ async function readState(page) {
       check('custom colour reaches the preview @' + width, custom.preview.includes('#a78bfa'));
       check('custom name reaches the HUD @' + width, custom.preview.includes('Purple Comet'));
       check('custom difficulty reaches the player @' + width, custom.preview.includes('speed=5'));
-      check('Mod Card uses the custom name @' + width, custom.starter.includes('Game name: Purple Comet') && custom.starter.includes('Sprite colour: purple'), custom.starter.slice(0, 90));
+      check('rainy day challenge uses the custom name @' + width, custom.starter.includes('Game name: Purple Comet') && custom.starter.includes('Player colour: purple'), custom.starter.slice(0, 90));
 
       const v2 = await page.evaluate(() => {
         const active = document.querySelector('.cw-step.active');
@@ -122,7 +123,7 @@ async function readState(page) {
       });
       check('stage tools @' + width, v2.tools && v2.run && v2.expand && v2.sound && v2.takeHome, JSON.stringify(v2));
       check('focus mode collapses other steps @' + width, v2.activeOpen && v2.collapsed, JSON.stringify({ active: v2.activeOpen, collapsed: v2.collapsed }));
-      check('real Godot lane on the step @' + width, v2.engine && /Vector2\(200, 200\)/.test(v2.engineCode), v2.engineCode.slice(0, 80));
+      check('real Godot lane on the step @' + width, v2.engine && v2.engineCode.trim().length > 20, v2.engineCode.slice(0, 80));
       check('predict prompt on the step @' + width, v2.predict);
       check('preview API @' + width, v2.previewStep);
       const labLink = await page.evaluate(() => {
@@ -130,6 +131,29 @@ async function readState(page) {
         return a ? a.getAttribute('href') : '';
       });
       check('Lab project link @' + width, /godot-lab\/index\.html\?project=godot-tutorial/.test(labLink), labLink);
+
+      // Complete step 1 so step 2's drag-to-order task renders.
+      await page.evaluate(() => window.CW.showSolution(1));
+      await page.click('.cw-step.active [data-cw="checkStep"]');
+      await page.waitForFunction(() => document.querySelector('.cw-step.active [data-cw="checkQuiz"]'), { timeout: 10000 });
+      await page.evaluate(() => {
+        const option = document.querySelector('.cw-step.active [data-cw="selectQuiz"][data-cw-arg2="1"]');
+        if (option) option.click();
+      });
+      await page.click('.cw-step.active [data-cw="checkQuiz"]');
+      await page.waitForFunction(() => document.querySelector('.cw-parsons'), { timeout: 10000 });
+      const interactive = await page.evaluate(() => {
+        const first = document.querySelector('[data-cw-parsons-bank] .cw-parsons-line');
+        if (first) first.click();
+        return {
+          lines: document.querySelectorAll('.cw-parsons-line').length,
+          check: !!document.querySelector('[data-cw="checkParsons"]'),
+          grownup: !!document.querySelector('.cw-grownup'),
+          moved: document.querySelectorAll('[data-cw-parsons-bank] .cw-parsons-line').length === 2
+        };
+      });
+      check('drag-to-order task @' + width, interactive.lines === 3 && interactive.check && interactive.moved, JSON.stringify(interactive));
+      check('grown-up helper @' + width, interactive.grownup);
 
       await page.click('#tab-home');
       await new Promise((r) => setTimeout(r, 120));

@@ -298,14 +298,14 @@ export function openProfileModal() {
     );
   };
 
-  // Copy-code: base64 of the save JSON — pasteable on any device
+  // Copy-code: base64 of the save JSON, pasteable on any device
   document.getElementById('btn-copy-code').onclick = () => {
     try {
       const code = btoa(unescape(encodeURIComponent(GameState.exportSave())));
       navigator.clipboard?.writeText(code).then(() => {
         msg('Code copied! Paste it on your other device.');
       }).catch(() => {
-        msg('Could not copy — try Export File instead.', true);
+        msg('Could not copy. Try Export File instead.', true);
       });
     } catch {
       msg('Could not generate code.', true);

@@ -133,8 +133,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -150,8 +149,7 @@ window.CW_CONFIG = {
         'var ox=px,oy=py;' +
         'if(leftHeld)px-=pSpeed;if(rightHeld)px+=pSpeed;' +
         'if(upHeld)py-=pSpeed;if(downHeld)py+=pSpeed;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -169,8 +167,7 @@ window.CW_CONFIG = {
         'if(rightHeld){px+=pSpeed;if(touchingWall(px,py))px=ox}' +
         'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -189,8 +186,7 @@ window.CW_CONFIG = {
         'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(px!==ox||py!==oy)moves++;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -212,8 +208,7 @@ window.CW_CONFIG = {
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(px!==ox||py!==oy)moves++;' +
         GOAL_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +

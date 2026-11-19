@@ -334,6 +334,8 @@ var cwStepTests = {};
 /* A3070: focus mode. Only the active step is open; completed steps collapse to
    a reviewable header and locked steps stay as a short "locked" row. */
 var openSteps = {};
+var parsonsState = {};
+var parsonsDragEnded = 0;
 var courseStartedAt = 0;
 var soundOn = false;
 try { soundOn = localStorage.getItem('jvds_canvas_sound') === '1'; } catch (e) {}
@@ -384,6 +386,8 @@ function transpileGDScript(src, opts) {
       .replace(/\bprint\s*\(/g, keepPrint ? 'print(' : 'console.log(')
       .replace(/\bstr\s*\(/g, 'String(')
       .replace(/\babs\s*\(/g, 'Math.abs(')
+      .replace(/\bmax\s*\(/g, 'Math.max(')
+      .replace(/\bmin\s*\(/g, 'Math.min(')
       .replace(/\batan2\s*\(/g, 'Math.atan2(')
       .replace(/\.size\(\)/g, '.length')
       .replace(/\.pop_front\(\)/g, '.shift()')
@@ -408,14 +412,44 @@ function transpileGDScript(src, opts) {
       .replace(/\bguard_target\b/g, 'gTarget')
       .replace(/\bguard_x\b/g, 'gx')
       .replace(/\bguard_y\b/g, 'gy')
+      .replace(/\bguard_facing\b/g, 'gAngle')
       .replace(/\bvelocity_x\b/g, 'vx')
       .replace(/\bvelocity_y\b/g, 'vy')
       .replace(/\bai_cars\b/g, 'aiCars')
       .replace(/\bboost_timer\b/g, 'boostTimer')
+      .replace(/\bmax_speed\b/g, 'maxSpeed')
+      .replace(/\bleft_held\b/g, 'leftHeld')
+      .replace(/\bright_held\b/g, 'rightHeld')
+      .replace(/\bplayer_waypt\b/g, 'pWaypt')
+      .replace(/\bvision_range\b/g, 'visionRange')
+      .replace(/\bvision_angle\b/g, 'visionAngle')
+      .replace(/\bcos\s*\(/g, 'Math.cos(')
+      .replace(/\bfloor\s*\(/g, 'Math.floor(')
+      .replace(/\brandi\s*\(\)/g, 'Math.floor(Math.random()*100)')
+      .replace(/\bgame_won\b/g, 'gameWon')
+      .replace(/\bgame_state\b/g, 'gameState')
+      .replace(/\bfirst_pick\b/g, 'firstPick')
+      .replace(/\bsecond_pick\b/g, 'secondPick')
+      .replace(/\bsin\s*\(/g, 'Math.sin(')
+      .replace(/\bstar_x\b/g, 'sx')
+      .replace(/\bstar_y\b/g, 'sy')
+      .replace(/\bstar_w\b/g, 'sw')
+      .replace(/\bstar_h\b/g, 'sh')
+      .replace(/\bfall_speed\b/g, 'fallSpeed')
+      .replace(/\bmin_x\b/g, 'minX')
+      .replace(/\bmax_x\b/g, 'maxX')
       .replace(/\bInput\.is_action_just_pressed\("ui_left"\)/g, 'leftJustPressed')
       .replace(/\bInput\.is_action_just_pressed\("ui_right"\)/g, 'rightJustPressed')
       .replace(/\bInput\.is_action_just_pressed\("ui_up"\)/g, 'upJustPressed')
       .replace(/\bInput\.is_action_just_pressed\("ui_down"\)/g, 'downJustPressed');
+    var isExitDecl = /^\s*(var|let)\s+exit_(x|y|w|h)\b/.test(s);
+    if (!isExitDecl) {
+      s = s.replace(/\bexit_x\b/g, 'exitX').replace(/\bexit_y\b/g, 'exitY').replace(/\bexit_w\b/g, 'exitW').replace(/\bexit_h\b/g, 'exitH');
+    }
+    var isBasketDecl = /^\s*(var|let)\s+basket_(x|y|w|h)\b/.test(s);
+    if (!isBasketDecl) {
+      s = s.replace(/\bbasket_x\b/g, 'bx').replace(/\bbasket_y\b/g, 'by').replace(/\bbasket_w\b/g, 'bw').replace(/\bbasket_h\b/g, 'bh');
+    }
     if (tutorialVars) {
       s = s
         .replace(/\bposition\.x\b/g, 'px')
@@ -1185,6 +1219,40 @@ function renderEngine(step) {
   return html;
 }
 
+function parsonsShuffle(n) {
+  var arr = [];
+  for (var i = 0; i < n; i++) arr.push(i);
+  for (var j = arr.length - 1; j > 0; j--) {
+    var k = (j * 7 + n * 3) % (j + 1);
+    var t = arr[j]; arr[j] = arr[k]; arr[k] = t;
+  }
+  return arr;
+}
+
+function parsonsLine(step, index) {
+  return '<div class="cw-parsons-line" draggable="true" data-cw-parsons-line="' + index + '" tabindex="0">' +
+    '<span class="cw-parsons-grip" aria-hidden="true">⠿</span><code>' + escapeHtml(step.parsons.lines[index]) + '</code></div>';
+}
+
+function renderParsons(step) {
+  var p = step.parsons;
+  if (!p || !Array.isArray(p.lines) || p.lines.length < 2) return '';
+  var st = parsonsState[step.num];
+  if (!st || st.bank.length + st.answer.length !== p.lines.length) {
+    st = parsonsState[step.num] = { bank: parsonsShuffle(p.lines.length), answer: [], passed: false };
+  }
+  var bank = st.bank.map(function (i) { return parsonsLine(step, i); }).join('') || '<span class="cw-parsons-empty">All lines placed.</span>';
+  var answer = st.answer.map(function (i) { return parsonsLine(step, i); }).join('') || '<span class="cw-parsons-empty">Drop the lines here in order.</span>';
+  return '<div class="cw-parsons' + (st.passed ? ' passed' : '') + '" data-cw-parsons="' + step.num + '">' +
+    '<div class="cw-parsons-head"><strong>Drag to order</strong><span class="cw-parsons-prompt">' + escapeHtml(p.prompt || 'Drag the lines into the right order.') + '</span></div>' +
+    '<div class="cw-parsons-bank" data-cw-parsons-bank>' + bank + '</div>' +
+    '<div class="cw-parsons-answer" data-cw-parsons-answer>' + answer + '</div>' +
+    '<div class="cw-parsons-actions"><button type="button" class="cw-btn cw-btn-check" data-cw="checkParsons" data-cw-arg="' + step.num + '">Check order</button>' +
+    '<button type="button" class="cw-btn cw-btn-reset" data-cw="resetParsons" data-cw-arg="' + step.num + '">Reset</button>' +
+    '<span class="cw-parsons-fb" id="parsons-fb-' + step.num + '" role="status" aria-live="polite"></span></div>' +
+  '</div>';
+}
+
 function renderSteps() {
   var panel = document.getElementById('stepsPanel');
   panel.innerHTML = '';
@@ -1243,7 +1311,7 @@ function renderSteps() {
         ) +
       '</div>' +
       '<div class="cw-feedback" id="feedback-' + step.num + '" role="status" aria-live="polite"></div>' +
-      ((isActive || isDone) ? renderEngine(step) : '');
+      ((isActive || isDone) ? renderEngine(step) + renderParsons(step) : '');
 
     if (step.fills && (isActive || isDone)) {
       var parts = step.fills.text.split('___');
@@ -2311,10 +2379,25 @@ function ensureStageTools() {
     '<button type="button" class="cw-stage-btn cw-stage-btn--run" data-cw="runStage">▶ Run</button>' +
     '<button type="button" class="cw-stage-btn" data-cw="expandStage">⛶ Expand</button>' +
     '<button type="button" class="cw-stage-btn" data-cw="takeHome">Take it home</button>' +
+    '<button type="button" class="cw-stage-btn cw-btn-dl" data-on="CW.downloadGame" data-on-plain>Download game</button>' +
     '<button type="button" class="cw-stage-btn cw-stage-btn--sound" data-cw="toggleSound" aria-pressed="' + (soundOn ? 'true' : 'false') + '">' + (soundOn ? 'Sound on' : 'Sound off') + '</button>';
   var frame = panel.querySelector('.cw-canvas-frame');
   if (frame && frame.parentNode === panel) panel.insertBefore(tools, frame);
   else panel.insertBefore(tools, panel.firstChild);
+  ensureGrownup();
+}
+
+/* A3070: one shared note for the grown-up sitting alongside the learner. */
+function ensureGrownup() {
+  var panel = document.getElementById('canvasPanel');
+  if (!panel || panel.querySelector('.cw-grownup')) return;
+  var box = document.createElement('details');
+  box.className = 'cw-grownup';
+  box.innerHTML = '<summary>For grown-ups</summary>' +
+    '<p>Work through one step at a time. Ask your child to predict what will happen before they press Check. If the code fails, read the message together and fix one thing. Finish by changing one thing of their own.</p>';
+  var tools = panel.querySelector('.cw-stage-tools');
+  if (tools && tools.parentNode === panel) panel.insertBefore(box, tools.nextSibling);
+  else panel.insertBefore(box, panel.firstChild);
 }
 
 function runStage() {
@@ -2372,6 +2455,118 @@ function playTone(kind) {
   } catch (e) {}
 }
 
+/* A3070: drag-to-order code. Desktop drag, tap to move for touch and keyboard. */
+function parsonsAfter(zone, y) {
+  var lines = Array.prototype.slice.call(zone.querySelectorAll('.cw-parsons-line:not(.cw-parsons-dragging)'));
+  var closest = null, closestOffset = Number.NEGATIVE_INFINITY;
+  lines.forEach(function (el) {
+    var r = el.getBoundingClientRect();
+    var offset = y - r.top - r.height / 2;
+    if (offset < 0 && offset > closestOffset) { closestOffset = offset; closest = el; }
+  });
+  return closest;
+}
+
+function syncParsonsState() {
+  Array.prototype.forEach.call(document.querySelectorAll('.cw-parsons'), function (pp) {
+    var num = Number(pp.getAttribute('data-cw-parsons'));
+    var st = parsonsState[num];
+    if (!st) return;
+    var bank = pp.querySelector('[data-cw-parsons-bank]');
+    var answer = pp.querySelector('[data-cw-parsons-answer]');
+    st.bank = Array.prototype.map.call(bank ? bank.querySelectorAll('.cw-parsons-line') : [], function (el) { return Number(el.getAttribute('data-cw-parsons-line')); });
+    st.answer = Array.prototype.map.call(answer ? answer.querySelectorAll('.cw-parsons-line') : [], function (el) { return Number(el.getAttribute('data-cw-parsons-line')); });
+  });
+}
+
+function moveParsonsLine(line, zone) {
+  if (!line || !zone) return;
+  var empty = zone.querySelector('.cw-parsons-empty');
+  if (empty) empty.remove();
+  zone.appendChild(line);
+  syncParsonsState();
+}
+
+function checkParsons(num) {
+  var st = parsonsState[num];
+  var pp = document.querySelector('[data-cw-parsons="' + num + '"]');
+  var fb = document.getElementById('parsons-fb-' + num);
+  if (!st || !pp || !fb) return;
+  if (st.bank.length) {
+    fb.className = 'cw-parsons-fb no';
+    fb.textContent = 'Move all the lines into the answer first.';
+    return;
+  }
+  var ok = st.answer.every(function (value, index) { return value === index; });
+  if (ok) {
+    st.passed = true;
+    pp.classList.add('passed');
+    fb.className = 'cw-parsons-fb ok';
+    fb.textContent = 'Right order. That is the shape of the code.';
+    playTone('step');
+  } else {
+    fb.className = 'cw-parsons-fb no';
+    fb.textContent = 'Not yet. The first line should read the input.';
+  }
+}
+
+function resetParsons(num) {
+  var step = null;
+  STEPS.forEach(function (s) { if (s.num === num) step = s; });
+  if (!step || !step.parsons) return;
+  parsonsState[num] = { bank: parsonsShuffle(step.parsons.lines.length), answer: [], passed: false };
+  renderSteps();
+}
+
+document.addEventListener('dragstart', function (e) {
+  var line = e.target.closest ? e.target.closest('.cw-parsons-line') : null;
+  if (!line) return;
+  var pp = line.closest('.cw-parsons');
+  if (!pp || pp.classList.contains('passed')) { e.preventDefault(); return; }
+  line.classList.add('cw-parsons-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); } catch (err) {}
+});
+document.addEventListener('dragend', function (e) {
+  var line = e.target.closest ? e.target.closest('.cw-parsons-line') : null;
+  if (line) line.classList.remove('cw-parsons-dragging');
+  parsonsDragEnded = Date.now();
+  syncParsonsState();
+});
+document.addEventListener('dragover', function (e) {
+  var zone = e.target.closest ? e.target.closest('[data-cw-parsons-bank],[data-cw-parsons-answer]') : null;
+  var line = document.querySelector('.cw-parsons-dragging');
+  if (!zone || !line) return;
+  e.preventDefault();
+  var empty = zone.querySelector('.cw-parsons-empty');
+  if (empty) empty.remove();
+  var after = parsonsAfter(zone, e.clientY);
+  if (after) zone.insertBefore(line, after);
+  else zone.appendChild(line);
+});
+document.addEventListener('click', function (e) {
+  if (Date.now() - parsonsDragEnded < 250) return;
+  var line = e.target.closest ? e.target.closest('.cw-parsons-line') : null;
+  if (!line || (e.target.closest && e.target.closest('button'))) return;
+  var pp = line.closest('.cw-parsons');
+  if (!pp || pp.classList.contains('passed')) return;
+  var bank = pp.querySelector('[data-cw-parsons-bank]');
+  var answer = pp.querySelector('[data-cw-parsons-answer]');
+  if (line.parentNode === bank) moveParsonsLine(line, answer);
+  else moveParsonsLine(line, bank);
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var line = e.target.closest ? e.target.closest('.cw-parsons-line') : null;
+  if (!line) return;
+  e.preventDefault();
+  var pp = line.closest('.cw-parsons');
+  if (!pp || pp.classList.contains('passed')) return;
+  var bank = pp.querySelector('[data-cw-parsons-bank]');
+  var answer = pp.querySelector('[data-cw-parsons-answer]');
+  if (line.parentNode === bank) moveParsonsLine(line, answer);
+  else moveParsonsLine(line, bank);
+});
+
 /* Delegated click handler for data-cw actions (CSP-safe, no inline handlers) */
 document.addEventListener('click', function(e) {
   var el = e.target.closest('[data-cw]');
@@ -2396,6 +2591,8 @@ document.addEventListener('click', function(e) {
   else if (action === 'expandStage') expandStage();
   else if (action === 'takeHome') takeHome();
   else if (action === 'toggleSound') toggleSound();
+  else if (action === 'checkParsons') checkParsons(arg);
+  else if (action === 'resetParsons') resetParsons(arg);
 });
 
 function mountVersionNotice() {
@@ -2498,9 +2695,12 @@ maybeShowResume();
     var box=document.createElement('div');
     box.className='cw-next';
     var html='<p class="cw-next-head">Kept your work? Keep going</p>';
-    if(studio) html+='<a class="cw-next-btn cw-next-btn--studio" href="/workshops/'+studio.href+'">Open the full '+studio.label+' \u2192</a>';
+    var isGodot=/godot/i.test(engineName);
+    if(studio && !isGodot) html+='<a class="cw-next-btn cw-next-btn--studio" href="/workshops/'+studio.href+'">Open the full '+studio.label+' \u2192</a>';
+    if(isGodot) html+='<a class="cw-next-btn cw-next-btn--main" href="/workshops/godot-lab/index.html">Open the Godot Lab \u2192</a>';
     if(guide) html+='<a class="cw-next-btn cw-next-btn--main" href="/workshops/'+guide+'">Keep building in '+engineName+' \u2192</a>';
     if(next) html+='<a class="cw-next-btn" href="/workshops/'+next.href+'">What to add next: '+next.label+' \u2192</a>';
+    html+='<p class="cw-next-challenge"><strong>Rainy day challenge:</strong> change one thing in your game, press Check, and show someone.</p>';
     html+='<a class="cw-next-btn" href="/workshop">Browse all workshops</a>';
     box.innerHTML=html;
     panel.appendChild(box);

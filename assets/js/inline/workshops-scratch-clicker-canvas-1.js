@@ -115,8 +115,7 @@ window.CW_CONFIG = {
         SETUP + TARGET_VARS + CLICK_HANDLER + MOVE_TARGET,
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'clicked=false;' +
         DRAW_BG + DRAW_TARGET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -130,8 +129,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         CHECK_CLICK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -145,8 +143,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -163,8 +160,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK + TICK_TIMER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -182,8 +178,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK + TICK_TIMER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

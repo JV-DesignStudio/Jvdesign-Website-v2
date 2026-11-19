@@ -46,7 +46,7 @@ function main() {
     `Subject idea: 🎮 Studio log: ${approved[0] ? titleOf(approved[0]) : 'What we shipped this week'}`,
     '',
     'Opening:',
-    'Hey — here is what has been happening in the studio this week. New things to try, read and play with below.',
+    'Hey, here is what has been happening in the studio this week. New things to try, read and play with below.',
     '',
     '## Main Updates',
     ''

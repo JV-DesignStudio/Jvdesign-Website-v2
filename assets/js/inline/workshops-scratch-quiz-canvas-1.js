@@ -134,8 +134,7 @@ window.CW_CONFIG = {
         SETUP + QUIZ_DATA + QUIZ_VARS + KEYS + CLICK_HANDLER,
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -149,8 +148,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -165,8 +163,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
@@ -187,8 +184,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         TICK_TIMER +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
@@ -210,8 +206,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         TICK_TIMER +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +

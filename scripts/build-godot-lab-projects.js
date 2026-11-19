@@ -24,7 +24,7 @@ const SKIP = /(^|\/)(\.godot|\.import|node_modules|__MACOSX)(\/|$)|\.(tmp|DS_Sto
 
 const SOURCES = [
   // Starters
-  { id: 'starter', title: 'First Video Game starter', group: 'starters', level: '2D', download: 'my-first-godot-project.zip', folder: 'workshops/godot-lab/starter', workshop: '/workshops/godot-mod-studio.html', note: 'Player, ground and a coin. The smallest real Godot project.' },
+  { id: 'starter', title: 'First Video Game starter', group: 'starters', level: '2D', download: 'my-first-godot-project.zip', folder: 'workshops/godot-lab/starter', workshop: '/workshops/engine-godot.html#godot-path', note: 'Player, ground and a coin. The smallest real Godot project.' },
   { id: 'godot-tutorial', title: 'Star Collector', group: 'workshops', level: '2D', download: 'star-collector-godot.zip', folder: 'workshops/godot-lab/godot-tutorial', workshop: '/workshops/godot-tutorial-canvas.html', note: 'The finished first-scene game from the Godot Basics lesson.' },
 
   // Templates

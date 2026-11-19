@@ -421,7 +421,7 @@
     var html =
       '<p class="step-stuck-panel-title">Try this before giving up</p>' +
       '<ol class="step-stuck-steps">' +
-        '<li>Read any error message in the console exactly — the first line is the clue.</li>' +
+        '<li>Read any error message in the console exactly. The first line is the clue.</li>' +
         '<li>Compare your code with the block above character by character. One wrong capital or missing bracket breaks it.</li>' +
         '<li>Click <strong>Apply</strong> again after re-reading the step from the top.</li>' +
       '</ol>';
@@ -507,7 +507,7 @@
 
   // ── TEACHER MODE ─────────────────────────────────────────────────────────────
   function initTeacherMode() {
-    // No header button — teacher notes are opt-in via body.teacher-mode only
+    // No header button, teacher notes are opt-in via body.teacher-mode only
     if (siteChrome()) return;
     var active = localStorage.getItem('teacher_mode') === '1';
     if (active) document.body.classList.add('teacher-mode');
@@ -1110,6 +1110,8 @@
 
   var isArticlePage = !!(document.body && (document.body.dataset.workshopKey || document.body.dataset.profileId));
   if (isArticlePage) loadScript('/assets/js/workshop-reader.js');
+  var isWorkshopFile = /\/workshops\/[^/]+\.html$/i.test(window.location.pathname);
+  if (isArticlePage || isWorkshopFile) loadScript('/assets/js/workshop-grownup.js');
 
   var isBuilderPage = !!(document.querySelector('#bsHost, [data-bs-css]') ||
     /\b(rocket|robot|race|pirate|castle|submarine|airship|station|fairy|cannon|phone)\b.*builder/i.test(document.title));

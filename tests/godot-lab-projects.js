@@ -43,7 +43,8 @@ function check(name, ok, detail = '') {
     check('main scene ' + p.id, !!scene && names.includes(scene), scene || 'missing');
     check('no Windows separators ' + p.id, names.every((n) => n.indexOf('\\') === -1), names.find((n) => n.indexOf('\\') !== -1) || '');
     if (p.workshop) {
-      check('workshop page ' + p.id, fs.existsSync(path.join(ROOT, p.workshop.replace(/^\//, ''))), p.workshop);
+      const workshopFile = p.workshop.split('#')[0].split('?')[0].replace(/^\//, '');
+      check('workshop page ' + p.id, fs.existsSync(path.join(ROOT, workshopFile)), p.workshop);
     }
   }
   check('starters group', groups.has('starters'));

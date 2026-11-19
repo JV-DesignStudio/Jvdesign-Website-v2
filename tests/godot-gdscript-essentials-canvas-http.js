@@ -72,12 +72,14 @@ const server = http.createServer((req, res) => {
         const activeBody = active ? bodyOf(active) : null;
         return {
           tools: !!document.querySelector('.cw-stage-tools'),
+          grownup: !!document.querySelector('.cw-grownup'),
           activeOpen: !!activeBody && getComputedStyle(activeBody).display !== 'none',
           collapsed,
           js: window.CWTranspileGDScript ? window.CWTranspileGDScript('func add(a, b):\n    return a + b\n\nprint(add(1, 2))', { keepPrint: true }) : ''
         };
       });
       check('stage tools @' + width, v2.tools);
+      check('grown-up helper @' + width, v2.grownup);
       check('focus mode collapses other steps @' + width, v2.activeOpen && v2.collapsed, JSON.stringify(v2));
       check('GDScript function compiles @' + width, /function add\(a, b\) \{/.test(v2.js) && /return a \+ b;/.test(v2.js) && /\n\}/.test(v2.js), v2.js);
       check('print stays visible in the output lesson @' + width, /print\(add\(1, 2\)\);/.test(v2.js), v2.js);

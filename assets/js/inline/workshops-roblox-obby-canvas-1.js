@@ -216,7 +216,7 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
       return wrap(CSS_OBBY, CANVAS_OBBY,
         SETUP_OBBY + PLATFORMS_BASE + KEYS_OBBY + RESPAWN +
         'function draw(){' + DRAW_BG_OBBY + DRAW_PLATFORMS + DRAW_PLAYER + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -225,7 +225,7 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
         SETUP_OBBY + PLATFORMS_BASE + LAVA_FLOOR + KEYS_OBBY + RESPAWN +
         MOVE_PLAYER +
         'function draw(){' + DRAW_BG_OBBY + DRAW_LAVA + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_HUD + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof checkLava==="function")checkLava();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -234,7 +234,7 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
         SETUP_OBBY + PLATFORMS_BASE + LAVA_FLOOR + MOVING_PLAT_VARS + KEYS_OBBY + RESPAWN +
         MOVE_PLAYER + LAVA_CHECK +
         'function draw(){' + DRAW_BG_OBBY + DRAW_LAVA + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_HUD + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof moveMovingPlatforms==="function")moveMovingPlatforms();movePlayer();checkLava();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -243,7 +243,7 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
         SETUP_OBBY + PLATFORMS_BASE + LAVA_FLOOR + MOVING_PLAT_VARS + JUMP_PAD_VARS + KEYS_OBBY + RESPAWN +
         MOVE_PLAYER + LAVA_CHECK + MOVE_PLATFORMS +
         'function draw(){' + DRAW_BG_OBBY + DRAW_LAVA + DRAW_PLATFORMS + DRAW_JUMPPAD_GLOW + DRAW_PLAYER + DRAW_HUD + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){moveMovingPlatforms();movePlayer();checkLava();if(typeof checkJumpPad==="function")checkJumpPad();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -252,7 +252,7 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
         SETUP_OBBY + PLATFORMS_BASE + LAVA_FLOOR + MOVING_PLAT_VARS + JUMP_PAD_VARS + KEYS_OBBY + RESPAWN +
         MOVE_PLAYER + LAVA_CHECK + MOVE_PLATFORMS + JUMP_PAD_CHECK +
         'function draw(){' + DRAW_BG_OBBY + DRAW_LAVA + DRAW_PLATFORMS + DRAW_JUMPPAD_GLOW + DRAW_PLAYER + DRAW_HUD + '}' +
-        TOUCH_OBBY + u +
+        TOUCH_OBBY + '\n' + u +
         'function loop(){moveMovingPlatforms();movePlayer();checkLava();checkJumpPad();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -450,8 +450,8 @@ engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: '
         'Same input system, just a different event source'
       ],
       challenge: 'Write the touch handlers for mobile:',
-      starter: '// Touch controls for mobile\nlet touchStart = null;\ncanvas.addEventListener("touchstart", function(e) {\n  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };\n  e.preventDefault();\n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  let dx = e.changedTouches[0].clientX - touchStart.x;\n  let dy = e.changedTouches[0].clientY - touchStart.y;\n  // Swipe up = jump, swipe left/right = move\n  \n  touchStart = null;\n});',
-      solution: 'let touchStart = null;\ncanvas.addEventListener("touchstart", function(e) {\n  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };\n  e.preventDefault();\n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  let dx = e.changedTouches[0].clientX - touchStart.x;\n  let dy = e.changedTouches[0].clientY - touchStart.y;\n  if (Math.abs(dy) > 20 && dy < 0) {\n    jumpHeld = true; setTimeout(function(){ jumpHeld = false; }, 150);\n  } else if (Math.abs(dx) > 20) {\n    if (dx > 0) { rightHeld = true; setTimeout(function(){ rightHeld = false; }, 200); }\n    else { leftHeld = true; setTimeout(function(){ leftHeld = false; }, 200); }\n  }\n  touchStart = null;\n});',
+      starter: '// Touch controls for mobile\n\ncanvas.addEventListener("touchstart", function(e) {\n  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };\n  e.preventDefault();\n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  let dx = e.changedTouches[0].clientX - touchStart.x;\n  let dy = e.changedTouches[0].clientY - touchStart.y;\n  // Swipe up = jump, swipe left/right = move\n  \n  touchStart = null;\n});',
+      solution: '\ncanvas.addEventListener("touchstart", function(e) {\n  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };\n  e.preventDefault();\n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  let dx = e.changedTouches[0].clientX - touchStart.x;\n  let dy = e.changedTouches[0].clientY - touchStart.y;\n  if (Math.abs(dy) > 20 && dy < 0) {\n    jumpHeld = true; setTimeout(function(){ jumpHeld = false; }, 150);\n  } else if (Math.abs(dx) > 20) {\n    if (dx > 0) { rightHeld = true; setTimeout(function(){ rightHeld = false; }, 200); }\n    else { leftHeld = true; setTimeout(function(){ leftHeld = false; }, 200); }\n  }\n  touchStart = null;\n});',
       checks: ['touchstart', 'touchend', 'jumpheld'],
       height: 300,
       quiz: {

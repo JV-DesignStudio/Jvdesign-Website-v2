@@ -59,6 +59,11 @@ const server = http.createServer((req, res) => {
           selected: (document.querySelector('[data-gl-project]') || {}).value || '',
           name: (document.querySelector('[data-gl-project-name]') || {}).textContent || '',
           workshop: workshop ? workshop.getAttribute('href') : '',
+          mobile: !!(document.querySelector('[data-gl-mobile]') && !document.querySelector('[data-gl-mobile]').hidden),
+          copy: !!document.querySelector('[data-gl-copy]'),
+          anyway: !!document.querySelector('[data-gl-anyway]'),
+          mobileLink: (document.querySelector('[data-gl-mobile-link]') || {}).textContent || '',
+          frameSrc: (document.getElementById('godot-frame') || {}).getAttribute('src') || '',
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
         };
       });
@@ -69,6 +74,9 @@ const server = http.createServer((req, res) => {
       check('download name ' + label, info.download === download, info.download);
       check('project title ' + label, info.name.trim() === title, info.name);
       check('project workshop link ' + label, /^\/workshops\//.test(info.workshop || ''), info.workshop);
+      check('phone hand-off card ' + label, info.mobile && info.copy && info.anyway, JSON.stringify({ mobile: info.mobile, copy: info.copy, anyway: info.anyway }));
+      check('phone link carries the project ' + label, /\?project=/.test(info.mobileLink), info.mobileLink);
+      check('phone does not load the 96 MB editor ' + label, !info.frameSrc, info.frameSrc || 'not loaded');
       check('no overflow ' + label, info.overflow <= 2, info.overflow + 'px');
       check('no page errors ' + label, errors.length === 0, errors.slice(0, 2).join(' | '));
       await page.close();

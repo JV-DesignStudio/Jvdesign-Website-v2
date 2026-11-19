@@ -133,8 +133,7 @@ window.CW_CONFIG = {
         SETUP + PLAYER_VARS + PLATFORMS + KEYS,
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -151,8 +150,7 @@ window.CW_CONFIG = {
         'pvy+=gravity;px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -167,8 +165,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
         'pvy+=gravity;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
@@ -190,8 +187,7 @@ window.CW_CONFIG = {
         'px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -215,8 +211,7 @@ window.CW_CONFIG = {
         'if(py>360){py=280;px=40;pvy=0}' +
         'for(var ci=coins.length-1;ci>=0;ci--){var c=coins[ci];if(px+pw>c.x-coinSize/2&&px<c.x+coinSize/2&&py+ph>c.y-coinSize/2&&py<c.y+coinSize/2){coins.splice(ci,1);score++}}' +
         'if(score>=5)gameState="win";' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +

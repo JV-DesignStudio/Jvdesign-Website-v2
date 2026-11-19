@@ -15,6 +15,8 @@ function scratchToJs(code) {
     .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
     .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
     .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
+    .replace(/if\s+(.+?)\s*:/g, 'if($1){')
+    .replace(/set \[([^\]]+)\] to \[([A-Za-z_]\w*)\]/g, '$1="$2";')
     .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
@@ -359,8 +361,8 @@ window.CW_CONFIG = {
         'Display lives in the top-right corner'
       ],
       challenge: '🐱 Write the miss penalty:',
-      starter: '// Ball missed!\nchange [lives] by [___]\n// Check game over\nif lives <= ___:\n  set [gameState] to [over]',
-      solution: '// Ball missed!\nchange [lives] by [-1]\n// Check game over\nif lives <= 0:\n  set [gameState] to [over]',
+      starter: '// Ball missed!\nchange [lives] by [___]\n// Check game over\nif lives <= ___:\n  set [gameState] to [over]\nend',
+      solution: '// Ball missed!\nchange [lives] by [-1]\n// Check game over\nif lives <= 0:\n  set [gameState] to [over]\nend',
       checks: ['lives', '-1', '0', 'over'],
       height: 120,
       fills: {

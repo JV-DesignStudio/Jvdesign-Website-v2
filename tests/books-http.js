@@ -41,7 +41,7 @@ for (const rel of BOOK_PAGES) {
     /skip-link|Skip to main/.test(src),
     'missing skip-to-main-content link');
 
-  // A1987: studio identity — logo, shared nav, and JVDesignStudio in title
+  // A1987: studio identity, logo, shared nav, and JVDesignStudio in title
   check(name + ':jvds-title',
     /JVDesignStudio/.test(src),
     'page title does not include JVDesignStudio');

@@ -18,6 +18,14 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 let failures = 0;
 function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }
 
+// The Beehiiv form is an external script plus an iframe. If either host drops
+// out of the page CSP the form silently disappears, so guard it here.
+const newsletterHtml = fs.readFileSync(path.join(ROOT, 'newsletter.html'), 'utf8');
+const csp = (newsletterHtml.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/i) || [])[1] || '';
+check('CSP allows the Beehiiv loader', /script-src[^;]*subscribe-forms\.beehiiv\.com/.test(csp));
+check('CSP allows the Beehiiv form frame', /frame-src[^;]*subscribe-forms\.beehiiv\.com/.test(csp));
+check('page embeds the Beehiiv form', /subscribe-forms\.beehiiv\.com\/v3\/loader\.js/.test(newsletterHtml) && /data-beehiiv-form=/.test(newsletterHtml));
+
 (async()=>{
   const server = http.createServer((req,res)=>{
     let p = decodeURIComponent(req.url.split('?')[0]);

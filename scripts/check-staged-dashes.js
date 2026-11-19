@@ -48,7 +48,7 @@ if (fixed.length) {
   fixed.forEach(f => console.log('    ' + f));
 }
 if (failed.length) {
-  console.log(`\n  [auto-fix] could not fix ${failed.length} file(s) — fix manually:`);
+  console.log(`\n  [auto-fix] could not fix ${failed.length} file(s) - fix manually:`);
   failed.forEach(f => console.log('    ' + f));
   process.exit(1);
 }

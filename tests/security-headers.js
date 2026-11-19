@@ -121,7 +121,16 @@ const pages = walk(ROOT, []).filter((p) => !p.includes(path.sep + 'partials' + p
 // free of any CSP so its sandboxed stage can run learner code inline; it is not
 // a content page. See scripts/canvas-preview.html + tests/canvas-preview-runtime.js.
 const SANDBOX_HOSTS = new Set(['assets/canvas-preview.html', 'assets/preview-host.html']);
-const contentPages = pages.filter((p) => !SANDBOX_HOSTS.has(path.relative(ROOT, p).replace(/\\/g, '/')));
+// These are not public content pages and intentionally carry no meta CSP:
+// generated finished-build demos (standalone play pages, A3101), the vendored
+// Godot web editor, and private social/newsletter drafts.
+const NO_CSP_BY_DESIGN = ['workshops/demos/', 'workshops/godot-lab/editor/', 'social-posts/'];
+const relPath = (p) => path.relative(ROOT, p).replace(/\\/g, '/');
+const contentPages = pages.filter((p) => {
+  const rel = relPath(p);
+  if (SANDBOX_HOSTS.has(rel)) return false;
+  return !NO_CSP_BY_DESIGN.some((dir) => rel.startsWith(dir));
+});
 let withCsp = 0;
 const missing = [];
 const dupes = [];

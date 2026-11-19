@@ -14,6 +14,12 @@ function defoldToJs(code) {
     .replace(/--(.*)$/gm, '//$1')
     .replace(/\blocal\s+/g, 'let ')
     .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\belseif\s+(.+?)\s+then\b/g, '} else if ($1) {')
+    .replace(/\bif\s+(.+?)\s+then\b/g, 'if ($1) {')
+    .replace(/\bwhile\s+(.+?)\s+do\b/g, 'while ($1) {')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
     .replace(/\bthen\b/g, '{')
     .replace(/\belseif\b/g, '} else if')
     .replace(/\belse\b(?!\s*if)/g, '} else {')
@@ -100,7 +106,7 @@ window.CW_CONFIG = {
     1: function(u) {
       return wbWrap(
         
-        SETUP + CATCHER_VARS + KEYS,
+        SETUP + 'let cspeed=6;' + KEYS,
         defoldToJs(u),
         'function loop(){' +
         MOVE_CATCHER +
@@ -115,8 +121,7 @@ window.CW_CONFIG = {
         SETUP + CATCHER_VARS + KEYS,
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'cx=Math.max(0,Math.min(400-cw,cx));' +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -131,8 +136,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>420)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -147,8 +151,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>420)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -163,8 +166,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         STAR_MISS +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -179,8 +181,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       

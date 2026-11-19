@@ -5,7 +5,7 @@ var CANVAS_TAG = '<canvas id="game" width="400" height="450"></canvas>';
 var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
 
 var GRID_VARS = 'const COLS=4,ROWS=4,CELL=80,OFFSET_X=40,OFFSET_Y=60;' +
-  'let board=[],flipped=[],matched=[],firstPick=-1,secondPick=-1,lockBoard=false,moves=0,gameWon=false;';
+  'let board=[],flipped=[],matched=[],firstPick=-1,secondPick=-1,lockBoard=false,moves=0,gameWon=false,mx=0,my=0;';
 var EMOJI_LIST = '["🚀","🌟","🤖","👾","💎","🍟","🐦","🌍"]';
 var INIT_BOARD = 'function initBoard(){var pairs=' + EMOJI_LIST + ';var cards=pairs.concat(pairs);' +
   'for(var i=cards.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=cards[i];cards[i]=cards[j];cards[j]=t}' +
@@ -25,7 +25,7 @@ var DRAW_GRID = 'function drawGrid(){ctx.fillStyle="#0f172a";ctx.fillRect(0,0,40
 var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
   'if(gameWon){initBoard();return}' +
   'if(lockBoard)return;' +
-  'var rect=canvas.getBoundingClientRect();var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+  'var rect=canvas.getBoundingClientRect();mx=e.clientX-rect.left;my=e.clientY-rect.top;' +
   'var col=Math.floor((mx-OFFSET_X)/CELL),row=Math.floor((my-OFFSET_Y)/CELL);' +
   'if(col<0||col>=COLS||row<0||row>=ROWS)return;' +
   'var idx=row*COLS+col;' +
@@ -37,7 +37,7 @@ var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
   'else{var f1=firstPick,f2=secondPick;firstPick=-1;secondPick=-1;setTimeout(function(){flipped[f1]=flipped[f2]=false;lockBoard=false},1000)}' +
   '}});';
 
-function gdscriptToJs(code){ var js=window.CWTranspileGDScript ? window.CWTranspileGDScript(code) : code; return js.replace(/\bcards\b/g,'board'); }
+function gdscriptToJs(code){ var js=window.CWTranspileGDScript ? window.CWTranspileGDScript(code) : code; return js.replace(/\bcards\b/g,'board').replace(/\bmouse_x\b/g,'mx').replace(/\bmouse_y\b/g,'my').replace(/\boffset_x\b/g,'OFFSET_X').replace(/\boffset_y\b/g,'OFFSET_Y').replace(/\bcell_size\b/g,'CELL').replace(/\bcols\b/g,'COLS').replace(/\brows\b/g,'ROWS'); }
 function wbWrap(blobSrc) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID + CLICK_HANDLER, blobSrc, 'function loop(){drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);');
 }
@@ -385,40 +385,6 @@ window.CW_CONFIG = {
           'sort() does not work on arrays'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '🏠 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and build your own memory game.',
-      engine: {
-        name: 'Godot 4',
-        file: 'res://project.godot',
-        intro: 'The whole project is ready to change.',
-        do: [
-          'Download the starter and open project.godot.',
-          'Read your Mod Card choices.',
-          'Change the theme, grid size or add a timer.',
-          'Press F5 and show someone.'
-        ],
-        check: 'Your own memory game runs and one thing is different.'
-      },
-      checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
-      points: [
-        'At home: open Godot and create a new 2D project with a GridContainer node',
-        'Set the GridContainer columns property to 4 (or your chosen grid width)',
-        'Add 16 Button children and assign your card images via texture property',
-        'Write a script with a shuffle() function and connect button pressed signals to your flip logic'
-      ],
-      challenge: '✏️ Fill in your Mod Card:',
-      starter: '# My Puzzle Mod Card\nGame name: ___\nCard theme: ___\nGrid size: ___\nPairs to match: ___\nCard back colour: ___\nBackground colour: ___\nOne thing to add at home: ___',
-      solution: '# My Puzzle Mod Card\nGame name: Space Memory\nCard theme: planets\nGrid size: 4x4\nPairs to match: 8\nCard back colour: dark blue\nBackground colour: black\nOne thing to add at home: timer that counts down 60 seconds',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'My card theme is ___ and at home I will add a ___.',
-        answers: ['planets', 'timer']
       }
     }
   ]
