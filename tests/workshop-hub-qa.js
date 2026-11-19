@@ -21,7 +21,8 @@ ok('every workshops.json id has a hub link (' + entries.length + ' entries)', mi
 
 // 2. catalogue cards carry data matching their JSON entry
 const catHtml = hub.slice(hub.indexOf('<!-- CATALOGUE:START -->'), hub.indexOf('<!-- CATALOGUE:END -->'));
-const cards = [...catHtml.matchAll(/<a href="([^"]+)" class="course-card" data-engine="([^"]*)" data-difficulty="([^"]*)" data-age="([^"]*)"[^>]*>\s*<div class="course-body">\s*<div class="course-tag">([^<]*)<\/div>\s*<div class="course-title">([^<]*)<\/div>/g)]
+// A2621: a cover thumb may sit between the card and the body, so allow it.
+const cards = [...catHtml.matchAll(/<a href="([^"]+)" class="course-card" data-engine="([^"]*)" data-difficulty="([^"]*)" data-age="([^"]*)"[^>]*>(?:\s*<div class="course-thumb[^>]*>[\s\S]*?<\/div>)?\s*<div class="course-body">\s*<div class="course-tag">([^<]*)<\/div>\s*<div class="course-title">([^<]*)<\/div>/g)]
   .map((m) => ({ href: m[1], engine: m[2], difficulty: m[3], age: m[4], badge: m[5], title: m[6] }));
 ok('catalogue holds all ' + entries.length + ' workshops', cards.length === entries.length,
   'found ' + cards.length);

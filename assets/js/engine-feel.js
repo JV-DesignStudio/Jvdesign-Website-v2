@@ -876,7 +876,7 @@
       var blob = new Blob([zip(projectFiles())], { type: 'application/zip' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'my-first-godot-project.zip';
+      a.download = 'my-godot-scene.zip';
       document.body.appendChild(a);
       a.click();
       a.remove();

@@ -44,6 +44,7 @@ function wbWrap(blobSrc) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-puzzle-canvas',
   downloadName: 'my-godot-puzzle.html',
+  engineProject: { href: '/workshops/godot-lab/index.html?project=pixel-quest', label: 'Build this project in the Godot Lab' },
   nextStep: { url: '/workshops/godot-gatekeeper-3d-part1-canvas.html', label: 'Gatekeeper Stealth' },
 
   hints: [

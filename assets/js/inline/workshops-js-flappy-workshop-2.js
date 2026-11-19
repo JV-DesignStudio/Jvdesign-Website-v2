@@ -49,6 +49,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-js-flappy-canvas',
   downloadName: 'my-flappy-game.html',
+  engineProject: {
+    href: '/downloads/js-flappy-starter.zip',
+    label: 'Download the Flappy starter project'
+  },
 
   hints: [
     {
@@ -153,6 +157,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Canvas & First Draw',
       goal: 'Paint the sky and the bird on the 400x500 canvas.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-flappy-game.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find function draw() and paint the sky before the bird.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'A blue sky fills the canvas and the yellow bird sits near the bottom left.'
+      },
       points: [
         'The <code>&lt;canvas&gt;</code> element is a blank pixel surface JavaScript draws on every frame',
         '<code>getContext("2d")</code> gives you the drawing toolkit',
@@ -186,6 +202,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Gravity & the Game Loop',
       goal: 'Make the bird fall with gravity using requestAnimationFrame.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        do: [
+          'Find the game loop that calls requestAnimationFrame.',
+          'Add bird.vy += gravity and bird.y += bird.vy before the draw call.',
+          'Save and reload.'
+        ],
+        check: 'The bird falls faster and faster and drops off the bottom of the screen.'
+      },
       points: [
         'The bird is a plain object: <code>{ x, y, vy, size }</code>',
         '<code>requestAnimationFrame(loop)</code> calls your function every screen refresh (~60/s)',
@@ -219,6 +245,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Flap!',
       goal: 'Make every click/tap/spacebar launch the bird upward.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        do: [
+          'Find where the canvas and document listeners are set up.',
+          'Add the flap function and call it on mousedown and on Space.',
+          'Save and reload, then click to flap.'
+        ],
+        check: 'Every click or Space press sends the bird back up.'
+      },
       points: [
         'A flap is just <code>bird.vy = -8</code> - replace the velocity, don\'t add to it',
         'Listen for clicks on the canvas AND the spacebar - one action, two listeners',
@@ -248,6 +284,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scrolling Pipes',
       goal: 'Spawn pipe pairs that scroll left with a random gap.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        do: [
+          'Find the update section of the game loop.',
+          'Add frames++, the every-90-frames push and the leftward scroll.',
+          'Save and reload.'
+        ],
+        check: 'New pipe pairs appear on the right and slide left at a steady speed with random gaps.'
+      },
       points: [
         'One pipe = <code>{ x, gapY }</code> - the gap centre. Top and bottom drawn from it',
         'Every 90 frames, push a new pipe at x=400 with random gapY',
@@ -281,6 +327,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Collision & Score',
       goal: 'Die on pipes and floor; score one point per pipe passed.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        do: [
+          'Find the pipe update.',
+          'Add the hits() checks for the top pipe, the bottom pipe and the floor.',
+          'Mark a pipe passed once its right edge is behind the bird.'
+        ],
+        check: 'Touching a pipe or the floor ends the run, and each cleared pipe adds one point.'
+      },
       points: [
         'AABB collision: four comparisons to check if two rectangles overlap',
         'Check the bird against BOTH top and bottom pipe of each pair',
@@ -314,6 +370,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Game Over & Best Score',
       goal: 'Show death screen, save best score, tap to restart.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-flappy-game.html',
+        do: [
+          'In draw(), add the dark overlay and the three text lines after the pipes.',
+          'Save the best score once, when dead becomes true.',
+          'Save and reload.'
+        ],
+        check: 'The Game Over screen shows your score and best score, and a click starts a fresh run.'
+      },
       points: [
         'While dead: skip physics, overlay "GAME OVER" with score and best',
         'Best score lives in <code>localStorage</code> - the browser\'s built-in save file',

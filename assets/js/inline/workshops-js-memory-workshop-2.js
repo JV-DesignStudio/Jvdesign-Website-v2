@@ -83,6 +83,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-js-memory-canvas',
   downloadName: 'my-memory-game.html',
+  engineProject: {
+    href: '/downloads/js-memory-starter.zip',
+    label: 'Download the Memory starter project'
+  },
 
   hints: [
     {
@@ -203,6 +207,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Board from Code',
       goal: 'Generate 16 card divs from an emoji array and add them to the grid.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-memory-game.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find the deck.forEach build block and check it makes one card div for every emoji.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'Sixteen face-down cards appear in a 4 by 4 grid.'
+      },
       points: [
         'The deck is two copies of 8 emojis - <code>[...emojis, ...emojis]</code> gives 16 cards',
         '<code>document.createElement("div")</code> builds a card, <code>innerHTML</code> fills it',
@@ -231,6 +247,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Fisher-Yates Shuffle',
       goal: 'Shuffle the deck so every game is different.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        do: [
+          'Find the shuffle function near the top of the script.',
+          'Check it swaps from the end of the array down to index 1.',
+          'Call shuffle(deck) after the deck is made and before the cards are built.'
+        ],
+        check: 'Reload several times. The emoji positions change every game.'
+      },
       points: [
         'Fisher-Yates walks backward through the array, swapping each element with a random earlier one',
         '<code>Math.floor(Math.random() * (i + 1))</code> picks the random index',
@@ -259,6 +285,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'CSS Flip Animation',
       goal: 'Click a card to flip it with a smooth 3D rotation.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        do: [
+          'Find the grid click handler.',
+          'Add card.classList.add("flipped") for the clicked card.',
+          'Check the CSS .flipped rule turns the card over.'
+        ],
+        check: 'Clicking a card rotates it to show the emoji.'
+      },
       points: [
         'Each card has a <code>.back</code> (question mark) and <code>.front</code> (emoji) face',
         'Adding the class <code>.flipped</code> triggers <code>transform: rotateY(180deg)</code>',
@@ -287,6 +323,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Match Logic',
       goal: 'If two flipped cards match, keep them face up. Otherwise flip them back after a delay.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        do: [
+          'Find the two-card check in the click handler.',
+          'Compare dataset.emoji. On a match add matched; on a miss flip both back after a short setTimeout.',
+          'Clear flippedCards and unlock in both branches.'
+        ],
+        check: 'A matching pair stays face up, and a wrong pair turns back after about 0.8 seconds.'
+      },
       points: [
         'Compare <code>a.dataset.emoji === b.dataset.emoji</code> to check for a match',
         'Matched cards get the <code>.matched</code> class and stay revealed',
@@ -315,6 +361,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Moves & Timer',
       goal: 'Count moves, run a timer, and detect when all pairs are found.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        do: [
+          'Find the timer and move counter helpers.',
+          'Call startTimer() on the first flip and updateMoves() on every second card.',
+          'Run the win test when two cards match.'
+        ],
+        check: 'The move count goes up and the timer starts on the first click.'
+      },
       points: [
         'Increment <code>moves</code> each time two cards are compared',
         '<code>setInterval</code> ticks the timer up every second once the first card is clicked',
@@ -343,6 +399,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Best Score & Difficulty',
       goal: 'Save your best score to localStorage and add an option for a harder board.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-memory-game.html',
+        do: [
+          'Find the win handler.',
+          'Read memoryBest from localStorage and store the lower move count.',
+          'Show the new best or the old best in the best message.'
+        ],
+        check: 'Beating your record shows New best score, and a worse run shows the old number.'
+      },
       points: [
         '<code>localStorage.setItem("memoryBest", moves)</code> saves across sessions',
         'Compare the current score against the saved best and update if lower',

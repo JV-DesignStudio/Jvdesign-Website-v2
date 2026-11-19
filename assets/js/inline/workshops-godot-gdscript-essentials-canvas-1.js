@@ -7,13 +7,15 @@ var OUTPUT_TAG = '<div id="output"><span class="info">Run your GDScript to see o
 var SETUP = 'const out=document.getElementById("output");function print(v){var d=document.createElement("div");d.className="line ok";d.textContent=String(v);out.appendChild(d);out.scrollTop=out.scrollHeight}function printerr(v){var d=document.createElement("div");d.className="line err";d.textContent="ERROR: "+String(v);out.appendChild(d)}out.innerHTML="";';
 
 function wbWrap(userCode) {
-  var safe = userCode.replace(/\bprint\s*\(/g, 'print(').replace(/\bprint_err\s*\(/g, 'printerr(');
+  var js = window.CWTranspileGDScript ? window.CWTranspileGDScript(userCode, { keepPrint: true }) : userCode;
+  var safe = js.replace(/\bprint_err\s*\(/g, 'printerr(');
   return cwBlobWrap(CSS_OUTPUT, OUTPUT_TAG, SETUP, safe, '');
 }
 
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gdscript-essentials-canvas',
   downloadName: 'my-godot-gdscript-essentials.html',
+  engineProject: { href: '/workshops/godot-lab/index.html?project=gdscript-essentials', label: 'Build this project in the Godot Lab' },
   nextStep: { url: '/workshops/godot-tutorial-canvas.html', label: 'Godot Tutorial' },
 
   hints: [

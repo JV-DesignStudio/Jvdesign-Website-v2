@@ -16,6 +16,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'content', 'workshops.json');
 const OUTCOMES = path.join(ROOT, 'content', 'workshop-outcomes.json');
+const COURSES = path.join(ROOT, 'content', 'courses.json');
 const ENGINE_HUBS = path.join(ROOT, 'content', 'engine-hubs.json');
 const NEEDS = path.join(ROOT, 'content', 'workshop-needs.json');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
@@ -64,6 +65,28 @@ function loadOutcomes() {
   }
 }
 
+// A2529: where does this workshop sit in its series? Built from
+// content/courses.json, which is generated from each page's own WS-NEXT block.
+function loadCourses() {
+  const map = new Map();
+  try {
+    const data = JSON.parse(fs.readFileSync(COURSES, 'utf8'));
+    for (const course of data.courses || []) {
+      const steps = course.steps || [];
+      steps.forEach((step, i) => {
+        if (!step || !step.slug || map.has(step.slug)) return;
+        map.set(step.slug, {
+          name: course.name,
+          index: i + 1,
+          total: steps.length,
+          firstTitle: (steps[0] && steps[0].title) || course.name
+        });
+      });
+    }
+  } catch { /* catalogue still renders without courses */ }
+  return map;
+}
+
 // A2793: what does a learner need before they can start?
 // - browser: runs in the browser with nothing to install
 // - install: needs a free desktop engine or tool installed first
@@ -79,7 +102,46 @@ function needsFor(entry, isStudio) {
   return 'install';
 }
 
-function card(e, outcomes) {
+const LEVEL_LABEL = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
+const NEEDS_LABEL = {
+  browser: { text: 'Runs in browser', title: 'No install. Opens in a normal browser.' },
+  install: { text: 'Needs install', title: 'Needs a free app on a desktop or laptop.' },
+  account: { text: 'Needs login', title: 'Opens in a browser, but you sign in first.' }
+};
+
+// A2529: one honest duration per card so a learner can pick something that fits
+// this lesson. Derived from step count (about five minutes a step) unless a
+// workshop sets its own `minutes`.
+function minutesFor(e) {
+  const explicit = parseInt(e.minutes, 10);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const steps = parseInt(e.steps, 10);
+  const base = Number.isFinite(steps) && steps > 0 ? steps * 5 : 20;
+  return Math.max(10, Math.min(90, base));
+}
+
+function metaRow(e, isStudio) {
+  const needs = needsFor(e, isStudio);
+  const need = NEEDS_LABEL[needs] || NEEDS_LABEL.install;
+  const level = LEVEL_LABEL[String(e.difficulty || '').toLowerCase()] || 'Beginner';
+  const mins = minutesFor(e);
+  return '        <div class="course-meta">\n'
+    + '          <span class="course-pill course-pill--time" title="About ' + mins + ' minutes">~' + mins + ' min</span>\n'
+    + '          <span class="course-pill course-pill--level course-pill--' + esc(String(e.difficulty || 'beginner').toLowerCase()) + '" title="' + esc(level) + ' level">' + esc(level) + '</span>\n'
+    + '          <span class="course-pill course-pill--needs course-pill--' + esc(needs) + '" title="' + esc(need.title) + '">' + esc(need.text) + '</span>\n'
+    + '        </div>\n';
+}
+
+function prereqRow(e, courses) {
+  const course = courses.get(e.id);
+  if (!course || course.total < 2) return '';
+  const where = course.index > 1
+    ? 'Step ' + course.index + ' of ' + course.total + ' in <strong>' + esc(course.name) + '</strong> · starts with ' + esc(course.firstTitle)
+    : 'Step 1 of ' + course.total + ' in <strong>' + esc(course.name) + '</strong>';
+  return '        <div class="course-prereq">' + where + '</div>\n';
+}
+
+function card(e, outcomes, courses) {
   const href = '../' + String(e.url).replace(/^\//, '');
   const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
   const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
@@ -88,23 +150,30 @@ function card(e, outcomes) {
   const outcomeLine = outcome
     ? '        <div class="course-outcome"><strong>Finish with</strong> ' + esc(outcome.finish) + '. <strong>Extend it by</strong> ' + esc(outcome.extend) + '.</div>\n'
     : '';
+  const thumb = e.cover
+    ? '      <div class="course-thumb"><img src="' + esc(e.cover) + '" alt="" width="320" height="180" loading="lazy" decoding="async"></div>\n'
+    : '      <div class="course-thumb course-thumb--empty" aria-hidden="true">' + esc(e.engine || 'Make') + '</div>\n';
   return '    <a href="' + esc(href) + '" class="course-card"'
     + ' data-engine="' + esc(e.engine) + '"'
     + ' data-difficulty="' + esc(e.difficulty) + '"'
     + ' data-age="' + esc(e.ageRange) + '"'
     + ' data-needs="' + needsFor(e, isStudio) + '"'
+    + ' data-minutes="' + minutesFor(e) + '"'
     + (isStudio ? ' data-studio="true"' : '')
     + ' data-cat="tutorial">\n'
+    + thumb
     + '      <div class="course-body">\n'
     + '        <div class="course-tag">' + esc(badge) + '</div>\n'
     + '        <div class="course-title">' + esc(e.title) + '</div>\n'
     + '        <div class="course-desc">' + esc(desc) + '</div>\n'
+    + metaRow(e, isStudio)
+    + prereqRow(e, courses)
     + outcomeLine
     + '      </div>\n'
     + '    </a>';
 }
 
-function section(entries, outcomes) {
+function section(entries, outcomes, courses) {
   return '<section class="courses-section" id="catalogue" data-format="courses">\n'
     + '  <div class="ws-section-head reveal">\n'
     + '    <span class="ws-section-icon">📖</span>\n'
@@ -115,7 +184,7 @@ function section(entries, outcomes) {
     + '    <span class="ws-section-count">' + entries.length + ' Workshops</span>\n'
     + '  </div>\n'
     + '  <div class="courses-grid" id="catalogueGrid">\n'
-    + entries.map((e) => card(e, outcomes)).join('\n')
+    + entries.map((e) => card(e, outcomes, courses)).join('\n')
     + '\n  </div>\n'
     + '</section>';
 }
@@ -196,6 +265,7 @@ function needsManifest(entries) {
 function generate({ checkOnly = false } = {}) {
   const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
   const outcomes = loadOutcomes();
+  const courses = loadCourses();
   let html = fs.readFileSync(HUB, 'utf8');
   let changed = false;
 
@@ -210,7 +280,7 @@ function generate({ checkOnly = false } = {}) {
 
   const blocks = [
     [BROWSE_START, BROWSE_END, BROWSE_START + '\n' + browse(entries) + '\n' + BROWSE_END],
-    [START, END, START + '\n' + section(entries, outcomes) + '\n' + END]
+    [START, END, START + '\n' + section(entries, outcomes, courses) + '\n' + END]
   ];
 
   for (const [s, e, want] of blocks) {

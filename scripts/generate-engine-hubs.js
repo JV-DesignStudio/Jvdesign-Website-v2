@@ -105,11 +105,12 @@ function card(w, engine, opts) {
   const tag = opts.badge ? opts.badge + ' · ' + meta : meta;
   const desc = (w.desc && w.desc.trim()) ? w.desc : (opts.note || ('A guided ' + engine.name + ' build-along.'));
   const install = opts.install === true ? 'true' : 'false';
+  const title = (engine.rename && engine.rename[w.id]) || w.title;
   return '      <a href="' + esc(href) + '" class="course-card" data-install="' + install + '" data-level="' + esc(w.difficulty) + '">\n'
     + '        ' + coverFor(w, engine) + '\n'
     + '        <div class="course-body">\n'
     + '          <div class="course-tag">' + esc(tag) + '</div>\n'
-    + '          <div class="course-title">' + esc(w.title) + '</div>\n'
+    + '          <div class="course-title">' + esc(title) + '</div>\n'
     + '          <div class="course-desc">' + esc(desc) + '</div>\n'
     + '        </div>\n'
     + '      </a>';
@@ -143,34 +144,85 @@ function say(voice, engine) {
     + '  </div>';
 }
 
+// A3069: an optional three-step front door for a hub. The hero still shows the
+// engine, but a new learner gets one obvious first move and a short path instead
+// of a wall of cards. Only engines that opt in with `spotlight` render it.
+function renderHeroCta(engine) {
+  const c = engine.heroCta;
+  if (!c || !c.href) return '';
+  const second = c.secondary && c.secondary.href
+    ? '      <a class="hub-cta-secondary" href="' + esc(c.secondary.href) + '">' + esc(c.secondary.label) + '</a>\n'
+    : '';
+  return '    <div class="hub-cta-row">\n'
+    + '      <a class="hub-cta-primary" href="' + esc(c.href) + '">' + esc(c.label || 'Start') + ' &rarr;</a>\n'
+    + second
+    + '    </div>\n'
+    + (c.note ? '    <p class="hub-cta-note">' + esc(c.note) + '</p>\n' : '');
+}
+
+function renderSpotlight(engine) {
+  const s = engine.spotlight;
+  if (!s || !Array.isArray(s.steps) || !s.steps.length) return '';
+  const steps = s.steps.map((step, i) => {
+    return '      <li class="hub-path-card">\n'
+      + '        <span class="hub-path-num" aria-hidden="true">' + esc(step.num || (i + 1)) + '</span>\n'
+      + '        <div class="hub-path-body">\n'
+      + '          <div class="hub-path-top"><h3>' + esc(step.title) + '</h3>'
+      + (step.time ? '<span class="hub-path-time">' + esc(step.time) + '</span>' : '')
+      + '</div>\n'
+      + '          <p>' + esc(step.text) + '</p>\n'
+      + '          <a class="hub-path-cta" href="' + esc(step.href || '#') + '">' + esc(step.label || 'Open') + ' &rarr;</a>\n'
+      + '        </div>\n'
+      + '      </li>';
+  }).join('\n');
+  return '  <section class="hub-path" id="godot-path" aria-labelledby="s-path">\n'
+    + '    <div class="hub-path-head">\n'
+    + '      <p class="hub-path-kicker">' + esc(s.kicker || 'Your path') + '</p>\n'
+    + '      <h2 id="s-path">' + esc(s.title) + '</h2>\n'
+    + '      <p class="hub-path-sub">' + esc(s.blurb) + '</p>\n'
+    + '    </div>\n'
+    + '    <ol class="hub-path-grid">\n' + steps + '\n    </ol>\n'
+    + (s.note ? '    <p class="hub-path-note">' + esc(s.note) + '</p>\n' : '')
+    + '  </section>';
+}
+
+function renderLibraryHead(engine) {
+  if (!engine.spotlight) return '';
+  return '  <div class="hub-library-head">\n'
+    + '    <h2>' + esc(engine.libraryTitle || 'Choose your next build') + '</h2>\n'
+    + '    <p>' + esc(engine.libraryBlurb || '') + '</p>\n'
+    + '  </div>';
+}
+
 // A2959/A2962: the Godot hub embeds the real Godot editor. The block lives in
 // the generator so a later `npm run build` cannot wipe it, and only the Godot
 // hub gets the engine-feel replica and the lab scripts.
 function renderGodotLab(engine) {
   if (engine.id !== 'godot') return '';
   return `<!-- GODOT-LAB:START -->
-<section class="ef-wrap" aria-labelledby="godot-lab-title">
+<section class="ef-wrap godot-lab" id="godot-lab" aria-labelledby="godot-lab-title">
   <div class="ef-head">
-    <p class="ef-kicker">Build with real GDScript</p>
-    <h2 id="godot-lab-title">Godot Lab: build in the real editor</h2>
-    <p>The replica below is the warm-up. When you are ready, download a starter project, open the official Godot editor in a new tab, and write the code that moves the game.</p>
-    <span class="ef-note">The real editor needs internet. The replica works offline.</span>
+    <p class="ef-kicker">Step 3 &middot; optional &middot; first load is about 96 MB</p>
+    <h2 id="godot-lab-title">Godot Lab: put your game in the real editor</h2>
+    <p>You already have a scene and a project you can keep. The Godot Lab opens the real Godot 4 editor in this tab with the starter project ready. Press Start, then change the player speed or add a coin.</p>
+    <span class="ef-note">The real editor works best on a laptop or desktop with a keyboard. A school network may block or slow a 96 MB download. The practice editor below works offline on any device.</span>
   </div>
   <div data-engine-feel="godot" data-ef-preset="starter"></div>
   <div class="godot-lab-steps">
     <div class="godot-lab-step">
       <span class="godot-lab-num">1</span>
       <div>
-        <strong>Download the starter project</strong>
-        <p>It contains project.godot, main.tscn and the player script you can open in the real engine.</p>
+        <strong>Keep the starter project</strong>
+        <p>The same project the Lab loads: project.godot, main.tscn, player.gd and coin.gd. Unzip it, then open project.godot in the free Godot app.</p>
+        <p>Doing the <a href="godot-tutorial-canvas.html">Godot Basics lesson</a>? Its At home mode downloads the finished Star Collector project, and the Lab can load that too.</p>
       </div>
-      <button type="button" class="ef-btn ef-btn--main" data-godot-lab-download>Download starter project</button>
+      <a class="ef-btn ef-btn--main" href="godot-lab/starter.zip" download="my-first-godot-project.zip">Download starter project</a>
     </div>
     <div class="godot-lab-step">
       <span class="godot-lab-num">2</span>
       <div>
         <strong>Open the Godot Lab</strong>
-        <p>The real editor, embedded. It loads the starter project for you.</p>
+        <p>The real editor, embedded. <a href="/workshops/godot-lab/index.html">Choose any template or workshop</a>, then press <b>Load project</b> and <b>Start</b>. It can take about a minute the first time.</p>
       </div>
       <a class="ef-btn ef-btn--main" href="/workshops/godot-lab/index.html">Open the Godot Lab</a>
     </div>
@@ -178,12 +230,12 @@ function renderGodotLab(engine) {
       <span class="godot-lab-num">3</span>
       <div>
         <strong>If the school network blocks it</strong>
-        <p>Use the replica above, or open the official editor in a new tab and preload the ZIP yourself.</p>
+        <p>Stay in the practice editor above, or open the official editor in a new tab and preload the ZIP yourself. Nothing is lost.</p>
       </div>
       <a class="ef-btn" href="https://editor.godotengine.org/latest/" target="_blank" rel="noopener">Open in a tab</a>
     </div>
   </div>
-  <p class="godot-lab-note" data-godot-lab-status role="status" aria-live="polite"></p>
+  <p class="godot-lab-note" role="status" aria-live="polite">Not sure yet? <a href="#godot-path">Go back to the three steps</a>.</p>
 </section>
 <!-- GODOT-LAB:END -->`;
 }
@@ -242,7 +294,7 @@ function renderSections(engine, byId, showInstallPill) {
       + sectionHead(s.icon || '📦', s.title, s.blurb, showInstallPill ? installPill(s.install, engine) : '', count, 's-' + s.id) + '\n'
       + '  <div class="courses-grid" data-hub-grid>\n' + cards.join('\n') + '\n  </div>\n'
       + '  </section>');
-    if (s.kind === 'start') blocks.push(say('pip', engine));
+    if (s.kind === 'start' && !engine.spotlight) blocks.push(say('pip', engine));
   });
   return blocks.filter(Boolean).join('\n\n');
 }
@@ -251,17 +303,24 @@ function renderPage(engine, byId) {
   const id = engine.id;
   const godotLab = renderGodotLab(engine);
   const labCss = godotLab ? '<link rel="stylesheet" href="/assets/css/engine-feel.css">\n<link rel="stylesheet" href="/assets/css/godot-lab.css">\n' : '';
-  const labJs = godotLab ? '<script defer src="/assets/js/engine-feel.js"></script>\n<script defer src="/assets/js/godot-lab.js"></script>\n' : '';
+  const labJs = godotLab ? '<script defer src="/assets/js/engine-feel.js"></script>\n' : '';
   const sections = engine.sections
     .map((s) => ({ ...s, workshops: s.workshops.filter((wid) => byId.has(wid)) }))
     .filter((s) => s.workshops.length);
-  const allIds = [...new Set(sections.flatMap((s) => s.workshops))];
+  const spotlight = renderSpotlight(engine);
+  const heroTitle = engine.heroTitle || ('Learn <em>' + esc(engine.name) + '</em>, one game at a time');
+  const heroSub = engine.heroSub || engine.tagline;
+  const heroCta = renderHeroCta(engine);
+  const spotlightIds = (engine.spotlight && Array.isArray(engine.spotlight.steps) ? engine.spotlight.steps : [])
+    .map((step) => step.workshop)
+    .filter((wid) => wid && byId.has(wid));
+  const allIds = [...new Set([...spotlightIds, ...sections.flatMap((s) => s.workshops)])];
   const total = allIds.length;
   const band = ageBand(allIds, byId);
 
   const hasPart = allIds.map((wid) => {
     const w = byId.get(wid);
-    return { '@type': 'Course', name: w.title, url: SITE + '/workshops/' + w.id + '.html', isAccessibleForFree: true };
+    return { '@type': 'Course', name: (engine.rename && engine.rename[wid]) || w.title, url: SITE + '/workshops/' + w.id + '.html', isAccessibleForFree: true };
   });
 
   // Only show a filter when it actually narrows the list, and only show the
@@ -321,6 +380,33 @@ function renderPage(engine, byId) {
       + '@media(min-width:640px){.hp-routes{grid-template-columns:1fr 1fr}}'
     : '';
 
+  const spotlightCss = engine.spotlight
+    ? `.hub-cta-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0 0}
+.hub-cta-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 24px;border-radius:12px;background:var(--teal-dk);color:#fff;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.14)}
+.hub-cta-primary:hover,.hub-cta-primary:focus-visible{background:var(--teal);color:#fff;outline:2px solid var(--teal);outline-offset:3px}
+.hub-cta-secondary{display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border-radius:12px;border:1.5px solid var(--border-lt);background:var(--bg-secondary);color:var(--text-primary);font-weight:800;font-size:.9rem;text-decoration:none}
+.hub-cta-secondary:hover,.hub-cta-secondary:focus-visible{border-color:var(--teal);color:var(--text-primary)}
+.hub-cta-note{margin:10px auto 0;max-width:560px;font-size:.82rem;line-height:1.45;color:var(--text-secondary)}
+.hub-path{max-width:1100px;margin:28px auto 0;padding:0 20px}
+.hub-path-head{max-width:760px;margin:0 auto 16px;text-align:center}
+.hub-path-kicker{margin:0 0 4px;font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-dk)}
+.hub-path-head h2{margin:0 0 6px;font-family:Fredoka,'Baloo 2',cursive;font-size:clamp(1.35rem,3.5vw,1.8rem);color:var(--text-primary)}
+.hub-path-sub{margin:0;font-size:.94rem;line-height:1.55;color:var(--text-secondary)}
+.hub-path-grid{list-style:none;display:grid;gap:12px;margin:0;padding:0}
+.hub-path-card{display:flex;gap:14px;min-width:0;padding:16px 18px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.hub-path-num{flex:0 0 40px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--hub-color) 18%,var(--bg-tertiary));border:1.5px solid var(--hub-color);font-family:Fredoka,'Baloo 2',cursive;font-size:1.1rem;font-weight:700;color:var(--text-primary)}
+.hub-path-body{flex:1;min-width:0}
+.hub-path-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hub-path-top h3{margin:0;font-family:Fredoka,'Baloo 2',cursive;font-size:1.08rem;color:var(--text-primary)}
+.hub-path-time{font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--bg-tertiary);border:1px solid var(--border-lt);color:var(--text-secondary)}
+.hub-path-body p{margin:6px 0 10px;font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
+.hub-path-cta{display:inline-flex;align-items:center;gap:4px;font-size:.86rem;font-weight:800;color:var(--teal-dk);text-decoration:none}
+.hub-path-cta:hover,.hub-path-cta:focus-visible{text-decoration:underline}
+.hub-path-note{max-width:760px;margin:12px auto 0;text-align:center;font-size:.82rem;line-height:1.5;color:var(--text-secondary)}
+.hub-library-head{max-width:1100px;margin:32px auto 0;padding:0 20px;text-align:center}
+.hub-library-head h2{margin:0 0 4px;font-family:Fredoka,'Baloo 2',cursive;font-size:clamp(1.3rem,3vw,1.6rem);color:var(--text-primary)}
+.hub-library-head p{margin:0 auto;max-width:680px;font-size:.9rem;line-height:1.5;color:var(--text-secondary)}`
+    : '';
   const checkpoint = engine.checkpoint
     ? (() => {
       const cp = engine.checkpoint;
@@ -354,12 +440,12 @@ function renderPage(engine, byId) {
     general: 'Free Step-by-Step Tutorials',
   };
   const hubName = engine.name === 'General' ? 'Game Making' : engine.name;
-  const title = hubName + ' Workshops: ' + (TITLE_TAIL[id] || 'Free Step-by-Step Game Tutorials') + ' | JVDesignStudio';
-  const description = hasApp
+  const title = engine.seoTitle || (hubName + ' Workshops: ' + (TITLE_TAIL[id] || 'Free Step-by-Step Game Tutorials') + ' | JVDesignStudio');
+  const description = engine.seoDescription || (hasApp
     ? 'Every free ' + engine.name + ' workshop in one place: start in the browser with nothing to install, then build the full game with '
       + appLabel + '. ' + total + ' workshops, ' + band.toLowerCase() + '.'
     : 'Every free ' + engine.name + ' workshop in one place. Build games right in the browser, nothing to install. '
-      + total + ' workshops, ' + band.toLowerCase() + '.';
+      + total + ' workshops, ' + band.toLowerCase() + '.');
 
   const jsonld = [
     {
@@ -414,7 +500,7 @@ ${labCss}<style>
 .hub-hero h1 em{color:var(--hub-color);font-style:normal}
 .hub-hero-sub{max-width:640px;margin:0 auto 16px;color:var(--text-secondary);font-size:1.02rem;line-height:1.6}
 .hub-facts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.hub-fact{font-size:.76rem;font-weight:800;padding:5px 12px;border-radius:999px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);color:var(--text-secondary)}
+.hub-fact{font-size:.76rem;font-weight:800;padding:5px 12px;border-radius:999px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);color:var(--text-secondary)}${spotlightCss ? '\n' + spotlightCss : ''}
 .hub-filter{max-width:1100px;margin:12px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hub-filter-label{font-size:.82rem;font-weight:800;color:var(--text-secondary)}
 .hub-filter button{font:inherit;font-size:.82rem;font-weight:800;padding:7px 14px;border-radius:999px;border:1.5px solid var(--border-lt);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer}
@@ -447,7 +533,7 @@ ${legacyCss ? legacyCss + '\n' : ''}.hub-checkpoint{max-width:820px;margin:18px 
 .hp-skill input{flex:0 0 auto;width:18px;height:18px;margin-top:2px;accent-color:var(--teal-dk)}
 .hp-next{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--border-lt);font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
 .hp-next a{font-weight:800;color:var(--teal-dk)}
-${readinessCss ? readinessCss + '\n' : ''}@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}}
+${readinessCss ? readinessCss + '\n' : ''}${spotlightCss ? '@media(min-width:820px){.hub-path-grid{grid-template-columns:repeat(3,1fr)}}\n' : ''}@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}${spotlightCss ? '.hub-cta-primary,.hub-cta-secondary{width:100%}.hub-path-card{padding:14px}.hub-path-num{flex-basis:34px;width:34px;height:34px;font-size:1rem}' : ''}}
 </style>
 ${jsonld}
 </head>
@@ -461,29 +547,29 @@ ${marker('nav-content', readPartial('nav-content'))}
 
   <section class="hub-hero" style="--hub-color:${engine.color}">
     <span class="hub-hero-badge"><span aria-hidden="true">${engine.emoji}</span> ${esc(engine.name)} engine hub</span>
-    <h1>Learn <em>${esc(engine.name)}</em>, one game at a time</h1>
-    <p class="hub-hero-sub">${esc(engine.tagline)}</p>
+    <h1>${heroTitle}</h1>
+    <p class="hub-hero-sub">${esc(heroSub)}</p>
     <div class="hub-facts">
       <span class="hub-fact">${esc(band)}</span>
       <span class="hub-fact">Free, no account</span>
       <span class="hub-fact">${total} workshops</span>
       ${hasApp ? '' : '<span class="hub-fact">Nothing to install</span>'}
     </div>
-    ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote) + '</p>' : ''}
+${heroCta}    ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote) + '</p>' : ''}
   </section>
 
-${godotLab ? godotLab + '\n\n' : ''}${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
-
+${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
+${spotlight ? '\n' + spotlight + '\n' : ''}${spotlight && godotLab ? godotLab + '\n\n' : ''}${spotlight ? say('pip', engine) + '\n\n' : ''}
 ${ladder}
 
-${checkpoint}
+${spotlight ? '' : checkpoint}
 
-${readiness ? readiness + '\n\n' : ''}${filterBar}
+${readiness ? readiness + '\n\n' : ''}${renderLibraryHead(engine)}${filterBar}
 
   <div class="hub-body">
 ${renderSections(engine, byId, mixedInstall)}
   </div>
-
+${spotlight ? '\n' + checkpoint + '\n' : ''}${!spotlight && godotLab ? '\n' + godotLab + '\n' : ''}
   <p class="hub-foot">Everything else, plus every other engine, lives in the <a href="/workshop">full workshop hub</a>. ${esc(engine.install)}</p>
 </main>
 

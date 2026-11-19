@@ -66,6 +66,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-platformer-canvas',
   downloadName: 'my-platformer-game.html',
+  engineProject: {
+    href: '/downloads/js-platformer-starter.zip',
+    label: 'Download the platformer starter project'
+  },
 
   hints: [
     'Your player appears and falls with gravity - the ground catches them',
@@ -159,6 +163,18 @@ window.CW_CONFIG = {
       activity: 'Modify code',
       checkpoint: 'A blue player rectangle sits on the ground and does not fall through.',
       goal: 'Draw a player rectangle that falls with gravity and lands on the ground.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-platformer-game.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find the game loop and check gravity is added to player.vy before the ground snap.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'A blue player rectangle falls and stops on the ground without sinking through it.'
+      },
       points: [
         'The player is an object: <code>{ x, y, w:24, h:32, vx, vy }</code>',
         'Each frame: <code>vy += gravity</code> pulls the player down',
@@ -189,6 +205,16 @@ window.CW_CONFIG = {
       activity: 'Modify code',
       checkpoint: 'Arrow keys move the player left and right, and Up or Space makes it jump.',
       goal: 'Move left/right with arrow keys and jump with Up or Space.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        do: [
+          'Find the movement code in the game loop.',
+          'Read the keys object for Left, Right, A and D, and set player.vx.',
+          'Jump only when onGround is true.'
+        ],
+        check: 'Arrow keys or A and D move the player, and Up or Space jumps from the ground.'
+      },
       points: [
         'Track pressed keys in an object: <code>keys[e.code] = true</code> on keydown, false on keyup',
         'Each frame: read the keys object to set <code>player.vx</code>',
@@ -219,6 +245,16 @@ window.CW_CONFIG = {
       activity: 'Modify code',
       checkpoint: 'The player lands on each platform and can jump from one to the next.',
       goal: 'Define platform rectangles and make the player land on them.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        do: [
+          'Find function checkPlatforms().',
+          'Clear onGround at the top, then test every platform for a landing from above.',
+          'Only land when player.vy is zero or positive.'
+        ],
+        check: 'The player lands on each platform and can jump from one to the next.'
+      },
       points: [
         'Each platform is <code>{ x, y, w, h }</code> - a simple rectangle',
         'Check if the player overlaps a platform from above (falling down)',
@@ -249,6 +285,16 @@ window.CW_CONFIG = {
       activity: 'Modify code',
       checkpoint: 'Coins disappear when you touch them and the score goes up.',
       goal: 'Place collectible coins and track the player\'s score.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        do: [
+          'Find the coin loop in the update step.',
+          'Test the player box against each coin circle that is not collected.',
+          'Mark the coin collected and add one to the score.'
+        ],
+        check: 'Coins disappear when you touch them and the score goes up.'
+      },
       points: [
         'Coins are circles: <code>{ x, y, r:8, collected:false }</code>',
         'Each frame, check if player overlaps each coin - if so, mark it <code>collected</code>',
@@ -279,6 +325,16 @@ window.CW_CONFIG = {
       activity: 'Write code',
       checkpoint: 'Enemies patrol and the health bar drops when you touch one.',
       goal: 'Add patrolling enemies that cost a heart on contact.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        do: [
+          'Find the enemy patrol loop.',
+          'Bounce the enemy speed when it reaches minX or maxX.',
+          'Add the contact check with the invuln timer so one hit costs one heart.'
+        ],
+        check: 'Enemies patrol back and forth, and touching one removes a heart then blinks the player.'
+      },
       points: [
         'Each enemy has <code>{ x, y, w, h, speed, minX, maxX }</code> - it walks back and forth',
         'Reverse <code>speed</code> when the enemy hits its minX or maxX boundary',
@@ -309,6 +365,16 @@ window.CW_CONFIG = {
       activity: 'Write code',
       checkpoint: 'The camera follows the player as they move through the level.',
       goal: 'Make the camera follow the player through a wider level.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-game.html',
+        do: [
+          'Find the camera value used by the draw code.',
+          'Set it from player.x minus 200, then clamp it to the level edges.',
+          'Translate the world before drawing and restore before the HUD.'
+        ],
+        check: 'The view scrolls with the player and the score stays fixed on screen.'
+      },
       points: [
         'A camera is just an x offset: <code>ctx.translate(-camera, 0)</code> shifts all drawing',
         'Each frame: <code>camera = player.x - 200</code> keeps the player near the left',

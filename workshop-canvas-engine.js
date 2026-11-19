@@ -37,6 +37,7 @@ var CANVAS_GUIDE_MAP = {
   "gml-platformer-canvas.html": "gml-platformer-workshop.html",
   "gml-pong-canvas.html": "gml-pong-workshop.html",
   "gml-rpg-canvas.html": "gml-rpg-workshop.html",
+  "godot-autoclicker-canvas.html": "godot-autoclicker-workshop.html",
   "godot-gatekeeper-3d-part1-canvas.html": "godot-gatekeeper-3d-part1.html",
   "godot-gatekeeper-3d-part2-canvas.html": "godot-gatekeeper-3d-part2.html",
   "godot-gdscript-essentials-canvas.html": "godot-gdscript-essentials.html",
@@ -99,123 +100,79 @@ var CANVAS_GUIDE_MAP = {
 var CANVAS_NEXT_MAP = {
   "cpp-breakout-canvas.html": {
     "href": "cpp-platformer-canvas.html",
-    "label": "C++ Platformer"
+    "label": "Redirecting to Cpp Platformer"
   },
   "cpp-platformer-canvas.html": {
     "href": "cpp-platformer-part2-canvas.html",
-    "label": "C++ Platformer Part 2"
+    "label": "Redirecting to Cpp Platformer Part2"
   },
   "cpp-platformer-part2-canvas.html": {
     "href": "cpp-tower-part1-canvas.html",
-    "label": "C++ Tower Defence Part 1"
+    "label": "Redirecting to Cpp Tower Part1"
   },
   "cpp-pong-canvas.html": {
     "href": "cpp-snake-canvas.html",
-    "label": "C++ Snake"
+    "label": "Redirecting to Cpp Snake"
   },
   "cpp-snake-canvas.html": {
     "href": "cpp-breakout-canvas.html",
-    "label": "C++ Breakout"
+    "label": "Redirecting to Cpp Breakout"
   },
   "cpp-tower-part1-canvas.html": {
     "href": "cpp-tower-part2-canvas.html",
-    "label": "C++ Tower Defence Part 2"
+    "label": "Redirecting to Cpp Tower Part2"
   },
   "godot-gatekeeper-3d-part1-canvas.html": {
     "href": "godot-gatekeeper-3d-part2-canvas.html",
     "label": "Godot Gatekeeper 3D Part 2"
   },
+  "godot-gdscript-essentials-canvas.html": {
+    "href": "godot-tutorial-canvas.html",
+    "label": "Godot Basics Tutorial"
+  },
+  "godot-platformer-canvas.html": {
+    "href": "godot-puzzle-canvas.html",
+    "label": "Godot Puzzle"
+  },
+  "godot-puzzle-canvas.html": {
+    "href": "godot-racing-2-canvas.html",
+    "label": "Godot Racing Part 2"
+  },
+  "godot-racing-2-canvas.html": {
+    "href": "godot-gatekeeper-3d-part1-canvas.html",
+    "label": "Godot Gatekeeper 3D Part 1"
+  },
+  "godot-tutorial-canvas.html": {
+    "href": "godot-platformer-canvas.html",
+    "label": "Godot Platformer"
+  },
   "java-rpg-part1-canvas.html": {
     "href": "java-rpg-part2-canvas.html",
-    "label": "Java RPG Battle Canvas"
+    "label": "Redirecting to Java Rpg Part2"
   },
   "java-rpg-part2-canvas.html": {
     "href": "java-rpg-part3-canvas.html",
-    "label": "Java RPG Finale"
+    "label": "Redirecting to Java Rpg Part3"
   },
   "python-breakout-canvas.html": {
     "href": "python-breakout-part2-canvas.html",
-    "label": "Python Breakout Part 2"
+    "label": "Redirecting to Python Breakout Part2"
   },
   "python-catch-canvas.html": {
     "href": "python-dodge-canvas.html",
-    "label": "Python Dodge"
+    "label": "Redirecting to Python Dodge"
   },
   "python-dodge-canvas.html": {
     "href": "python-maze-canvas.html",
-    "label": "Python Maze"
+    "label": "Redirecting to Python Maze"
   },
   "python-maze-canvas.html": {
     "href": "python-breakout-canvas.html",
-    "label": "Python Breakout"
+    "label": "Redirecting to Python Breakout"
   },
   "python-platformer-canvas.html": {
     "href": "python-platformer-part2-canvas.html",
-    "label": "Python Platformer Part 2"
-  },
-  "js-breakout-canvas.html": {
-    "href": "js-flappy-canvas.html",
-    "label": "JS Flappy"
-  },
-  "js-flappy-canvas.html": {
-    "href": "js-memory-canvas.html",
-    "label": "JS Memory"
-  },
-  "js-memory-canvas.html": {
-    "href": "js-snake-canvas.html",
-    "label": "JS Snake"
-  },
-  "js-snake-canvas.html": {
-    "href": "js-breakout-canvas.html",
-    "label": "JS Breakout"
-  },
-  "roblox-obby-canvas.html": {
-    "href": "roblox-tycoon-canvas.html",
-    "label": "Roblox Tycoon"
-  },
-  "roblox-tycoon-canvas.html": {
-    "href": "roblox-adventure-canvas.html",
-    "label": "Roblox Adventure"
-  },
-  "roblox-adventure-canvas.html": {
-    "href": "roblox-battle-canvas.html",
-    "label": "Roblox Battle"
-  },
-  "roblox-battle-canvas.html": {
-    "href": "roblox-simulator-canvas.html",
-    "label": "Roblox Simulator"
-  },
-  "roblox-simulator-canvas.html": {
-    "href": "roblox-horror-canvas.html",
-    "label": "Roblox Horror"
-  },
-  "roblox-horror-canvas.html": {
-    "href": "roblox-pirate-canvas.html",
-    "label": "Roblox Pirate"
-  },
-  "roblox-pirate-canvas.html": {
-    "href": "roblox-collapse-obby-canvas.html",
-    "label": "Roblox Collapse Obby"
-  },
-  "roblox-collapse-obby-canvas.html": {
-    "href": "roblox-corruption-obby-canvas.html",
-    "label": "Roblox Corruption Obby"
-  },
-  "roblox-corruption-obby-canvas.html": {
-    "href": "roblox-sim-lockdown-1-canvas.html",
-    "label": "Roblox Sim Lockdown 1"
-  },
-  "roblox-sim-lockdown-1-canvas.html": {
-    "href": "roblox-sim-lockdown-2-canvas.html",
-    "label": "Roblox Sim Lockdown 2"
-  },
-  "roblox-sim-lockdown-2-canvas.html": {
-    "href": "roblox-sim-lockdown-3-canvas.html",
-    "label": "Roblox Sim Lockdown 3"
-  },
-  "roblox-sim-lockdown-3-canvas.html": {
-    "href": "roblox-obby-canvas.html",
-    "label": "Roblox Obby"
+    "label": "Redirecting to Python Platformer Part2"
   }
 };
 /* A1365:CANVAS_NEXT:end */
@@ -230,6 +187,7 @@ var CANVAS_STUDIO_MAP = {
   "cpp-tower-part1-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
   "cpp-tower-part2-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
   "my-first-cpp-game-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "godot-autoclicker-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
   "godot-gatekeeper-3d-part1-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
   "godot-gatekeeper-3d-part2-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
   "godot-gdscript-essentials-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
@@ -373,6 +331,183 @@ var cwXpLocal = 0;
    Token checks stay as a fast prefilter; they are never the proof on their own
    when a test exists. */
 var cwStepTests = {};
+/* A3070: focus mode. Only the active step is open; completed steps collapse to
+   a reviewable header and locked steps stay as a short "locked" row. */
+var openSteps = {};
+var courseStartedAt = 0;
+var soundOn = false;
+try { soundOn = localStorage.getItem('jvds_canvas_sound') === '1'; } catch (e) {}
+var audioCtx = null;
+
+/* A3070: a small GDScript-to-JS transpiler for the browser lessons. It is not
+   a full Godot runtime; it turns the teaching subset (var, func, if/elif/else,
+   for, while, print, common helpers) into runnable JavaScript so the canvas
+   preview matches the code the learner writes. */
+function transpileGDScript(src, opts) {
+  var keepPrint = !!(opts && opts.keepPrint);
+  var tutorialVars = !!(opts && opts.tutorialVars);
+  var lines = String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n');
+  var out = [];
+  var stack = [];
+
+  function indentOf(line) {
+    var m = line.match(/^[ \t]*/)[0];
+    var n = 0;
+    for (var i = 0; i < m.length; i++) n += m.charAt(i) === '\t' ? 4 : 1;
+    return Math.floor(n / 4);
+  }
+  function pad(n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += '    ';
+    return s;
+  }
+  function closeNormal(indent) {
+    while (stack.length && stack[stack.length - 1] >= indent) {
+      var at = stack.pop();
+      out.push(pad(at) + '}');
+    }
+  }
+  function closeForElse(indent) {
+    while (stack.length && stack[stack.length - 1] > indent) {
+      var deep = stack.pop();
+      out.push(pad(deep) + '}');
+    }
+    if (stack.length && stack[stack.length - 1] === indent) stack.pop();
+  }
+  function codeBody(text) {
+    var s = String(text || '').trim();
+    if (!s) return '';
+    s = s
+      .replace(/^var\s+(\w+)\s*:\s*[A-Za-z0-9_\[\]\.]+\s*=\s*/,'let $1 = ')
+      .replace(/^var\s+(\w+)\s*:\s*[A-Za-z0-9_\[\]\.]+\s*$/,'let $1')
+      .replace(/\bprint_err\s*\(/g, 'printerr(')
+      .replace(/\bprint\s*\(/g, keepPrint ? 'print(' : 'console.log(')
+      .replace(/\bstr\s*\(/g, 'String(')
+      .replace(/\babs\s*\(/g, 'Math.abs(')
+      .replace(/\batan2\s*\(/g, 'Math.atan2(')
+      .replace(/\.size\(\)/g, '.length')
+      .replace(/\.pop_front\(\)/g, '.shift()')
+      .replace(/\.push_back\(/g, '.push(')
+      .replace(/\brandf\s*\(\)/g, 'Math.random()')
+      .replace(/\brandi\s*\(\)\s*%\s*([A-Za-z0-9_]+)/g, 'Math.floor(Math.random()*$1)')
+      .replace(/\bclamp\s*\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+      .replace(/\bVector2\s*\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+      .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+      .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+      .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+      .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+      .replace(/\band\b/g, '&&')
+      .replace(/\bor\b/g, '||')
+      .replace(/\bnot\b/g, '!')
+      .replace(/\bvar\b/g, 'let');
+    var isPlayerDecl = /^\s*(var|let)\s+player_(x|y)\b/.test(s);
+    if (!isPlayerDecl) {
+      s = s.replace(/\bplayer_x\b/g, 'px').replace(/\bplayer_y\b/g, 'py');
+    }
+    s = s
+      .replace(/\bguard_target\b/g, 'gTarget')
+      .replace(/\bguard_x\b/g, 'gx')
+      .replace(/\bguard_y\b/g, 'gy')
+      .replace(/\bvelocity_x\b/g, 'vx')
+      .replace(/\bvelocity_y\b/g, 'vy')
+      .replace(/\bai_cars\b/g, 'aiCars')
+      .replace(/\bboost_timer\b/g, 'boostTimer')
+      .replace(/\bInput\.is_action_just_pressed\("ui_left"\)/g, 'leftJustPressed')
+      .replace(/\bInput\.is_action_just_pressed\("ui_right"\)/g, 'rightJustPressed')
+      .replace(/\bInput\.is_action_just_pressed\("ui_up"\)/g, 'upJustPressed')
+      .replace(/\bInput\.is_action_just_pressed\("ui_down"\)/g, 'downJustPressed');
+    if (tutorialVars) {
+      s = s
+        .replace(/\bposition\.x\b/g, 'px')
+        .replace(/\bposition\.y\b/g, 'py')
+        .replace(/\bposition_x\b/g, 'px')
+        .replace(/\bposition_y\b/g, 'py')
+        .replace(/\bsprite_angle\b/g, 'pAngle')
+        .replace(/\bgame_won\b/g, 'gameWon');
+    }
+    if (!/[;{}]$/.test(s)) s += ';';
+    return s;
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var raw = lines[i];
+    var indent = indentOf(raw);
+    var line = raw.trim();
+    if (!line) { out.push(''); continue; }
+    if (line.charAt(0) === '#') continue;
+    line = line.replace(/\s+#.*$/, '');
+
+    var isElif = /^elif\b/.test(line);
+    var isElse = /^else\s*:/.test(line);
+    if (isElif || isElse) closeForElse(indent);
+    else closeNormal(indent);
+
+    var m;
+
+    if (isElif) {
+      m = line.match(/^elif\s+(.+?)\s*:\s*(.*)$/);
+      if (m) {
+        var elseCond = codeBody(m[1]).replace(/;$/, '');
+        if (m[2].trim()) out.push(pad(indent) + '} else if (' + elseCond + ') { ' + codeBody(m[2]) + ' }');
+        else { out.push(pad(indent) + '} else if (' + elseCond + ') {'); stack.push(indent); }
+      }
+      continue;
+    }
+    if (isElse) {
+      m = line.match(/^else\s*:\s*(.*)$/);
+      if (m) {
+        if (m[1].trim()) out.push(pad(indent) + '} else { ' + codeBody(m[1]) + ' }');
+        else { out.push(pad(indent) + '} else {'); stack.push(indent); }
+      }
+      continue;
+    }
+
+    m = line.match(/^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*(?:->\s*[A-Za-z0-9_\[\]\.]+)?\s*:\s*(.*)$/);
+    if (m) {
+      var args = m[2].replace(/\s*:\s*[A-Za-z0-9_\[\]\.]+/g, '');
+      if (m[3].trim()) out.push(pad(indent) + 'function ' + m[1] + '(' + args + ') { ' + codeBody(m[3]) + ' }');
+      else { out.push(pad(indent) + 'function ' + m[1] + '(' + args + ') {'); stack.push(indent); }
+      continue;
+    }
+
+    m = line.match(/^if\s+(.+?)\s*:\s*(.*)$/);
+    if (m) {
+      var cond = codeBody(m[1]).replace(/;$/, '');
+      if (m[2].trim()) out.push(pad(indent) + 'if (' + cond + ') { ' + codeBody(m[2]) + ' }');
+      else { out.push(pad(indent) + 'if (' + cond + ') {'); stack.push(indent); }
+      continue;
+    }
+
+    m = line.match(/^for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\s+range\s*\(([^)]+)\)\s*:\s*(.*)$/);
+    if (m) {
+      var rng = codeBody(m[2]).replace(/;$/, '');
+      if (m[3].trim()) out.push(pad(indent) + 'for (let ' + m[1] + ' = 0; ' + m[1] + ' < ' + rng + '; ' + m[1] + '++) { ' + codeBody(m[3]) + ' }');
+      else { out.push(pad(indent) + 'for (let ' + m[1] + ' = 0; ' + m[1] + ' < ' + rng + '; ' + m[1] + '++) {'); stack.push(indent); }
+      continue;
+    }
+
+    m = line.match(/^for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\s+(.+?)\s*:\s*(.*)$/);
+    if (m) {
+      var list = codeBody(m[2]).replace(/;$/, '');
+      if (m[3].trim()) out.push(pad(indent) + 'for (let ' + m[1] + ' of ' + list + ') { ' + codeBody(m[3]) + ' }');
+      else { out.push(pad(indent) + 'for (let ' + m[1] + ' of ' + list + ') {'); stack.push(indent); }
+      continue;
+    }
+
+    m = line.match(/^while\s+(.+?)\s*:\s*(.*)$/);
+    if (m) {
+      var wcond = codeBody(m[1]).replace(/;$/, '');
+      if (m[2].trim()) out.push(pad(indent) + 'while (' + wcond + ') { ' + codeBody(m[2]) + ' }');
+      else { out.push(pad(indent) + 'while (' + wcond + ') {'); stack.push(indent); }
+      continue;
+    }
+
+    out.push(pad(indent) + codeBody(line));
+  }
+  closeNormal(0);
+  return out.join('\n');
+}
+window.CWTranspileGDScript = transpileGDScript;
 
 /* ── LIVE "WHAT YOUR CODE DID" LAYER ──
    Purely additive. Names the current step over the canvas and, as the learner
@@ -479,9 +614,11 @@ function ensureCanvasDesc() {
   return el;
 }
 
-function updateWhat(step) {
+function updateWhat(step, preview) {
   var el = ensureWhat();
-  if (el && step) el.innerHTML = 'Step ' + step.num + ': ' + step.goal;
+  if (el && step) el.innerHTML = preview
+    ? 'Preview: ' + step.goal + ' Fill in the blanks to make it yours.'
+    : 'Step ' + step.num + ': ' + step.goal;
   var desc = ensureCanvasDesc();
   if (desc && step) desc.textContent = 'What you should see: ' + stripTags(step.expect || step.goal);
 }
@@ -566,6 +703,20 @@ function ensurePreviewKeyboardExit() {
   hint.style.cssText = 'margin:0 0 10px;font-size:.78rem;line-height:1.4;color:rgba(255,255,255,.75)';
   wrap.parentNode.insertBefore(btn, wrap);
   wrap.parentNode.insertBefore(hint, wrap);
+}
+
+function ensureEngineProjectLink() {
+  if (!CFG.engineProject || !CFG.engineProject.href) return;
+  var panel = document.getElementById('canvasPanel');
+  if (!panel || panel.querySelector('.cw-engine-project')) return;
+  var a = document.createElement('a');
+  a.className = 'cw-engine-project';
+  a.href = CFG.engineProject.href;
+  a.setAttribute('download', '');
+  a.textContent = CFG.engineProject.label || 'Download the engine starter project';
+  var dl = panel.querySelector('.cw-btn-dl');
+  if (dl && dl.parentNode === panel) panel.insertBefore(a, dl);
+  else panel.appendChild(a);
 }
 
 window.addEventListener('message', function (e) {
@@ -720,6 +871,7 @@ function loadState() {
       predictText = state.predictText || {};
       predictPassed = state.predictPassed || {};
       explainText = state.explainText || {};
+      if (state.startedAt) courseStartedAt = state.startedAt;
     }
   } catch(e) {}
 }
@@ -740,7 +892,8 @@ function saveState() {
       predictSelected: predictSelected,
       predictText: predictText,
       predictPassed: predictPassed,
-      explainText: explainText
+      explainText: explainText,
+      startedAt: courseStartedAt || (courseStartedAt = Date.now())
     }));
     /* A1425: ledger fingerprint so canvas XP counts in the site totals.
        scanComponentXP only sees {xp:number, total:number, completed:[]},
@@ -1011,6 +1164,27 @@ function renderNodeTree(node, depth, isLast, prefix) {
   return html;
 }
 
+/* A3070: engine parity. A step can carry the same job in the real engine:
+   the exact file, the exact clicks and a checkpoint. The code is the same
+   code the learner already writes in the canvas editor, so the two lanes
+   never drift. */
+function renderEngine(step) {
+  var e = step.engine;
+  if (!e) return '';
+  var name = e.name || 'the engine';
+  var html = '<div class="cw-engine">' +
+    '<div class="cw-engine-head"><span class="cw-engine-badge">' + escapeHtml(name) + '</span> In ' + escapeHtml(name) + '</div>' +
+    (e.intro ? '<p class="cw-engine-intro">' + escapeHtml(e.intro) + '</p>' : '') +
+    (e.file ? '<p class="cw-engine-file">File: <code>' + escapeHtml(e.file) + '</code></p>' : '') +
+    '<ol class="cw-engine-do">' +
+      (e.do || []).map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') +
+    '</ol>' +
+    (e.code ? '<pre class="cw-engine-code"><code>' + escapeHtml(e.code) + '</code></pre>' : '') +
+    (e.check ? '<p class="cw-engine-check"><strong>Check:</strong> ' + escapeHtml(e.check) + '</p>' : '') +
+  '</div>';
+  return html;
+}
+
 function renderSteps() {
   var panel = document.getElementById('stepsPanel');
   panel.innerHTML = '';
@@ -1023,6 +1197,7 @@ function renderSteps() {
     if (i === currentStep) card.classList.add('active');
     else if (completed[step.num]) card.classList.add('completed');
     else if (i > currentStep && !completed[step.num]) card.classList.add('locked');
+    if (openSteps[step.num]) card.classList.add('cw-open');
 
     var isDone = !!completed[step.num];
     var isActive = (i === currentStep);
@@ -1033,6 +1208,10 @@ function renderSteps() {
         '<span class="cw-step-num">' + step.num + '</span>' +
         '<h3>' + step.title + '</h3>' +
         (step.activity ? '<span class="cw-activity">' + step.activity + '</span>' : '') +
+        (isDone && !attempts[step.num] && !solutionSeen[step.num] ? '<span class="cw-star" title="Completed without a hint">★</span>' : '') +
+        (isActive ? '' : (isDone
+          ? '<button type="button" class="cw-step-toggle" data-cw="toggleStep" data-cw-arg="' + step.num + '" aria-expanded="' + (openSteps[step.num] ? 'true' : 'false') + '">' + (openSteps[step.num] ? 'Hide' : 'Review') + '</button>'
+          : '<span class="cw-step-locked">Locked</span>')) +
       '</div>' +
       '<p class="cw-goal">' + step.goal + ' <span class="cw-step-time" title="Estimated time for this step">~' + stepMinutes(step) + ' min</span></p>' +
       (step.num === lastDone && !allDone && i < STEPS.length - 1 ? '<p class="cw-last-done-tag">You stopped here. Pick up again any time.</p>' : '') +
@@ -1063,7 +1242,8 @@ function renderSteps() {
           '<button class="cw-btn cw-btn-reset" data-cw="resetStep" data-cw-arg="' + step.num + '">Reset</button>'
         ) +
       '</div>' +
-      '<div class="cw-feedback" id="feedback-' + step.num + '" role="status" aria-live="polite"></div>';
+      '<div class="cw-feedback" id="feedback-' + step.num + '" role="status" aria-live="polite"></div>' +
+      ((isActive || isDone) ? renderEngine(step) : '');
 
     if (step.fills && (isActive || isDone)) {
       var parts = step.fills.text.split('___');
@@ -1380,13 +1560,18 @@ function updateCanvas() {
   if (Object.keys(cwStepTests).length) return;
   var step = STEPS[currentStep];
   var code = editors[step.num] ? editors[step.num].value : step.starter;
-  showPreview(hasUnfilled(code)
-    ? polishPreview(BLANK_PLACEHOLDER)
-    : polishPreview(TEMPLATES[step.num](code)));
+  var unfilled = hasUnfilled(code);
+  /* A3070: a lesson can show the finished step as a playable preview while the
+     starter still has blanks. The learner sees the game first, then fills the
+     code in to make it theirs. */
+  var previewSolution = !!(unfilled && CFG.previewSolutionWhenBlank && step.solution && !hasUnfilled(step.solution));
+  showPreview(previewSolution
+    ? polishPreview(TEMPLATES[step.num](step.solution))
+    : (unfilled ? polishPreview(BLANK_PLACEHOLDER) : polishPreview(TEMPLATES[step.num](code))));
   saveState();
 
   renderCanvasHint();
-  updateWhat(step);
+  updateWhat(step, previewSolution);
   updateLive(step.num);
 }
 
@@ -1466,6 +1651,8 @@ function updateProgress() {
   if (fillEl) fillEl.style.width = (count / STEPS.length * 100) + '%';
   if (textEl) textEl.textContent =
     count === STEPS.length ? 'Complete!' : 'Step ' + (currentStep + 1) + ' / ' + STEPS.length;
+  var chip = ensureCleanChip();
+  if (chip) chip.textContent = '★ ' + cleanCount() + ' clean';
   if (count === STEPS.length) {
     offerRemix(finishFocusPending);
     finishFocusPending = false;
@@ -1775,10 +1962,13 @@ function cwCelebrate(num) {
 
   cwShowXpPopup(card);
   cwConfetti(card);
+  playTone('step');
 
   var doneCount = Object.keys(completed).length;
   if (doneCount === STEPS.length) {
-    cwMilestone('All Steps Complete!', 'You built the whole game!');
+    playTone('win');
+    var mins = courseStartedAt ? Math.max(1, Math.round((Date.now() - courseStartedAt) / 60000)) : 0;
+    cwMilestone('All Steps Complete!', 'You built the whole game. Clean steps: ' + cleanCount() + '/' + STEPS.length + (mins ? ' · ' + mins + ' min' : ''));
   } else if (doneCount === Math.floor(STEPS.length / 2)) {
     cwMilestone('Halfway There!', doneCount + ' of ' + STEPS.length + ' steps done');
   }
@@ -2029,6 +2219,14 @@ window.CW = {
   checkStep: checkStep,
   answerPaste: answerPaste,
   showSolution: showSolution,
+  refresh: updateCanvas,
+  previewStep: function(num) {
+    var step = STEPS.find(function(s) { return s.num === num; });
+    if (!step || !editors[num]) return false;
+    showPreview(polishPreview(TEMPLATES[num](editors[num].value)));
+    updateWhat(step);
+    return true;
+  },
   resetStep: resetStep,
   selectQuiz: selectQuiz,
   checkQuiz: checkQuiz,
@@ -2070,6 +2268,110 @@ function ensureProgressStrip() {
   } catch (e) {}
 }
 
+/* A3070: focus mode, stage tools, sound and simple records. */
+function toggleStep(num) {
+  openSteps[num] = !openSteps[num];
+  var card = document.getElementById('card-' + num);
+  if (card) card.classList.toggle('cw-open', !!openSteps[num]);
+  var btn = card ? card.querySelector('.cw-step-toggle') : null;
+  if (btn) {
+    btn.textContent = openSteps[num] ? 'Hide' : 'Review';
+    btn.setAttribute('aria-expanded', openSteps[num] ? 'true' : 'false');
+  }
+}
+
+function cleanCount() {
+  var n = 0;
+  STEPS.forEach(function (s) {
+    if (completed[s.num] && !attempts[s.num] && !solutionSeen[s.num]) n++;
+  });
+  return n;
+}
+
+function ensureCleanChip() {
+  var prog = document.querySelector('#canvasPanel .cw-progress');
+  if (!prog) return null;
+  var chip = document.getElementById('cwCleanChip');
+  if (!chip) {
+    chip = document.createElement('span');
+    chip.id = 'cwCleanChip';
+    chip.className = 'cw-clean-chip';
+    chip.title = 'Steps completed without a hint or the solution';
+    prog.appendChild(chip);
+  }
+  return chip;
+}
+
+function ensureStageTools() {
+  var panel = document.getElementById('canvasPanel');
+  if (!panel || panel.querySelector('.cw-stage-tools')) return;
+  var tools = document.createElement('div');
+  tools.className = 'cw-stage-tools';
+  tools.innerHTML =
+    '<button type="button" class="cw-stage-btn cw-stage-btn--run" data-cw="runStage">▶ Run</button>' +
+    '<button type="button" class="cw-stage-btn" data-cw="expandStage">⛶ Expand</button>' +
+    '<button type="button" class="cw-stage-btn" data-cw="takeHome">Take it home</button>' +
+    '<button type="button" class="cw-stage-btn cw-stage-btn--sound" data-cw="toggleSound" aria-pressed="' + (soundOn ? 'true' : 'false') + '">' + (soundOn ? 'Sound on' : 'Sound off') + '</button>';
+  var frame = panel.querySelector('.cw-canvas-frame');
+  if (frame && frame.parentNode === panel) panel.insertBefore(tools, frame);
+  else panel.insertBefore(tools, panel.firstChild);
+}
+
+function runStage() {
+  updateCanvas();
+  playTone('run');
+}
+
+function expandStage() {
+  var frame = document.querySelector('.cw-canvas-frame');
+  if (!frame) return;
+  try {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (frame.requestFullscreen) frame.requestFullscreen();
+  } catch (e) {}
+}
+
+function takeHome() {
+  var box = document.querySelector('.cw-next');
+  if (box) { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  var guide = (window.CANVAS_GUIDE_MAP || {})[(location.pathname.split('/').pop() || '').toLowerCase()];
+  if (guide) location.href = '/workshops/' + guide;
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  try { localStorage.setItem('jvds_canvas_sound', soundOn ? '1' : '0'); } catch (e) {}
+  var btn = document.querySelector('[data-cw="toggleSound"]');
+  if (btn) {
+    btn.textContent = soundOn ? 'Sound on' : 'Sound off';
+    btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+    btn.classList.toggle('is-on', soundOn);
+  }
+  if (soundOn) playTone('run');
+}
+
+function playTone(kind) {
+  if (!soundOn) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = audioCtx || new AC();
+    var notes = kind === 'win' ? [523, 659, 784, 1046] : kind === 'step' ? [660, 880] : [330, 392];
+    notes.forEach(function (f, i) {
+      var t = audioCtx.currentTime + i * 0.08;
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.07, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.2);
+    });
+  } catch (e) {}
+}
+
 /* Delegated click handler for data-cw actions (CSP-safe, no inline handlers) */
 document.addEventListener('click', function(e) {
   var el = e.target.closest('[data-cw]');
@@ -2089,6 +2391,11 @@ document.addEventListener('click', function(e) {
   else if (action === 'reportStep') reportStep(arg);
   else if (action === 'revealHint') revealHint(arg);
   else if (action === 'resumeStep') resumeStep(arg);
+  else if (action === 'toggleStep') toggleStep(arg);
+  else if (action === 'runStage') runStage();
+  else if (action === 'expandStage') expandStage();
+  else if (action === 'takeHome') takeHome();
+  else if (action === 'toggleSound') toggleSound();
 });
 
 function mountVersionNotice() {
@@ -2105,7 +2412,9 @@ function mountVersionNotice() {
 /* Init */
 ensureLiveStyle();
 loadState();
+courseStartedAt = Date.now();
 ensureProgressStrip();
+ensureStageTools();
 renderSteps();
 mountVersionNotice();
 updateCanvas();
@@ -2116,6 +2425,7 @@ if (cwFrame) {
 }
 ensureCanvasDesc();
 ensurePreviewKeyboardExit();
+ensureEngineProjectLink();
 updateProgress();
 maybeOfferContinue();
 maybeShowResume();

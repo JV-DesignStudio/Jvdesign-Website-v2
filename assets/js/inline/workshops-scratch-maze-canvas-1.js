@@ -100,6 +100,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-maze-canvas',
   downloadName: 'my-scratch-maze.html',
+  engineProject: {
+    href: '/downloads/scratch-maze-workshop-reference.zip',
+    label: 'Download the Scratch reference project'
+  },
 
   hints: [
     'A small player sprite in the top-left of a dark maze',
@@ -228,6 +232,17 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Player Sprite',
       goal: 'Draw a yellow player square in the top-left corner of the maze.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu and draw a small yellow square costume.',
+          'Make ps and pSpeed variables, then set ps to 16 and pSpeed to 3.',
+          'Add a go to block: x is 30 minus 240 and y is 180 minus 30.'
+        ],
+        check: 'The yellow player sits in the top-left corner of the stage.'
+      },
       points: [
         'The player is a 16x16 yellow square - like a small Scratch sprite',
         'It starts at position (30, 30) in the top-left corner',
@@ -257,6 +272,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Four-Way Movement',
       goal: 'Move the player in all four directions with arrow keys.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Add four if blocks inside a forever loop.',
+          'Up arrow changes y by 3, down by -3, left changes x by -3 and right by 3.',
+          'Scratch y points up, so up is positive here even though the canvas counts down.'
+        ],
+        check: 'All four arrow keys move the player and it stays on the stage.'
+      },
       points: [
         'In Scratch: check all four arrow keys with <code>if &lt;key [up arrow] pressed?&gt; then</code>',
         'Up decreases y (toward the top), down increases y',
@@ -286,6 +311,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Maze Walls',
       goal: 'Add grey walls that block the player from passing through.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Draw the maze walls on the backdrop in grey.',
+          'Store oldX and oldY at the start of each loop.',
+          'If the player is touching the colour grey, set x to oldX and y to oldY.'
+        ],
+        check: 'The player cannot walk through a wall; it slides back to where it was.'
+      },
       points: [
         'In Scratch: <code>if &lt;touching color [grey]?&gt; then</code> detects wall contact',
         'Walls are grey rectangles placed across the stage forming corridors',
@@ -315,6 +350,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'The Goal',
       goal: 'Add a green goal square in the bottom-right that the player must reach.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'goal sprite',
+        do: [
+          'Add a green square sprite and lock it to the maze layer.',
+          'Make gx, gy and gs variables and set them to 432, 312 and 24.',
+          'Place it with x equal to gx minus 240 and y equal to 180 minus gy.'
+        ],
+        check: 'The green goal sits in the bottom-right corner of the maze.'
+      },
       points: [
         'The goal is a 24x24 green square at position (432, 312)',
         'In Scratch: <code>if &lt;touching [Goal]?&gt; then</code> checks if you reached it',
@@ -344,6 +389,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Move Counter',
       goal: 'Track how many moves the player makes to reach the goal.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Make a moves variable.',
+          'Change moves by 1 each time an arrow key actually moves the player.',
+          'Reset moves to 0 when a new game starts.'
+        ],
+        check: 'The move counter goes up when you move and resets on a new game.'
+      },
       points: [
         'In Scratch: <code>change [moves] by [1]</code> each time the player moves',
         'Only count frames where the player actually changed position',
@@ -373,6 +428,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Screen and Restart',
       goal: 'Show a win message with the move count when you reach the goal.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Use a touching goal block to detect the win.',
+          'Set gameState to win and show a You made it message with the moves count.',
+          'On key R, go back to the start and set moves to 0.'
+        ],
+        check: 'Reaching the goal shows the win message with your move count, and R restarts.'
+      },
       points: [
         'When the player touches the goal: <code>set [gameState] to [win]</code>',
         'Display "YOU WIN!" with the total move count',

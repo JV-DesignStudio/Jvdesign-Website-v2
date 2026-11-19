@@ -102,6 +102,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-quiz-canvas',
   downloadName: 'my-scratch-quiz.html',
+  engineProject: {
+    href: '/downloads/scratch-quiz-workshop-reference.zip',
+    label: 'Download the Scratch reference project'
+  },
 
   hints: [
     'A question displayed on stage with three answer buttons',
@@ -228,6 +232,17 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Question Display',
       goal: 'Show a question with three answer choices on stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'question sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu and make a question sprite.',
+          'Add qIndex, score and total variables and set score to 0 and total to 5.',
+          'Use a list called questions and a say block to show questions at qIndex plus 1.'
+        ],
+        check: 'The first question appears on stage with three answer choices.'
+      },
       points: [
         'Questions are stored in a list - each has a question, three answers, and which is correct',
         'In Scratch: use a list variable for questions and <code>say</code> blocks to display them',
@@ -257,6 +272,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Click or Press to Answer',
       goal: 'Let players click buttons or press 1, 2, 3 to pick an answer.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'answer buttons',
+        do: [
+          'Make three button sprites or clones labelled 1, 2 and 3.',
+          'Add when this sprite clicked to each button.',
+          'Also add if key 1 pressed, key 2 pressed and key 3 pressed so the keyboard works too.'
+        ],
+        check: 'Clicking a button or pressing 1, 2 or 3 picks that answer.'
+      },
       points: [
         'In Scratch: <code>when this sprite clicked</code> handles button clicks',
         'Keyboard shortcuts (1, 2, 3) give a faster way to answer',
@@ -286,6 +311,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Right or Wrong Feedback',
       goal: 'Show green "Correct!" or red "Wrong!" after each answer.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'question sprite',
+        do: [
+          'Make a feedback variable and a correct answer list.',
+          'If the picked answer matches, change score by 1 and set feedback to Correct!',
+          'Otherwise set feedback to Wrong! and say the right answer.'
+        ],
+        check: 'A right answer turns the feedback green and a wrong one turns it red.'
+      },
       points: [
         'Compare the picked answer to the correct answer stored in the question data',
         'Correct: <code>say [Correct!]</code> in green, add 1 to score',
@@ -315,6 +350,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Question Timer',
       goal: 'Add a 10-second countdown for each question.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'Stage',
+        do: [
+          'Make a timeLeft variable.',
+          'When a new question starts, set timeLeft to 10.',
+          'Add a repeat 10 block with wait 1 second and change timeLeft by -1.'
+        ],
+        check: 'Each question starts at 10 and counts down to zero.'
+      },
       points: [
         'Each question gets 10 seconds - enough to read and think but creates urgency',
         'The timer displays in the bottom-right: "Time: 10"',
@@ -344,6 +389,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Score Tracking',
       goal: 'Track and display the running score throughout the quiz.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'score sprite',
+        do: [
+          'Show the score variable on stage, or use a score sprite that says it.',
+          'Update it after every answer with change score by 1 on a correct answer.',
+          'Keep total set to 5 so the final result can compare against it.'
+        ],
+        check: 'The score is always visible and goes up after a correct answer.'
+      },
       points: [
         'The score shows as "Score: 0" in the bottom-left corner',
         'It updates instantly when a correct answer is given',
@@ -373,6 +428,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Results and Restart',
       goal: 'Show final results with a message based on score, press R to retry.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'question sprite',
+        do: [
+          'At the end, set message to Amazing! for 4 or 5, Good try! for 2 or 3, and Keep practising! below that.',
+          'Say the final message and score on stage.',
+          'On key R, set qIndex to 0, score to 0 and start the quiz again.'
+        ],
+        check: 'The message matches the score, and R starts a new quiz.'
+      },
       points: [
         'After all questions: show "QUIZ COMPLETE!" with the final score',
         'Score 4-5: "Amazing!" / Score 2-3: "Good try!" / Score 0-1: "Keep practising!"',

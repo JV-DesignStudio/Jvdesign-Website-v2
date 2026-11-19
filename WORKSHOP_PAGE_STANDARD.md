@@ -121,6 +121,52 @@ Implementation:
 - `tracks.js` and the finish-banner code can also surface the next track item.
   When they do, the `WS-NEXT` block is still the visible, static fallback.
 
+## Engine parity (the fifth block)
+
+A canvas build-along is the preview, not the product. Every build-along must
+also be followable with the real engine open on another screen, and both routes
+must end with the exact same project.
+
+Required:
+
+- `CW_CONFIG.engineProject` points at a downloadable starter project that opens
+  in the engine. The file must exist in the repo.
+- Every step has an `engine` block with the engine name, the exact file, at
+  least three ordered actions, and a checkpoint the learner can see.
+- The code in the canvas editor is the code that goes into the engine. Do not
+  keep a second engine-only code sample that can drift.
+- The starter project has the scene, nodes and signals pre-wired, so a beginner
+  only fills the functions each step names.
+- A test proves the lane exists and the starter downloads.
+
+Schema:
+
+```js
+engineProject: { href: '/my-starter.zip', label: 'Download the starter project' },
+// inside a step
+engine: {
+  name: 'Godot 4',
+  file: 'res://my-script.gd',
+  intro: 'The scene and signals are already wired.',
+  do: ['Open my-script.gd', 'Find func on_tap()', 'Add ...', 'Press F5'],
+  check: 'Click the button and the label should count up.'
+}
+```
+
+Machine checks:
+
+- `tests/workshop-content-integrity.js` requires the project and a lane on
+  every step for configs not listed in
+  `content/workshop-engine-parity-baseline.json`.
+- `tests/workshop-engine-parity.js` reports the baseline progress.
+- A page-specific lane test, such as
+  `tests/godot-autoclicker-godot-lane.js`, proves the panels render and the
+  starter zip downloads.
+
+Rollout: the baseline lists the configs that existed before the standard. Each
+engine slice removes its configs from the baseline as it adds the lanes. A new
+build-along is never added to the baseline.
+
 ## Layout and accessibility
 
 - Blocks are max 960px wide, centred, with 20px side padding, and collapse under

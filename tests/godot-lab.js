@@ -6,7 +6,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '..');
-const PAGE = 'workshops/godot-lab/index.html';
+const PAGE = process.env.LAB_PAGE || 'workshops/godot-lab/index.html';
 const BOOT_TIMEOUT = 180000;
 let failures = 0;
 function check(name, ok, detail = '') {
@@ -74,14 +74,14 @@ const benign = /HTTPS proxy|set_https_proxy|Failed to load resource|net::ERR_FAI
       sab: typeof SharedArrayBuffer,
       frameSrc: (document.getElementById('godot-frame') || {}).getAttribute('src'),
       loadButton: !!document.querySelector('[data-gl-load]'),
-      download: !!document.querySelector('a[href="starter.zip"]'),
+      download: !!document.querySelector('a[href$=".zip"]'),
       fallback: !!document.querySelector('a[href="https://editor.godotengine.org/latest/"]')
     }));
     check('lab page is cross-origin isolated', lab.isolated === true);
     check('SharedArrayBuffer is available', lab.sab === 'function', lab.sab);
     check('self-hosted editor frame loads', /editor\/index\.html/.test(lab.frameSrc || ''), lab.frameSrc);
     check('load starter button present', lab.loadButton);
-    check('starter download fallback present', lab.download);
+    check('project download fallback present', lab.download);
     check('official editor fallback present', lab.fallback);
 
     const editor = await page.evaluate(() => {

@@ -85,6 +85,7 @@ var WORKSHOP_KEY_TO_ID = {
     'jvds-gml-pong-v2': 'gml-pong-workshop',
     'jvds-gml-rpg-v2': 'gml-rpg-workshop',
     'jvds-gml-shooter-v2': 'gml_shooter_trainer_project',
+    'jvds-godot-autoclicker-v1': 'godot-autoclicker-workshop',
     'jvds-godot-gatekeeper3d-p1-v2': 'godot-gatekeeper-3d-part1',
     'jvds-godot-gatekeeper3d-p2-v2': 'godot-gatekeeper-3d-part2',
     'jvds-godot-gdscript-v2': 'godot-gdscript-essentials',

@@ -72,6 +72,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-js-breakout-canvas',
   downloadName: 'my-breakout-game.html',
+  engineProject: {
+    href: '/downloads/js-breakout-starter.zip',
+    label: 'Download the Breakout starter project'
+  },
 
   hints: [
     {
@@ -187,6 +191,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Canvas & Mouse Paddle',
       goal: 'Set up a 400x500 canvas and make a paddle follow the mouse.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-breakout-game.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find the mousemove handler and check it moves paddle.x with the mouse, clamped to the walls.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'The paddle follows your mouse and stops at both edges of the canvas.'
+      },
       points: [
         '<code>mousemove</code> fires every time the pointer moves - perfect for a paddle',
         '<code>getBoundingClientRect()</code> converts page coordinates to canvas coordinates',
@@ -215,6 +231,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ball & Wall Bounce',
       goal: 'Add a ball that moves with velocity and bounces off three walls.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        do: [
+          'Find the game loop, where ball.x += ball.vx and ball.y += ball.vy run.',
+          'Add the left, right and top wall checks that flip the velocity.',
+          'Save and reload.'
+        ],
+        check: 'The ball bounces off the left, right and top walls instead of leaving the screen.'
+      },
       points: [
         'The ball is an object: <code>{ x, y, r, vx, vy }</code> - position, radius, velocity',
         'Each frame: <code>x += vx</code> and <code>y += vy</code> moves the ball',
@@ -243,6 +269,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Rebound',
       goal: 'Make the ball bounce off the paddle with spin based on hit position.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        do: [
+          'Find the paddle collision check in the loop.',
+          'Send the ball back up with a negative vy, then set vx from where it hit the paddle.',
+          'Nudge the ball above the paddle so it cannot stick.'
+        ],
+        check: 'Hitting the paddle edges sends the ball out at an angle, and the middle sends it straight up.'
+      },
       points: [
         'Check if the ball overlaps the paddle rectangle each frame',
         'On hit, reverse <code>vy</code> so the ball goes back up',
@@ -271,6 +307,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Bricks & Glow',
       goal: 'Create a grid of colourful bricks that shatter when the ball hits them.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        do: [
+          'Find the brick hit loop in the update step.',
+          'Test the ball box against each brick that is still alive.',
+          'On a hit, mark the brick dead, flip ball.vy and add 10 to the score.'
+        ],
+        check: 'Bricks vanish when the ball reaches them and the score goes up by ten.'
+      },
       points: [
         'Bricks are stored in an array - each has <code>{ x, y, w, h, alive, color }</code>',
         'Draw each alive brick with <code>shadowBlur</code> for a neon glow effect',
@@ -299,6 +345,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Particle Explosions',
       goal: 'Spawn particles that burst out when a brick breaks.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        do: [
+          'Add the particles array near the other game variables.',
+          'Push eight particles from the middle of a broken brick.',
+          'Move and fade them in the loop, then draw them with globalAlpha.'
+        ],
+        check: 'Every brick you break throws out a little burst of its own colour.'
+      },
       points: [
         'When a brick dies, push 8 small particles into a <code>particles</code> array',
         'Each particle has random velocity, a colour matching the brick, and a <code>life</code> countdown',
@@ -327,6 +383,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Lives, Levels & Ship It',
       goal: 'Add 3 lives, level progression with speed increase, and a restart flow.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-breakout-game.html',
+        do: [
+          'Find where the ball falls below the paddle.',
+          'Lose a life, reset the ball, and set dead when lives reach zero.',
+          'When every brick is gone, raise the level and rebuild the wall; after level 3 show the win screen.'
+        ],
+        check: 'Missing the ball costs a life, clearing the wall starts a faster level, and the third clear wins.'
+      },
       points: [
         'When the ball falls off the bottom, lose a life and reset the ball - at 0 lives, game over',
         'Clear all bricks to advance a level - speed increases and bricks respawn',

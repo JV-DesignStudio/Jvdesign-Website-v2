@@ -185,6 +185,17 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Paddle',
       goal: 'Place a white paddle at the bottom of the stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'paddle sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu and draw a wide white paddle costume.',
+          'Make padX, padY, padW and padH variables and set them to 190, 340, 100 and 12.',
+          'Place the paddle with x equal to padX minus 240 and y equal to 180 minus padY.'
+        ],
+        check: 'The white paddle sits near the bottom of the stage.'
+      },
       points: [
         'The Scratch stage is 480x360 pixels',
         'The paddle is a white rectangle: 100 wide, 12 tall, at y=340',
@@ -214,6 +225,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Paddle Movement',
       goal: 'Slide the paddle left and right with arrow keys.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'paddle sprite',
+        do: [
+          'Add a forever loop with an if block for the left arrow.',
+          'Change x by -7 for left and 7 for right.',
+          'Keep x between -240 and 240 so the paddle cannot leave the stage.'
+        ],
+        check: 'Left and right arrows slide the paddle and it stops at both edges.'
+      },
       points: [
         'In Scratch: <code>if &lt;key [left arrow] pressed?&gt; then change x by [-7]</code>',
         'Speed is 7 pixels per frame for responsive control',
@@ -243,6 +264,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Bouncing Ball',
       goal: 'Launch a ball that bounces off the top and side walls.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'ball sprite',
+        do: [
+          'Make bdx and bdy variables for the ball speed.',
+          'In a forever loop, change x by bdx and y by bdy.',
+          'If the ball touches a side or the top edge, multiply the matching speed by -1.'
+        ],
+        check: 'The ball moves and bounces off the top and both side walls.'
+      },
       points: [
         'The ball starts at the centre: bx=240, by=180',
         'It moves by bdx (horizontal) and bdy (vertical) each frame',
@@ -272,6 +303,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Paddle Bounce',
       goal: 'Bounce the ball off the paddle and score a point.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'ball sprite',
+        do: [
+          'Add a touching paddle block to the ball loop.',
+          'When they touch, change score by 1 and set bdy to bdy times -1.',
+          'Nudge the ball just above the paddle so it cannot stick.'
+        ],
+        check: 'The ball bounces off the paddle and every hit adds a point.'
+      },
       points: [
         'Check: ball bottom reaches paddle top AND ball x is within paddle width',
         'On bounce: <code>bdy *= -1</code> sends the ball back up, score += 1',
@@ -301,6 +342,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Lives System',
       goal: 'Lose a life when the ball passes the paddle, game over at zero.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'ball sprite',
+        do: [
+          'When the ball reaches the bottom edge, change lives by -1.',
+          'If lives is 0 or less, set gameState to over and stop the ball.',
+          'Otherwise send the ball back to the middle and launch it again.'
+        ],
+        check: 'A missed ball costs a life, and the game ends at zero lives.'
+      },
       points: [
         'When <code>by + br >= 360</code> the ball has passed the bottom',
         'Subtract 1 life and reset the ball to the centre',
@@ -330,6 +381,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Game Over & Restart',
       goal: 'Show the final score and restart with R.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'Stage',
+        do: [
+          'When gameState becomes over, show the final score in a say bubble.',
+          'On key R, set score to 0, lives to 3 and gameState to play.',
+          'Send the ball and paddle back to their starting places.'
+        ],
+        check: 'The final score is shown, and R starts a fresh game.'
+      },
       points: [
         'In the "over" state: stop updating ball and paddle positions',
         'Display "GAME OVER" with the final score at centre stage',

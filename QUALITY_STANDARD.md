@@ -81,6 +81,12 @@ further step: something to customise, break or extend independently. This is
 the `Then extend it` field of the outcome panel, not a second list. It is the
 signal that the workshop builds independence, not copy-paste dependency.
 
+**Engine parity.** A build-along works in its own canvas and with the real
+engine open on another screen. Every step names the engine file, the exact
+clicks and a checkpoint, and a downloadable starter project opens in the engine.
+The canvas code is the engine code. See `WORKSHOP_PAGE_STANDARD.md` (engine
+parity).
+
 **Lumo present.** Lumo appears in the copy, a callout, or a hint panel at
 at least one meaningful point in the learning journey.
 

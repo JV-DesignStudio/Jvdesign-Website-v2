@@ -104,6 +104,10 @@ function generateWorkshops() {
     const title = extract(html, /<title>([^<|]+)/);
     const desc = extract(html, /<meta\s+name="description"\s+content="([^"]+)"/);
     const themeColor = extract(html, /<meta\s+name="theme-color"\s+content="([^"]+)"/);
+    /* A3070: a build-along can be browser-first even when its engine needs an
+       install. The page declares that explicitly so the catalogue and the needs
+       banner do not tell a learner to install the app before they start. */
+    const needs = extract(html, /<meta\s+name=["']jvds-needs["']\s+content=["']([^"']+)["']/);
 
     // Determine engine from filename prefix
     let engine = 'General';
@@ -187,7 +191,8 @@ function generateWorkshops() {
       steps,
       themeColor: tc,
       cover: cover,
-      url: `/workshops/${rel}`
+      url: `/workshops/${rel}`,
+      ...(needs ? { needs } : {})
     });
 
     if (!engines[engine]) engines[engine] = 0;

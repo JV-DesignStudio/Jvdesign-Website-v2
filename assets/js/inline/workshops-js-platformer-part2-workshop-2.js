@@ -78,6 +78,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-js-platformer-part2-canvas',
   downloadName: 'my-platformer-part2.html',
+  engineProject: {
+    href: '/downloads/js-platformer-part2-workshop-reference.zip',
+    label: 'Download the finished platformer project'
+  },
 
   hints: [
     {
@@ -188,6 +192,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Your Own Engine',
       goal: 'Rebuild the core game loop: canvas, player, gravity, arrow movement and ground collision.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-platformer-part2.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find function loop() and check gravity, arrow movement and the requestAnimationFrame call.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'The player falls, lands on the ground and moves left and right with the arrow keys.'
+      },
       points: [
         'The <code>&lt;canvas&gt;</code> runs at 600x400 pixels - wider than Flappy Bird for side-scrolling',
         'The player object tracks position, velocity, size and a <code>facing</code> direction',
@@ -216,6 +232,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Double Jump',
       goal: 'Replace the simple ground-only jump with a jumpsLeft counter that allows two jumps.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        do: [
+          'Find the jump code inside loop().',
+          'Replace the single jump with the jumpsLeft counter and the justPressed edge check.',
+          'Reset jumpsLeft to 2 whenever the player lands.'
+        ],
+        check: 'Two Up presses give two jumps, and a third does nothing until you land.'
+      },
       points: [
         'Instead of a boolean <code>onGround</code> check, track <code>jumpsLeft</code> (starts at 2)',
         'Each jump press spends one jump - first jump from the ground, second in mid-air',
@@ -244,6 +270,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Wall Slide & Wall Jump',
       goal: 'Detect wall contact, slow the fall speed, and kick the player away from the wall on jump.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        do: [
+          'Find the platform collision code.',
+          'Add the wall overlap check that sets onWall to -1 or 1 and slows the fall.',
+          'Use onWall to push the player away when they jump.'
+        ],
+        check: 'Holding into a wall slows the fall, and Up pushes you away from it.'
+      },
       points: [
         'Check if the player overlaps a wall rectangle while moving sideways',
         'While touching a wall: slow the fall to <code>vy * 0.4</code> for a slide effect',
@@ -272,6 +308,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Parallax Scrolling',
       goal: 'Draw layered backgrounds at different scroll speeds to create an illusion of depth.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        do: [
+          'Find the background draw code.',
+          'Draw each layer at s.x - camX * layer.speed.',
+          'Keep the player and platforms at full speed.'
+        ],
+        check: 'Far shapes drift slowly and near shapes drift fast as the camera moves.'
+      },
       points: [
         'Three layers: far clouds (0.1x speed), mid hills (0.3x speed), near trees (0.6x speed)',
         'Each layer draws its shapes offset by <code>camX * layer.speed</code>',
@@ -300,6 +346,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Levels as Text',
       goal: 'Define levels with ASCII strings where # = solid, C = coin, E = enemy, . = empty.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        do: [
+          'Find the levelStr array.',
+          'Loop each row and character and push tiles, coins and enemies.',
+          'Use TILE for every position so the map lines up.'
+        ],
+        check: 'The level matches the ASCII map: platforms, coins and enemies appear where the letters are.'
+      },
       points: [
         'Each row of the level string is a row of tiles on screen',
         '<code>charAt(c)</code> reads a single character at column c from the string',
@@ -328,6 +384,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Enemies, Timer & Finish',
       goal: 'Stomp enemies from above, race a countdown timer, and win when all coins are collected.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-platformer-part2.html',
+        do: [
+          'Find the enemy update and the HUD draw.',
+          'Add the stomp check, count the timer down with Date.now(), and test that every coin is collected.',
+          'Show the win screen when the last coin is gone.'
+        ],
+        check: 'Stomping an enemy bounces the player, the timer counts down, and every coin collected wins.'
+      },
       points: [
         'Stomp check: if the player lands on an enemy from above (vy > 0), the enemy dies and the player bounces',
         'The timer counts down from 60 using real elapsed time - not frame count',

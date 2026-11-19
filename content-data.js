@@ -1474,6 +1474,39 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-mod-studio.html"
     },
     {
+      "id": "godot-autoclicker-canvas",
+      "title": "Biscuit Tycoon Build Canvas",
+      "desc": "Build a Biscuit Tin style auto clicker in the browser. Tap for biscuits, hire auto tappers and buy upgrades. Ages 8+.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "tycoon"
+      ],
+      "steps": 6,
+      "themeColor": "#c98a2e",
+      "cover": "og/learn.webp",
+      "url": "/workshops/godot-autoclicker-canvas.html"
+    },
+    {
+      "id": "godot-autoclicker-workshop",
+      "title": "Biscuit Tycoon! Build an Auto Clicker in Godot",
+      "desc": "Build your own auto clicker in Godot. Tap for biscuits, hire auto tappers, buy upgrades and add a golden bonus. Free browser build-along, Ages 8+.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "tycoon"
+      ],
+      "steps": 6,
+      "themeColor": "#c98a2e",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/godot-autoclicker-workshop.html",
+      "needs": "browser"
+    },
+    {
       "id": "godot-racing-workshop",
       "title": "Build a Racing Game in Godot: Free Beginner Tutorial",
       "desc": "Build a top-down racing game in Godot from scratch. Free step-by-step beginner tutorial for home and classroom. No experience needed.",
@@ -5641,8 +5674,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-17T16:25:25.000Z",
-    "workshops": 283,
+    "generated": "2026-11-19T13:46:42.000Z",
+    "workshops": 285,
     "games": 16,
     "tools": 50,
     "books": 5,
@@ -5653,7 +5686,7 @@ window.JVDS_CONTENT = {
       "GDevelop": 7,
       "General": 52,
       "GML/GameMaker": 6,
-      "Godot": 17,
+      "Godot": 19,
       "Java": 8,
       "JavaScript": 6,
       "Minecraft": 18,

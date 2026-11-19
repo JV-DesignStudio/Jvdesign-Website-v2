@@ -12,30 +12,37 @@
   if (/-(cheatsheet|studio|landing|learn|start)\.html$/.test(p)) return;
   if (/^\/workshops\/(engine-|learn|start-here|my-first-series|my-progress|my-achievements|tiny-learners)/.test(p)) return;
 
+  // A3070: a canvas build-along runs in the browser even when its engine app is
+  // the optional next step. Respect the page's explicit browser-first marker.
+  var browserFirst = !!document.querySelector('meta[name="jvds-needs"][content="browser"]') ||
+    !!document.querySelector('script[src*="workshop-canvas-engine"]');
+
   // Detect compatibility tier from URL
   var tier = 'browser';
-  if (/minecraft-/.test(p)) tier = 'paid-game';
-  else if (/stardew-/.test(p)) tier = 'paid-game';
-  else if (/terraria-/.test(p)) tier = 'paid-game';
-  else if (/pico8/.test(p)) tier = 'pico8';
-  else if (/roblox-/.test(p)) tier = 'account';
-  else if (/tinkercad-/.test(p)) tier = 'browser-account';
-  else if (/scratch-/.test(p)) tier = 'browser-account';
-  else if (/blender-/.test(p)) tier = 'download';
-  else if (/godot-/.test(p)) tier = 'download';
-  else if (/defold-/.test(p)) tier = 'download';
-  else if (/gdevelop-/.test(p)) tier = 'download';
-  else if (/python-/.test(p)) tier = 'download';
-  else if (/\bjava-/.test(p)) tier = 'download';
-  else if (/cpp-/.test(p)) tier = 'download';
-  else if (/gml-/.test(p)) tier = 'download';
-  else if (/unity-/.test(p)) tier = 'download';
-  else if (/unreal-/.test(p)) tier = 'download';
-  else if (/mugen-/.test(p)) tier = 'download';
-  else if (/openrct2-/.test(p)) tier = 'download';
+  if (!browserFirst) {
+    if (/minecraft-/.test(p)) tier = 'paid-game';
+    else if (/stardew-/.test(p)) tier = 'paid-game';
+    else if (/terraria-/.test(p)) tier = 'paid-game';
+    else if (/pico8/.test(p)) tier = 'pico8';
+    else if (/roblox-/.test(p)) tier = 'account';
+    else if (/tinkercad-/.test(p)) tier = 'browser-account';
+    else if (/scratch-/.test(p)) tier = 'browser-account';
+    else if (/blender-/.test(p)) tier = 'download';
+    else if (/godot-/.test(p)) tier = 'download';
+    else if (/defold-/.test(p)) tier = 'download';
+    else if (/gdevelop-/.test(p)) tier = 'download';
+    else if (/python-/.test(p)) tier = 'download';
+    else if (/\bjava-/.test(p)) tier = 'download';
+    else if (/cpp-/.test(p)) tier = 'download';
+    else if (/gml-/.test(p)) tier = 'download';
+    else if (/unity-/.test(p)) tier = 'download';
+    else if (/unreal-/.test(p)) tier = 'download';
+    else if (/mugen-/.test(p)) tier = 'download';
+    else if (/openrct2-/.test(p)) tier = 'download';
+  }
 
   // Fallback: check hero-eyebrow / hero-badge / title for engine names not in URL
-  if (tier === 'browser') {
+  if (!browserFirst && tier === 'browser') {
     var heroText = (document.querySelector('.hero-eyebrow,.hero-badge,.hero-inner h1') || {}).textContent || '';
     var titleText = document.title || '';
     var combined = (heroText + ' ' + titleText).toLowerCase();

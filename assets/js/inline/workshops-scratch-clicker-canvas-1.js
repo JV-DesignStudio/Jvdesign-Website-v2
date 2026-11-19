@@ -83,6 +83,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-clicker-canvas',
   downloadName: 'my-scratch-clicker.html',
+  engineProject: {
+    href: '/downloads/scratch-clicker-workshop-reference.zip',
+    label: 'Download the Scratch reference project'
+  },
 
   hints: [
     'A colourful circle target in the centre of the stage',
@@ -196,6 +200,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Target Sprite',
       goal: 'Draw a colourful bullseye target in the centre of the stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'target sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu in a new tab and draw a small bullseye costume.',
+          'Make tx, ty and tr variables.',
+          'Set tx to 200, ty to 140 and tr to 35.',
+          'Scratch x is tx minus 240 and y is 180 minus ty, so use those sums in a go to block.'
+        ],
+        check: 'The bullseye sits in the middle of the stage.'
+      },
       points: [
         'The target is three circles layered: gold outer, red middle, white centre',
         'In Scratch this would be a sprite with a bullseye costume',
@@ -225,6 +241,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Click to Move',
       goal: 'When clicked, the target jumps to a random position on stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'target sprite',
+        do: [
+          'Add a when this sprite clicked hat block.',
+          'Set tx to pick random 50 to 430 and ty to pick random 50 to 310.',
+          'Move the sprite with the same go to sums you used in step 1.'
+        ],
+        check: 'Clicking the target makes it jump somewhere new on the stage.'
+      },
       points: [
         'In Scratch: <code>when this sprite clicked</code> starts the click handler',
         'Use <code>go to x: (pick random -180 to 180) y: (pick random -120 to 120)</code> to move randomly',
@@ -254,6 +280,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Score Counter',
       goal: 'Add 1 to the score each time you successfully click the target.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'target sprite',
+        do: [
+          'On the green flag, set score to 0.',
+          'Inside the when this sprite clicked script, change score by 1.',
+          'Show the score with a variable readout or a label sprite.'
+        ],
+        check: 'Every click adds one to the score, and the green flag resets it.'
+      },
       points: [
         'In Scratch: <code>change [score] by [1]</code> inside the click handler',
         'The score displays in the top-left corner in white text',
@@ -283,6 +319,17 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Countdown Timer',
       goal: 'Add a 30-second countdown. Game over when time runs out.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'Stage',
+        do: [
+          'Make a timeLeft variable.',
+          'On the green flag set timeLeft to 30.',
+          'Add a repeat 30 block with wait 1 second and change timeLeft by -1.',
+          'When timeLeft reaches 0, set gameState to over and stop the other scripts.'
+        ],
+        check: 'The timer counts from 30 to 0 and the round ends at zero.'
+      },
       points: [
         'In Scratch: use a <code>repeat until [timer > 30]</code> or a custom countdown variable',
         'The timer ticks down once per second from 30 to 0',
@@ -312,6 +359,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Shrinking Target',
       goal: 'Make the target smaller as the score grows for increasing difficulty.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'target sprite',
+        do: [
+          'Set tr to 35 - score each time the score changes.',
+          'Keep tr at least 15 with a minimum block.',
+          'Set the sprite size to tr times a sensible scale so it shrinks on screen.'
+        ],
+        check: 'The target gets smaller as your score climbs and never disappears.'
+      },
       points: [
         'In Scratch: <code>set size to (100 - score * 2) %</code> shrinks the costume',
         'On canvas we reduce the radius: tr = 35 - score (minimum 15)',
@@ -341,6 +398,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Game Over and Restart',
       goal: 'Show the final score when time runs out, press R to play again.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'Stage',
+        do: [
+          'When gameState becomes over, show a Game Over sprite with the final score.',
+          'Add a when key R pressed script.',
+          'Set score to 0, timeLeft to 30, tr to 35 and gameState to play.'
+        ],
+        check: 'The final score is shown at the end, and R starts a fresh round.'
+      },
       points: [
         'When gameState is "over": display "TIME UP!" and the final score',
         'Pressing R resets score to 0, time to 30, target size to 35',

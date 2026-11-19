@@ -42,6 +42,11 @@ const EXTRAS = {
   'python-dodge-canvas.html': 'python-maze-canvas.html',
   'python-maze-canvas.html': 'python-breakout-canvas.html',
   'js-snake-canvas.html': 'js-platformer-canvas.html',
+  'godot-gdscript-essentials-canvas.html': 'godot-tutorial-canvas.html',
+  'godot-tutorial-canvas.html': 'godot-platformer-canvas.html',
+  'godot-platformer-canvas.html': 'godot-puzzle-canvas.html',
+  'godot-puzzle-canvas.html': 'godot-racing-2-canvas.html',
+  'godot-racing-2-canvas.html': 'godot-gatekeeper-3d-part1-canvas.html',
 };
 
 function shortTitle(file) {

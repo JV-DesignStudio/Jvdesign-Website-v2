@@ -101,6 +101,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-platformer-canvas',
   downloadName: 'my-scratch-platformer.html',
+  engineProject: {
+    href: '/downloads/scratch-platformer-workshop-reference.zip',
+    label: 'Download the Scratch reference project'
+  },
 
   hints: [
     'A yellow player sprite standing on a green ground platform',
@@ -231,6 +235,17 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Player Sprite',
       goal: 'Draw a yellow player on the green ground platform.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu and draw a yellow square costume.',
+          'Make pw and ph variables, then set them to 24.',
+          'Place the player with x equal to 40 minus 240 and y equal to 180 minus 280.'
+        ],
+        check: 'The yellow player stands on the green ground platform.'
+      },
       points: [
         'The player is a 24x24 yellow square with two tiny eye dots',
         'It starts on the ground platform at position (40, 280)',
@@ -260,6 +275,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Left and Right Running',
       goal: 'Move the player left and right with arrow keys.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Add a forever loop with an if block for the left arrow.',
+          'Change x by -4 when left is pressed and by 4 when right is pressed.',
+          'Use a costume flip or point in direction so the player faces the way it runs.'
+        ],
+        check: 'Left and right arrows run the player along the ground.'
+      },
       points: [
         'In Scratch: <code>if &lt;key [right arrow] pressed?&gt; then change x by [4]</code>',
         'The player moves at 4 pixels per frame - fast enough to feel responsive',
@@ -289,6 +314,17 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Gravity and Platforms',
       goal: 'Add gravity that pulls the player down and platforms that catch them.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Make a pvy variable.',
+          'Change pvy by 0.5 inside the forever loop, then change y by pvy.',
+          'Draw the platforms as colours and use a touching colour block to land.',
+          'On landing, set pvy to 0 and onGround to true.'
+        ],
+        check: 'The player falls and stops on each platform instead of dropping through.'
+      },
       points: [
         'Gravity adds 0.5 to vertical speed each frame: <code>change [pvy] by [0.5]</code>',
         'When the player lands on a platform, stop falling: <code>set [pvy] to [0]</code>',
@@ -318,6 +354,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Jumping',
       goal: 'Press space or up arrow to jump - but only when on the ground.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'Add an if block for the space key pressed.',
+          'Only jump when onGround is true.',
+          'Set pvy to -9 so the player rises, then let gravity pull it back down.'
+        ],
+        check: 'Space jumps from a platform, and pressing it in mid-air does nothing.'
+      },
       points: [
         'Jump by setting a negative vertical speed: <code>set [pvy] to [-9]</code>',
         'Only allow jumping when <code>onGround</code> is true - no double jumps',
@@ -347,6 +393,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Collectible Coins',
       goal: 'Add gold coins on platforms that the player can collect.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'coin sprite',
+        do: [
+          'Add a gold coin sprite and place copies on the platforms.',
+          'When the player touches a coin, change score by 1 and hide that coin.',
+          'Set totalCoins to 5 so the game knows when every coin is gone.'
+        ],
+        check: 'Touching a coin adds one to the score and the coin disappears.'
+      },
       points: [
         'Five gold coins float above different platforms',
         'In Scratch: <code>if &lt;touching [Coin]?&gt; then hide, change score by 1</code>',
@@ -376,6 +432,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Screen and Restart',
       goal: 'Collect all 5 coins to win. Press R to reset and play again.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'player sprite',
+        do: [
+          'When score equals 5, set gameState to win and show a You win message.',
+          'Stop the movement scripts so the player cannot keep running.',
+          'On key R, set score to 0, show every coin again and go back to the start.'
+        ],
+        check: 'Collecting the fifth coin shows the win message, and R starts a fresh game.'
+      },
       points: [
         'When score reaches 5: <code>set [gameState] to [win]</code>',
         'Display "ALL COINS COLLECTED!" in gold text',

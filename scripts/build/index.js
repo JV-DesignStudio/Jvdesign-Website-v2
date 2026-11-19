@@ -26,6 +26,7 @@ const STEPS = [
   { id: 'content',  label: 'Content  (scan -> content/*.json -> content-data.js)', fn: () => require('./content').runContent() },
   { id: 'outcomes', label: 'Outcomes (workshop outcome statements)',              fn: () => { require('../build-workshop-outcomes').build(); require('../apply-workshop-outcomes').apply(); } },
   { id: 'catalogue', label: 'Catalogue (workshop hub from content/workshops.json)', fn: () => require('../generate-workshop-catalogue').generate() },
+  { id: 'kits',     label: 'Kits     (browser + engine tracks, remix prompts)',       fn: () => require('../build-workshop-kits').write() },
   { id: 'tools',    label: 'Tools hub (grid + stats from content/tools.json)',     fn: () => require('./tools-hub').runToolsHub() },
   { id: 'redirects', label: 'Redirects (redirects.json -> stubs + 404 routes)',   fn: () => require('./redirects').runRedirects() },
   { id: 'partials', label: 'Partials (inject nav/footer)',                        fn: () => require('./partials').runPartials() },

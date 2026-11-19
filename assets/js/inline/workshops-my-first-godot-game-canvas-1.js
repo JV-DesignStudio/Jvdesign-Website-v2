@@ -10,30 +10,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
    GDScript syntax runs in the canvas iframe)
    =================================================== */
 function gdscriptToJs(code) {
-  return code
-    .replace(/#.*$/gm, '')
-    .replace(/\bprint\s*\(/g, 'console.log(')
-    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
-    .replace(/\brandf\(\)/g, 'Math.random()')
-    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
-    .replace(/\babs\(/g, 'Math.abs(')
-    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
-    .replace(/\.position\.x/g, '.x')
-    .replace(/\.position\.y/g, '.y')
-    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
-    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
-    .replace(/\belif\b/g, '} else if')
-    .replace(/\bif\s+(.+):/g, 'if($1){')
-    .replace(/\belse\s*:/g, '} else {')
-    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
-    .replace(/\bwhile\s+(.+):/g, 'while($1){')
-    .replace(/\bvar\b/g, 'let')
-    .replace(/\btrue\b/g, 'true')
-    .replace(/\bfalse\b/g, 'false')
-    .replace(/\bnull\b/g, 'null');
+  return window.CWTranspileGDScript ? window.CWTranspileGDScript(code) : code;
 }
 
 /* ===================================================
@@ -92,6 +69,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-godot-canvas',
   downloadName: 'my-first-godot-game.html',
+  engineProject: { href: '/workshops/godot-lab/index.html?project=starter', label: 'Build this project in the Godot Lab' },
   nextStep: { url: '/workshops/godot-platformer-canvas.html', label: 'Godot Platformer' },
 
   hints: [

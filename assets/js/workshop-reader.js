@@ -247,8 +247,8 @@
   // ── INIT ─────────────────────────────────────────────────────────────
   function init() {
     buildTOC();
-    // Next Quest needs playerProfile for "done" state - wait a tick
-    setTimeout(buildNextQuest, 300);
+    // Recommendations now come from assets/js/workshop-recommend.js (A2620),
+    // which runs on every workshop page and shows three next steps.
   }
 
   if (document.readyState === 'loading') {

@@ -1,37 +1,14 @@
 'use strict';
 
 function gdscriptToJs(code) {
-  return code
-    .replace(/#.*$/gm, '')
-    .replace(/\bprint\s*\(/g, 'console.log(')
-    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
-    .replace(/\brandf\(\)/g, 'Math.random()')
-    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
-    .replace(/\babs\(/g, 'Math.abs(')
-    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
-    .replace(/\.position\.x/g, '.x')
-    .replace(/\.position\.y/g, '.y')
-    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
-    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
-    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
-    .replace(/\belif\b/g, '} else if')
-    .replace(/\bif\s+(.+):/g, 'if($1){')
-    .replace(/\belse\s*:/g, '} else {')
-    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
-    .replace(/\bwhile\s+(.+):/g, 'while($1){')
-    .replace(/\bvar\b/g, 'let')
-    .replace(/\btrue\b/g, 'true')
-    .replace(/\bfalse\b/g, 'false')
-    .replace(/\bnull\b/g, 'null');
+  return window.CWTranspileGDScript ? window.CWTranspileGDScript(code, { tutorialVars: true }) : code;
 }
 
 var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
 var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
 var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
 
-var PLAYER_VARS = 'let px=200,py=200,pAngle=0,speed=3;';
+var PLAYER_VARS = 'let px=200,py=200,pAngle=0,speed=3,vx=0,vy=0;';
 var TRAIL_VARS = 'let trail=[];';
 var COIN_VARS = 'let coins=[];for(var ci=0;ci<8;ci++)coins.push({x:40+Math.floor(Math.random()*7)*46,y:40+Math.floor(Math.random()*7)*46,active:true});';
 var WIN_VARS = 'let score=0,gameWon=false;';
@@ -48,12 +25,59 @@ var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
     'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
     'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
 
-var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,400,400);' +
-  'ctx.strokeStyle="#1e293b";ctx.lineWidth=1;for(var gi=0;gi<400;gi+=40){ctx.beginPath();ctx.moveTo(gi,0);ctx.lineTo(gi,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi);ctx.lineTo(400,gi);ctx.stroke()}';
-var DRAW_TRAIL = 'for(var ti=0;ti<trail.length;ti++){var alpha=ti/trail.length*0.5;ctx.fillStyle="rgba(96,165,250,"+alpha+")";ctx.beginPath();ctx.arc(trail[ti].x,trail[ti].y,4*(ti/trail.length),0,Math.PI*2);ctx.fill()}';
-var DRAW_COINS = 'for(var cii=0;cii<coins.length;cii++){if(coins[cii].active){ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(coins[cii].x,coins[cii].y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("🪙",coins[cii].x,coins[cii].y+4)}}';
-var DRAW_PLAYER = 'ctx.save();ctx.translate(px,py);ctx.rotate(pAngle);ctx.fillStyle="#60a5fa";ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-8,8);ctx.lineTo(-8,-8);ctx.closePath();ctx.fill();ctx.restore();';
-var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("🪙 " + score + " / 8",8,20);';
+/* A3069: the three choices on the design card are real. They set the player
+   colour, the game name in the HUD and the starting speed. The values are read
+   at preview time, so changing them before the build changes the game. */
+var DESIGN_COLOURS = { blue: '#60a5fa', purple: '#a78bfa', green: '#4ade80', red: '#f87171', orange: '#fb923c', teal: '#2dd4bf' };
+var DESIGN_SPEEDS = { easy: 2, normal: 3, hard: 5 };
+
+function readDesign() {
+  try {
+    if (window.CW_DESIGN) return window.CW_DESIGN;
+    return JSON.parse(localStorage.getItem('cw_design_godot_tutorial') || '{}') || {};
+  } catch (e) { return {}; }
+}
+
+function designName() {
+  var n = String(readDesign().designName || '').trim();
+  return n ? n.slice(0, 24) : 'Star Collector';
+}
+
+function designColour() {
+  return DESIGN_COLOURS[readDesign().designColour] || DESIGN_COLOURS.blue;
+}
+
+function designSpeed() {
+  return DESIGN_SPEEDS[readDesign().designSpeed] || 3;
+}
+
+function darken(hex, factor) {
+  var n = parseInt(hex.slice(1), 16);
+  var r = Math.round(((n >> 16) & 255) * factor);
+  var g = Math.round(((n >> 8) & 255) * factor);
+  var b = Math.round((n & 255) * factor);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+var DRAW_BG, DRAW_TRAIL, DRAW_COINS, DRAW_PLAYER, DRAW_HUD, DRAW_WIN;
+
+function applyDesign() {
+  var c = designColour();
+  var bg = darken(c, 0.16);
+  var name = designName().replace(/["\\]/g, '');
+
+  PLAYER_VARS = 'let px=200,py=200,pAngle=0,speed=' + designSpeed() + ',vx=0,vy=0;';
+  DRAW_BG = 'ctx.fillStyle=' + JSON.stringify(bg) + ';ctx.fillRect(0,0,400,400);' +
+    'ctx.strokeStyle=' + JSON.stringify(c) + ';ctx.globalAlpha=.12;ctx.lineWidth=1;' +
+    'for(var gi=0;gi<400;gi+=40){ctx.beginPath();ctx.moveTo(gi,0);ctx.lineTo(gi,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi);ctx.lineTo(400,gi);ctx.stroke()}' +
+    'ctx.globalAlpha=1;';
+  DRAW_TRAIL = 'for(var ti=0;ti<trail.length;ti++){var alpha=ti/trail.length*0.5;ctx.fillStyle=' + JSON.stringify(c) + ';ctx.globalAlpha=alpha;ctx.beginPath();ctx.arc(trail[ti].x,trail[ti].y,4*(ti/trail.length),0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;';
+  DRAW_COINS = 'for(var cii=0;cii<coins.length;cii++){if(coins[cii].active){ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(coins[cii].x,coins[cii].y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("🪙",coins[cii].x,coins[cii].y+4)}}';
+  DRAW_PLAYER = 'ctx.save();ctx.translate(px,py);ctx.rotate(pAngle);ctx.fillStyle=' + JSON.stringify(c) + ';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-8,8);ctx.lineTo(-8,-8);ctx.closePath();ctx.fill();ctx.globalAlpha=.35;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();ctx.restore();';
+  DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 13px monospace";ctx.textAlign="left";ctx.fillText(' + JSON.stringify(name) + ',8,20);' +
+    'ctx.textAlign="right";ctx.fillText("🪙 " + score + " / 8",392,20);ctx.textAlign="left";';
+  DRAW_WIN = 'if(gameWon){ctx.fillStyle="rgba(34,197,94,0.25)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 26px monospace";ctx.textAlign="center";ctx.fillText(' + JSON.stringify(name + ' complete!') + ',200,180);ctx.font="15px monospace";ctx.fillText("You collected all 8 coins. Refresh to play again.",200,215)}';
+}
 
 function wbWrap(presetup, blobSrc, afterBlob) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
@@ -62,6 +86,8 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-tutorial-canvas',
   downloadName: 'my-godot-tutorial.html',
+  engineProject: { href: '/workshops/godot-lab/index.html?project=godot-tutorial', label: 'Build this project in the Godot Lab' },
+  previewSolutionWhenBlank: true,
   nextStep: { url: '/workshops/godot-world-workshop.html', label: 'Godot World' },
 
   hints: [
@@ -76,6 +102,7 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         gdscriptToJs(u),
@@ -85,6 +112,7 @@ window.CW_CONFIG = {
       );
     },
     2: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
@@ -96,11 +124,12 @@ window.CW_CONFIG = {
       );
     },
     3: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'var vx=0,vy=0;' +
+        'vx=0;vy=0;' +
         'if(leftHeld)vx=-speed;if(rightHeld)vx=speed;if(upHeld)vy=-speed;if(downHeld)vy=speed;' +
         'px+=vx;py+=vy;' +
         'if(vx!==0||vy!==0)pAngle=Math.atan2(vy,vx);' +
@@ -111,11 +140,12 @@ window.CW_CONFIG = {
       );
     },
     4: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'var vx=0,vy=0;' +
+        'vx=0;vy=0;' +
         'if(leftHeld)vx=-speed;if(rightHeld)vx=speed;if(upHeld)vy=-speed;if(downHeld)vy=speed;' +
         'px+=vx;py+=vy;' +
         'if(vx!==0||vy!==0)pAngle=Math.atan2(vy,vx);' +
@@ -127,11 +157,12 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'var vx=0,vy=0;' +
+        'vx=0;vy=0;' +
         'if(leftHeld)vx=-speed;if(rightHeld)vx=speed;if(upHeld)vy=-speed;if(downHeld)vy=speed;' +
         'px+=vx;py+=vy;' +
         'if(vx!==0||vy!==0)pAngle=Math.atan2(vy,vx);' +
@@ -144,12 +175,13 @@ window.CW_CONFIG = {
       );
     },
     6: function(u) {
+      applyDesign();
       return wbWrap(
         SETUP + PLAYER_VARS + TRAIL_VARS + COIN_VARS + WIN_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(!gameWon){' +
-        'var vx=0,vy=0;' +
+        'vx=0;vy=0;' +
         'if(leftHeld)vx=-speed;if(rightHeld)vx=speed;if(upHeld)vy=-speed;if(downHeld)vy=speed;' +
         'px+=vx;py+=vy;' +
         'if(vx!==0||vy!==0)pAngle=Math.atan2(vy,vx);' +
@@ -160,7 +192,7 @@ window.CW_CONFIG = {
         'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_TRAIL + DRAW_COINS + DRAW_PLAYER + DRAW_HUD +
-        'if(gameWon){ctx.fillStyle="rgba(34,197,94,0.25)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("All coins collected!",200,185);ctx.font="16px monospace";ctx.fillText("Refresh to play again",200,218)}' +
+        DRAW_WIN +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -197,6 +229,25 @@ window.CW_CONFIG = {
       activity: '🌟 First scene',
       goal: 'Place your sprite and coins on the canvas.',
       checkpoint: 'You should see a blue arrow in the center and yellow coin dots scattered around.',
+      expect: 'A blue arrow in the centre and eight yellow coins spread around the scene.',
+      minutes: 9,
+      predict: {
+        question: 'Where will the player start when x and y are both 200?',
+        answer: 'centre|center|middle|200'
+      },
+      engine: {
+        name: 'Godot',
+        intro: 'The same scene in the real Godot editor.',
+        file: 'main.tscn',
+        do: [
+          'Open main.tscn.',
+          'Select Player and set its position to (200, 200) in the Inspector.',
+          'Check that Coins has eight Area2D children.'
+        ],
+        code: '# main.tscn\n[node name="Player" type="CharacterBody2D" parent="."]\nposition = Vector2(200, 200)\n\n[node name="Coins" type="Node2D" parent="."]\n# eight Area2D children',
+        check: 'The Scene panel shows Main > Player and Main > Coins with eight children.'
+      },
+      makeItYours: 'Move the start position to a corner and see how the game feels. Put it back when you are done.',
       points: [
         'The sprite is a triangle pointing right - a simple arrow shape',
         'Coins are random yellow circles placed on a grid',
@@ -243,6 +294,27 @@ window.CW_CONFIG = {
       activity: '🕹️ Input',
       goal: 'Move the sprite with WASD or arrow keys.',
       checkpoint: 'Use arrow keys or WASD - the blue arrow should move around the canvas.',
+      expect: 'The arrow moves with the arrow keys and stays inside the 400 by 400 scene.',
+      minutes: 10,
+      predict: {
+        question: 'If you hold the right arrow, what should happen?',
+        options: ['The arrow moves right and keeps moving', 'The arrow moves one pixel', 'Nothing until you press Check'],
+        correct: 0
+      },
+      explain: 'Why do we set velocity before move_and_slide() instead of changing position directly?',
+      engine: {
+        name: 'Godot',
+        intro: 'The same movement in player.gd.',
+        file: 'player.gd',
+        do: [
+          'Open player.gd on the Player node.',
+          'Read the direction with Input.get_vector().',
+          'Set velocity, then call move_and_slide().'
+        ],
+        code: 'extends CharacterBody2D\n\n@export var speed := 180.0\n\nfunc _physics_process(_delta: float) -> void:\n    var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")\n    velocity = direction * speed\n    move_and_slide()',
+        check: 'Press Play and drive the player with the arrow keys.'
+      },
+      makeItYours: 'Change speed to 320 and see how different the game feels. Put it back to 180 when you are done.',
       points: [
         'Check four key states: left, right, up, down',
         'Build a velocity vector from the held keys',
@@ -282,6 +354,25 @@ window.CW_CONFIG = {
       activity: '🔄 Rotation',
       goal: 'Rotate the sprite to face the direction it is moving.',
       checkpoint: 'Move in different directions - the arrow should always point the way it is going.',
+      expect: 'The arrow turns to face the direction it is moving.',
+      minutes: 6,
+      predict: {
+        question: 'What should the arrow do when you move left?',
+        options: ['Keep pointing right', 'Turn to point left', 'Disappear'],
+        correct: 1
+      },
+      engine: {
+        name: 'Godot',
+        intro: 'One line handles the turn in Godot.',
+        file: 'player.gd',
+        do: [
+          'After setting velocity, check that the direction is not zero.',
+          'Set rotation to direction.angle().'
+        ],
+        code: 'if direction.length() > 0.1:\n    rotation = direction.angle()',
+        check: 'Press Play, hold left, and watch the arrow point left.'
+      },
+      makeItYours: 'Change the arrow shape in the Player Body polygon. Try a triangle that points up.',
       points: [
         'atan2(vy, vx) returns the angle from the positive X axis to the point (vx, vy)',
         'Only update the angle when actually moving (vx != 0 or vy != 0)',
@@ -313,6 +404,26 @@ window.CW_CONFIG = {
       activity: '✨ Trail',
       goal: 'Leave a fading trail of dots behind the sprite as it moves.',
       checkpoint: 'Move around - a glowing blue trail should follow the arrow and fade as it gets older.',
+      expect: 'A short fading trail follows the arrow as it moves.',
+      minutes: 8,
+      predict: {
+        question: 'What happens to the oldest point when the trail is full?',
+        options: ['It stays forever', 'It is removed so the trail stays short', 'It turns into a coin'],
+        correct: 1
+      },
+      engine: {
+        name: 'Godot',
+        intro: 'The trail is a Line2D child of the Player.',
+        file: 'player.gd',
+        do: [
+          'Add the current position to trail_points.',
+          'Remove the oldest point when the list is longer than 20.',
+          'Send the points to the Trail Line2D.'
+        ],
+        code: 'trail_points.push_front(position)\nif trail_points.size() > 20:\n    trail_points.pop_back()\ntrail.points = PackedVector2Array(trail_points)',
+        check: 'Press Play and move in a loop. The line follows your path and keeps only the last 20 points.'
+      },
+      makeItYours: 'Change the trail limit from 20 to 40 and watch the trail get longer.',
       points: [
         'Push the current position to a trail array each frame',
         'Limit trail length to 20 points (shift off the oldest when exceeded)',
@@ -344,6 +455,27 @@ window.CW_CONFIG = {
       activity: '🪙 Collect',
       goal: 'Collect coins by moving over them; increase the score.',
       checkpoint: 'Drive over a yellow coin - it should disappear and your score should increase.',
+      expect: 'A coin disappears and the score goes up when you touch it.',
+      minutes: 10,
+      predict: {
+        question: 'What should happen when the arrow touches a coin?',
+        options: ['The coin disappears and the score goes up', 'The coin moves away', 'Nothing'],
+        correct: 0
+      },
+      engine: {
+        name: 'Godot',
+        intro: 'Coins are Area2D nodes. The signal does the work.',
+        file: 'coin.gd',
+        do: [
+          'Open coin.gd on a Coin node.',
+          'Connect body_entered.',
+          'Call add_coin() on the player, then queue_free().'
+        ],
+        code: 'extends Area2D\n\nfunc _ready() -> void:\n    body_entered.connect(_on_body_entered)\n\nfunc _on_body_entered(body: Node2D) -> void:\n    if body.has_method("add_coin"):\n        body.add_coin()\n    queue_free()',
+        check: 'Press Play, touch a coin, and check the score label.'
+      },
+      solutionNotes: ['The active flag stops one coin being counted twice.', 'The distance is checked before the score changes.'],
+      makeItYours: 'Change the collection distance from 18 to 30 and see how generous it feels.',
       points: [
         'Each coin has an active flag - false means already collected',
         'Check distance from player to each active coin',
@@ -382,6 +514,27 @@ window.CW_CONFIG = {
       activity: '🏆 Win',
       goal: 'Show a win screen when all 8 coins are collected.',
       checkpoint: 'Collect all 8 coins - a green overlay should appear with a congratulations message.',
+      expect: 'A win panel appears with the game name and a message when the last coin is collected.',
+      minutes: 8,
+      predict: {
+        question: 'When should the win panel appear?',
+        options: ['After the first coin', 'When the last coin is collected', 'When the page loads'],
+        correct: 1
+      },
+      explain: 'Why do we check the score after a coin is collected instead of every frame?',
+      engine: {
+        name: 'Godot',
+        intro: 'The win panel is a Label that waits for the last coin.',
+        file: 'player.gd',
+        do: [
+          'Open player.gd.',
+          'Increase the score in add_coin().',
+          'Show the Win label when the score reaches the coin total.'
+        ],
+        code: 'func add_coin() -> void:\n    score += 1\n    score_label.text = game_name + "  Coins: " + str(score) + " / " + str(total_coins)\n    if score >= total_coins:\n        win_label.text = game_name + " complete!"\n        win_label.visible = true',
+        check: 'Press Play and collect the last coin. The Win label appears.'
+      },
+      makeItYours: 'Change the win message to your own words, then play it again.',
       points: [
         'Check score >= 8 after each coin collection',
         'Set gameWon = true to freeze movement and show the overlay',
@@ -413,6 +566,21 @@ window.CW_CONFIG = {
       activity: '🏠 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and build this scene for real.',
       checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
+      expect: 'A filled Mod Card you can save, print or download.',
+      minutes: 5,
+      engine: {
+        name: 'Godot',
+        intro: 'The finished project is ready for you.',
+        file: 'project.godot',
+        do: [
+          'Switch to At home mode.',
+          'Open the Godot Lab and load the lesson project.',
+          'Press Play and collect the coins.'
+        ],
+        code: '# The full project is in workshops/godot-lab/godot-tutorial/\n# Player, Coins, UI and the same scripts.',
+        check: 'The Lab opens Star Collector and the arrow moves.'
+      },
+      makeItYours: 'Add one thing of your own: a timer, a second enemy, or a sound.',
       points: [
         'At home: open Godot, create a CharacterBody2D with a Sprite2D child',
         'Add a script with _physics_process(delta): use Input.get_vector() and move_and_slide()',

@@ -52,6 +52,10 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-js-snake-canvas',
   downloadName: 'my-snake-game.html',
+  engineProject: {
+    href: '/downloads/js-snake-starter.zip',
+    label: 'Download the Snake starter project'
+  },
 
   hints: [
     {
@@ -148,6 +152,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Grid & Tick Loop',
       goal: 'Make the snake move one cell every 120 ms.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        intro: 'The canvas runs the real game. Download My Game gives you a plain HTML file, so the code is the same code you keep at home.',
+        do: [
+          'Download My Game and save my-snake-game.html in a folder.',
+          'Open the file in VS Code or Notepad.',
+          'Find function step() and check the three lines that build the head, unshift it and pop the tail.',
+          'Save, then double-click the file to play it in Chrome or Edge.'
+        ],
+        check: 'The snake crosses the board one cell per tick and leaves no gaps behind.'
+      },
       points: [
         '25x25 grid of 16 px cells on a 400x400 canvas',
         'Every tick: create a new head cell, add to front, remove tail',
@@ -178,6 +194,16 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Input Queue',
       goal: 'Queue arrow-key presses so fast combos work.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        do: [
+          'Keep the file open in your editor.',
+          'Find the keydown listener and check it pushes into inputQueue instead of setting dir directly.',
+          'Save and reload the page, then press Up then Left as fast as you can.'
+        ],
+        check: 'A fast Up then Left turns the snake twice and never folds it back on itself.'
+      },
       points: [
         'Push each key into an array instead of overwriting <code>dir</code>',
         'Each tick shifts one valid direction off the queue',
@@ -204,6 +230,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Food & Growth',
       goal: 'Spawn food that avoids the snake; eat to grow.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        do: [
+          'Find function spawnFood().',
+          'Check it keeps picking a random cell until the cell is not on the snake.',
+          'Save and reload, then eat three pieces of food.'
+        ],
+        check: 'Food never appears inside the snake, and the tail grows by one each time you eat.'
+      },
       points: [
         'Random cell, but keep retrying if it lands on the snake',
         '<code>Array.some()</code> checks if ANY cell matches',
@@ -234,6 +270,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Death & Wrap-Around',
       goal: 'Add wall collision, self-bite, and a wrap toggle.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        do: [
+          'Find the part of step() that runs after the new head is built.',
+          'Add the wall checks and the self-bite check; both set dead to true and return.',
+          'Save and reload, then drive into a wall with the Wrap box unticked.'
+        ],
+        check: 'Hitting a wall or your own body shows Game Over. Ticking Wrap lets you cross the edge.'
+      },
       points: [
         'Wrap mode: <code>(head.x + GRID) % GRID</code> teleports across edges',
         'Classic mode: head out of bounds = dead',
@@ -260,6 +306,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Touch Controls',
       goal: 'Swipe detection makes it playable on phones.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        do: [
+          'Add the touchstart and touchend listeners next to the keydown listener.',
+          'Push the swipe direction into the same inputQueue.',
+          'Save, then open the file on a phone or use device mode in DevTools.'
+        ],
+        check: 'A swipe up, down, left or right turns the snake the same way the arrow keys do.'
+      },
       points: [
         'Record touch start position, compare with end position',
         'Bigger axis wins: |dx| > |dy| = horizontal swipe',
@@ -288,6 +344,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Gradient Body',
       goal: 'Draw each segment with fading HSL colour.',
+      engine: {
+        name: 'Your browser',
+        file: 'my-snake-game.html',
+        do: [
+          'Find function draw().',
+          'Replace the solid green fill with the forEach loop that sets the hsl lightness per segment.',
+          'Save and reload.'
+        ],
+        check: 'The head is bright green and the tail fades darker down the body.'
+      },
       points: [
         'HSL lets you compute ONE number (lightness) per segment',
         '<code>forEach</code> with index <code>i</code> gives the position in the body',

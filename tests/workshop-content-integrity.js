@@ -17,6 +17,16 @@ const vm = require('vm');
 const SITE = path.resolve(__dirname, '..');
 const DIR = path.join(SITE, 'assets', 'js', 'inline');
 const TAKE_HOME = /take it home|mod card|at home|take-home/i;
+/* A3070: every new build-along must carry the same steps for the real engine.
+   Existing configs are listed in the baseline until their rollout slice lands. */
+const PARITY_BASELINE = (() => {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(SITE, 'content', 'workshop-engine-parity-baseline.json'), 'utf8'));
+    return new Set(Array.isArray(raw.configs) ? raw.configs : []);
+  } catch {
+    return new Set();
+  }
+})();
 const CANVAS_PROPS = new Set([
   'fillStyle', 'strokeStyle', 'font', 'lineWidth', 'lineCap', 'lineJoin', 'globalAlpha',
   'globalCompositeOperation', 'textAlign', 'textBaseline', 'shadowBlur', 'shadowColor',
@@ -76,6 +86,23 @@ function checkConfig(file, config) {
   const add = (kind, detail) => issues.push({ file, kind, detail });
   if (!config.storageKey) add('no-storageKey', 'CW_CONFIG has no storageKey');
   if (!config.downloadName) add('no-downloadName', 'CW_CONFIG has no downloadName');
+
+  if (config.storageKey && !PARITY_BASELINE.has(config.storageKey)) {
+    if (!config.engineProject || !config.engineProject.href) {
+      add('missing-engine-project', 'CW_CONFIG has no downloadable engine starter project');
+    } else {
+      const href = String(config.engineProject.href);
+      const file = href.startsWith('/') ? path.join(SITE, href.slice(1)) : path.resolve(SITE, href);
+      if (!fs.existsSync(file)) add('engine-project-missing-file', 'engine starter not found: ' + href);
+    }
+    for (const step of config.steps) {
+      if (!step || typeof step.num !== 'number') continue;
+      const e = step.engine;
+      if (!e || !e.name || !Array.isArray(e.do) || !e.do.length) {
+        add('missing-engine-lane', 'step ' + step.num + ' has no In-engine instructions');
+      }
+    }
+  }
 
   const seen = new Set();
   for (const step of config.steps) {

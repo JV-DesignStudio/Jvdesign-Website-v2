@@ -263,6 +263,7 @@ const SERIES = [
       { key: 'jvds-godot-gdscript-v2', name: 'GDScript Essentials', url: 'godot-gdscript-essentials.html', ep: 0, badge: '📘' },
       { key: 'jvds-godot-tutorial-v2', name: 'How To Godot 4', url: 'godot_tutorial.html', ep: 1, badge: '📘' },
       { key: 'jvds-godot-racing2-v2', name: 'Racing Bonus: Loops & Explosions', url: 'godot-racing-workshop-2.html', ep: 2, badge: '🏁' },
+      { key: 'jvds-godot-autoclicker-v1', name: 'Biscuit Tycoon Auto Clicker', url: 'godot-autoclicker-workshop.html', ep: 10, badge: '🍪' },
       { key: 'jvds-space-invaders-v2', name: 'Space Invaders', url: 'space_invaders_tutorial.html', ep: 3, badge: '👾' },
       { key: 'jvds-race-builder-v2', name: 'Race Builder', url: 'race-builder.html', ep: 4, badge: '🏎️' },
       { key: 'jvds-racing-blueprint-v2', name: 'Racing Blueprint', url: 'racing-blueprint.html', ep: 5, badge: '📐' },

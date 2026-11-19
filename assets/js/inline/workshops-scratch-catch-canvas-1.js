@@ -102,6 +102,10 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-catch-canvas',
   downloadName: 'my-scratch-catch.html',
+  engineProject: {
+    href: '/downloads/scratch-catch-workshop-reference.zip',
+    label: 'Download the Scratch reference project'
+  },
 
   hints: [
     'An orange basket at the bottom of the Scratch stage',
@@ -209,6 +213,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Basket Sprite',
       goal: 'Place an orange basket at the bottom of the Scratch stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'basket sprite',
+        intro: 'Open scratch.mit.edu or the Scratch app next to this page. Every step here maps to blocks you drag, so you can build both at once.',
+        do: [
+          'Open scratch.mit.edu in a new tab and pick a sprite for the basket.',
+          'Open the Variables panel and make bx, by, bw and bh.',
+          'Set bx to 200, by to 320, bw to 80 and bh to 20.',
+          'Scratch x is bx minus 240 and y is 180 minus by, so add a go to block that uses those sums.'
+        ],
+        check: 'The basket sprite sits near the bottom middle of the stage.'
+      },
       points: [
         'The Scratch stage is 480x360 pixels - our canvas matches it exactly',
         'The basket is a bright orange rectangle: 80 wide, 20 tall, at y=320',
@@ -238,6 +254,17 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Arrow Key Movement',
       goal: 'Move the basket left and right with arrow keys, staying on stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'basket sprite',
+        do: [
+          'Keep the basket script open.',
+          'Add an if block for key left arrow pressed that changes bx by -6.',
+          'Add the same for right arrow with +6.',
+          'Keep bx between 0 and 480 minus bw so the basket cannot leave the stage.'
+        ],
+        check: 'Left and right arrows slide the basket and it stops at both edges.'
+      },
       points: [
         'In Scratch you check keys with <code>if &lt;key [right arrow] pressed?&gt; then</code>',
         'Move by <code>speed</code> (6) pixels each frame while a key is held',
@@ -267,6 +294,16 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Falling Fruit',
       goal: 'Spawn a fruit at a random x and let it fall down the stage.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'fruit sprite',
+        do: [
+          'Make fx, fy and fallSpeed variables.',
+          'In a forever loop, change fy by fallSpeed.',
+          'When fy passes the bottom, set fx to pick random 20 to 440 and fy to -20.'
+        ],
+        check: 'The fruit falls, then reappears at a random spot along the top.'
+      },
       points: [
         'The fruit starts above the stage at fy = -20 so it slides in smoothly',
         'Each frame: <code>change [fy] by [fallSpeed]</code> moves it down (positive y is down)',
@@ -296,6 +333,16 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching Fruit',
       goal: 'Detect when fruit touches the basket and score a point.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'fruit sprite',
+        do: [
+          'Add a touching basket block to the fruit script.',
+          'When they touch, change score by 1.',
+          'Send the fruit back to the top with a new random fx.'
+        ],
+        check: 'Touching the fruit with the basket adds one to the score.'
+      },
       points: [
         'In Scratch you use <code>if &lt;touching [Basket]?&gt;</code> for collision',
         'On canvas we check if the rectangles overlap using four edge comparisons',
@@ -325,6 +372,16 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Lives and Missing',
       goal: 'Lose a life when fruit hits the ground, game over at zero.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'fruit sprite',
+        do: [
+          'When fy passes the bottom without a catch, change lives by -1.',
+          'When lives reaches 0, set gameState to over.',
+          'Stop the falling loop and show a Game Over sprite or say block.'
+        ],
+        check: 'A missed fruit costs a life, and the game ends at zero lives.'
+      },
       points: [
         'When the fruit passes the bottom without being caught: <code>change [lives] by [-1]</code>',
         'If lives reach 0: game over - stop everything',
@@ -354,6 +411,16 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Ramp and Restart',
       goal: 'Make fruit fall faster as score grows, let R restart the game.',
+      engine: {
+        name: 'Scratch 3',
+        file: 'fruit sprite',
+        do: [
+          'Set fallSpeed to 3 + score / 5 and keep it under 8.',
+          'When the R key is pressed, set score to 0, lives to 3 and gameState to play.',
+          'Send the fruit back to the top to start again.'
+        ],
+        check: 'The fruit speeds up as you score, and R starts a fresh game.'
+      },
       points: [
         'Increase fallSpeed every few catches: <code>set [fallSpeed] to [3 + score / 5]</code>',
         'Cap it at 8 so the game stays playable',
