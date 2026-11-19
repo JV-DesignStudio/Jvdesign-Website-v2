@@ -15,7 +15,7 @@ function wbWrap(userCode) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gdscript-essentials-canvas',
   downloadName: 'my-godot-gdscript-essentials.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=gdscript-essentials', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/gdscript-essentials.zip', label: 'Download the GDScript Essentials starter' },
   nextStep: { url: '/workshops/godot-tutorial-canvas.html', label: 'Godot Tutorial' },
 
   hints: [
@@ -67,6 +67,18 @@ window.CW_CONFIG = {
       title: 'Variables & Types',
       activity: '📦 Variables',
       goal: 'Declare variables of different types and print them.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_01_variables.gd',
+        intro: 'Each lesson file is already attached to the scene.',
+        do: [
+          'Open scripts/lesson_01_variables.gd.',
+          'Declare a String, int, float and bool.',
+          'Print each one.',
+          'Press F5 and read the Output panel.'
+        ],
+        check: 'The Output panel prints your four values.'
+      },
       checkpoint: 'Press Apply - the output panel should show your variable values printed on separate lines.',
       points: [
         'var stores a value: var name = "Josh"',
@@ -98,6 +110,18 @@ window.CW_CONFIG = {
       title: 'Functions',
       activity: '⚙️ Functions',
       goal: 'Write a function that takes parameters and returns a value.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_02_control_flow.gd',
+        intro: 'Keep the lesson scene open.',
+        do: [
+          'Open scripts/lesson_02_control_flow.gd.',
+          'Write func add(a, b): with return a + b.',
+          'Call it and print the result.',
+          'Press F5.'
+        ],
+        check: 'The Output panel shows the returned value.'
+      },
       checkpoint: 'Press Apply - the output should show the result of calling your function.',
       points: [
         'func declares a function: func add(a, b):',
@@ -129,6 +153,18 @@ window.CW_CONFIG = {
       title: 'Loops',
       activity: '🔁 Loops',
       goal: 'Use a for loop to print numbers and a while loop to count down.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_03_loops.gd',
+        intro: 'Keep the lesson scene open.',
+        do: [
+          'Open scripts/lesson_03_loops.gd.',
+          'Write a for loop that prints 0 to 4.',
+          'Write a while loop that counts down from 3.',
+          'Press F5.'
+        ],
+        check: 'The Output panel shows 0 to 4, then the countdown.'
+      },
       checkpoint: 'Press Apply - you should see numbers 0 to 4 followed by a countdown.',
       points: [
         'for i in range(5): loops i from 0 to 4 (5 not included)',
@@ -160,6 +196,18 @@ window.CW_CONFIG = {
       title: 'Conditions',
       activity: '🔀 Conditions',
       goal: 'Use if/elif/else to print different messages based on a score.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_04_functions.gd',
+        intro: 'Keep the lesson scene open.',
+        do: [
+          'Open scripts/lesson_04_functions.gd.',
+          'Write an if/elif/else grade checker.',
+          'Print the message for the score.',
+          'Press F5.'
+        ],
+        check: 'The Output panel shows the grade that matches the score.'
+      },
       checkpoint: 'Press Apply - the output should show the grade message that matches your score.',
       points: [
         'if checks the first condition',
@@ -191,6 +239,18 @@ window.CW_CONFIG = {
       title: 'Arrays & Dictionaries',
       activity: '📋 Arrays',
       goal: 'Store a list of items in an array and a set of key-value pairs in a dictionary.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_05_objects.gd',
+        intro: 'Keep the lesson scene open.',
+        do: [
+          'Open scripts/lesson_05_objects.gd.',
+          'Create an array of items and a dictionary of stats.',
+          'Print one array item and one dictionary value.',
+          'Press F5.'
+        ],
+        check: 'The Output panel shows the item and the stat.'
+      },
       checkpoint: 'Press Apply - output should show each item in your array and values from your dictionary.',
       points: [
         'var items = ["sword","shield"] creates an array',
@@ -222,6 +282,18 @@ window.CW_CONFIG = {
       title: 'Signals',
       activity: '📡 Signals',
       goal: 'Simulate a signal by emitting and connecting it with a custom function.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/lesson_player.gd',
+        intro: 'The lesson player wires the signal for you.',
+        do: [
+          'Open scripts/lesson_player.gd.',
+          'Find the signal declaration and emit_signal call.',
+          'Connect it to a function that prints the new value.',
+          'Press F5.'
+        ],
+        check: 'The Output panel shows the signal firing and the function receiving it.'
+      },
       checkpoint: 'Press Apply - the output should show the signal being emitted and the connected function receiving it.',
       points: [
         'signal declares an event: signal health_changed(new_hp)',
@@ -253,6 +325,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '🏠 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and write your favourite GDScript concept in a real script.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Write your favourite concept in a new script.',
+          'Press F5 and read the Output panel.'
+        ],
+        check: 'Your own script runs and prints something you chose.'
+      },
       checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
       points: [
         'At home: open Godot, select any node and press Ctrl+Shift+N to create a new script',

@@ -50,7 +50,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-platformer-canvas',
   downloadName: 'my-godot-platformer.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=platformer', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/platformer.zip', label: 'Download the 2D Platformer starter' },
   nextStep: { url: '/workshops/godot-racing-canvas.html', label: 'Godot Racing' },
 
   hints: [
@@ -117,7 +117,7 @@ window.CW_CONFIG = {
     },
     5: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + KEYS,
+        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + ENEMY_VARS + KEYS + 'let enemy=enemies[0];',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)vx=-speed;else if(rightHeld)vx=speed;else vx=0;' +
@@ -127,8 +127,9 @@ window.CW_CONFIG = {
         'for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
         'if(py+ph>=p.y&&py+ph<=p.y+p.h+vy+1&&px+pw>p.x&&px<p.x+p.w&&vy>=0){py=p.y-ph;vy=0;onGround=true}}' +
         'for(var i=0;i<coins.length;i++){if(!coins[i].got){var dx=px+pw/2-coins[i].x,dy=py+ph/2-coins[i].y;if(dx*dx+dy*dy<(pw/2+coins[i].r)*(pw/2+coins[i].r)){coins[i].got=true;collected++}}}' +
+        'for(var i=0;i<enemies.length;i++){var en=enemies[i];en.x+=en.dx;if(en.x<=en.minX||en.x+en.w>=en.maxX)en.dx*=-1}' +
         'if(typeof cwStep==="function")cwStep();' +
-        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -191,6 +192,18 @@ window.CW_CONFIG = {
       title: 'Player & Ground',
       activity: '\uD83C\uDFD7\uFE0F Build it',
       goal: 'Place a blue player on a green ground platform.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scenes/Main.tscn',
+        intro: 'Player, Ground and Camera are already in the scene.',
+        do: [
+          'Open scenes/Main.tscn.',
+          'Select Player and set its position to (80, 300).',
+          'Select Ground and set its width and y position to 370.',
+          'Press F5.'
+        ],
+        check: 'A blue player stands on the green ground.'
+      },
       checkpoint: 'You should see a blue square sitting on a green bar at the bottom of the canvas.',
       points: [
         'The ground spans the full 600px width at y=370',
@@ -222,6 +235,18 @@ window.CW_CONFIG = {
       title: 'Running Left & Right',
       activity: '\uD83D\uDD79\uFE0F Move it',
       goal: 'Move the player horizontally with arrow keys.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/Player.gd',
+        intro: 'Player.gd already has the CharacterBody2D movement frame.',
+        do: [
+          'Open scripts/Player.gd.',
+          'Find _physics_process(delta).',
+          'Set velocity.x to -speed on ui_left, speed on ui_right, else 0.',
+          'Press F5 and steer with the arrow keys.'
+        ],
+        check: 'The player moves left and right and stops when no key is held.'
+      },
       checkpoint: 'Press the left and right arrow keys - the blue square should slide smoothly side to side.',
       points: [
         'In Godot: <code>Input.is_action_pressed("ui_left")</code> for held keys',
@@ -253,6 +278,17 @@ window.CW_CONFIG = {
       title: 'Gravity & Jumping',
       activity: '\u2B06\uFE0F Jump!',
       goal: 'Add gravity and let the player jump with Up.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/Player.gd',
+        intro: 'Keep Player.gd open.',
+        do: [
+          'Add gravity to velocity.y every frame.',
+          'When ui_up is pressed and is_on_floor(), set velocity.y to -10.',
+          'Press F5 and jump.'
+        ],
+        check: 'The player falls, lands on a platform and jumps only from the ground.'
+      },
       checkpoint: 'Press Up - the player should arc upward and fall back down. They can only jump from the ground.',
       points: [
         'Gravity adds 0.5 to vertical velocity each frame',
@@ -284,6 +320,18 @@ window.CW_CONFIG = {
       title: 'Collecting Coins',
       activity: '\uD83E\uDE99 Collect',
       goal: 'Place golden coins above platforms and collect them on touch.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/Coin.gd',
+        intro: 'The coin Area2D is already wired to a signal.',
+        do: [
+          'Open scripts/Coin.gd.',
+          'Find _on_body_entered(body).',
+          'Hide the coin and add 1 to the score.',
+          'Play and collect a coin.'
+        ],
+        check: 'The coin disappears and the score goes up by 1.'
+      },
       checkpoint: 'Jump up to a coin - it should disappear and the counter in the top-left should go up.',
       points: [
         'Four coins float above different platforms',
@@ -315,6 +363,18 @@ window.CW_CONFIG = {
       title: 'Patrolling Enemies',
       activity: '\uD83D\uDC7E Enemies',
       goal: 'Add red enemies that pace back and forth on platforms.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/Enemy.gd',
+        intro: 'The enemy has its patrol edges set in the Inspector.',
+        do: [
+          'Open scripts/Enemy.gd.',
+          'Move the enemy by speed * direction each frame.',
+          'Flip direction when it reaches a patrol edge.',
+          'Play and watch it pace.'
+        ],
+        check: 'The enemy walks between its edges and turns around.'
+      },
       checkpoint: 'Two red rectangles should be moving back and forth on platforms. Touch one to see game over.',
       points: [
         'Each enemy has a min/max x range and reverses at the edges',
@@ -346,6 +406,18 @@ window.CW_CONFIG = {
       title: 'Win & Restart',
       activity: '\uD83C\uDFC6 Finish it',
       goal: 'Win when all coins are collected, game over on enemy touch, R to restart.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/Main.gd',
+        intro: 'Main.gd owns the score and the win label.',
+        do: [
+          'Open scripts/Main.gd.',
+          'When the score equals the coin count, show the win label and stop.',
+          'Reset the scene on ui_accept or R.',
+          'Play, collect every coin, then press R.'
+        ],
+        check: 'The last coin shows the win message and R starts a fresh run.'
+      },
       checkpoint: 'Collect all 4 coins to see the win screen. Get hit by an enemy to see game over. Press R to reset.',
       points: [
         'When <code>collected >= coins.length</code>, show "ALL COINS!" and stop play',
@@ -377,6 +449,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '\uD83C\uDFE0 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own platformer.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot in Godot 4.',
+          'Read the Mod Card choices you saved.',
+          'Change one colour, speed or platform count.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own version runs and one thing is different from the guide.'
+      },
       checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
       points: [
         'At home: open Godot and create a new 2D project',

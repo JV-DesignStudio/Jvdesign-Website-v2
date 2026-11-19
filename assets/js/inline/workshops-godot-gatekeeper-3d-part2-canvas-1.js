@@ -49,7 +49,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper2-canvas',
   downloadName: 'my-godot-gatekeeper-2.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=gatekeeper-2', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/gatekeeper-2.zip', label: 'Download the Gatekeeper Part 2 starter' },
   nextStep: { url: '/workshops/godot-gdscript-essentials-canvas.html', label: 'GDScript Essentials' },
 
   hints: [
@@ -65,7 +65,7 @@ window.CW_CONFIG = {
   templates: {
     1: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
         gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
@@ -74,7 +74,7 @@ window.CW_CONFIG = {
     },
     2: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(typeof cwStep==="function")cwStep();' +
@@ -202,6 +202,18 @@ window.CW_CONFIG = {
       title: 'Multiple Guards',
       activity: '\uD83D\uDC6E Two guards',
       goal: 'Set up the scene with two independent guards and a player.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.tscn',
+        intro: 'Both guard nodes are already in the scene.',
+        do: [
+          'Open main.tscn.',
+          'Place Guard1 in the upper area.',
+          'Place Guard2 in the lower-right area.',
+          'Press F5.'
+        ],
+        check: 'The player and two guards stand in different parts of the level.'
+      },
       checkpoint: 'You should see a blue player dot and two red guard dots at different positions on the tiled floor.',
       points: [
         'Each guard is an object with its own position, angle, speed, patrol, and target index',
@@ -233,6 +245,18 @@ window.CW_CONFIG = {
       title: 'Independent Patrols',
       activity: '\uD83D\uDD04 Patrols',
       goal: 'Make each guard follow its own patrol route independently.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Guard.gd handles one patrol; loop it for both.',
+        do: [
+          'Open guard.gd.',
+          'Loop over the guards array.',
+          'Update each guard toward its own waypoint and advance when close.',
+          'Play and watch both loops.'
+        ],
+        check: 'Both guards patrol independently on different timings.'
+      },
       checkpoint: 'Both red dots should move in loops - watch them for a full cycle each. Notice they are on different timings.',
       points: [
         'Loop over the guards array and update each one separately',
@@ -264,6 +288,17 @@ window.CW_CONFIG = {
       title: 'Vision Cones',
       activity: '\uD83D\uDC41\uFE0F Cones',
       goal: 'Draw a vision cone for each guard.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Keep guard.gd open.',
+        do: [
+          'Draw a cone for each guard in the loop.',
+          'Use the guard facing angle for the cone.',
+          'Play and watch both cones.'
+        ],
+        check: 'Each guard has a yellow cone sweeping its direction.'
+      },
       checkpoint: 'Each red dot should now have a yellow cone sweeping in its direction of travel.',
       points: [
         'Same vision cone logic as Part 1, applied to each guard in a loop',
@@ -295,6 +330,17 @@ window.CW_CONFIG = {
       title: 'Distraction Items',
       activity: '\uD83E\uDEA8 Distract',
       goal: 'Throw rocks with Space to distract guards away from their patrol.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Keep guard.gd open.',
+        do: [
+          'For each guard, check whether any rock is within 80 pixels.',
+          'Turn the guard toward the nearest rock.',
+          'Play and throw a rock near a guard.'
+        ],
+        check: 'A guard turns toward a nearby rock instead of patrolling.'
+      },
       checkpoint: 'Press Space - a purple dot should appear ahead of you. Throw one near a guard - the guard should turn to face it.',
       points: [
         'Space throws a rock in the direction you are moving',
@@ -326,6 +372,18 @@ window.CW_CONFIG = {
       title: 'Detection System',
       activity: '\uD83D\uDEA8 Detect',
       goal: 'Trigger caught state if either guard spots the player.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Keep guard.gd open.',
+        do: [
+          'Check the vision cone for every guard.',
+          'If any guard sees the player, set the caught state.',
+          'Run the distraction check first.',
+          'Walk into a cone.'
+        ],
+        check: 'Walking into either cone shows SPOTTED, and rocks still distract.'
+      },
       checkpoint: 'Walk into either guard cone - a red SPOTTED overlay should appear. Rocks should still distract guards.',
       points: [
         'Check vision cone detection for every guard in the loop',
@@ -357,6 +415,18 @@ window.CW_CONFIG = {
       title: 'Levels & Victory',
       activity: '\uD83C\uDFC6 Levels',
       goal: 'Reach EXIT to win; press R to restart. Level counter displayed.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'Main.gd owns the win, caught and level states.',
+        do: [
+          'Open main.gd.',
+          'Check the player against the EXIT rectangle.',
+          'Show ESCAPED on a win and SPOTTED on a catch.',
+          'Reset player, guards and rocks on R.'
+        ],
+        check: 'Reaching EXIT wins, being seen loses, and R restarts.'
+      },
       checkpoint: 'Sneak past both guards to the green EXIT. The green ESCAPED overlay should appear. Press R to try again.',
       points: [
         'Check player overlap with the exit rectangle',
@@ -388,6 +458,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '\uD83C\uDFE0 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and build your multi-guard stealth level.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Change the guard count, speed or vision range.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own multi-guard level runs and one thing is different.'
+      },
       checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
       points: [
         'At home: duplicate your Part 1 Godot project and add a second guard node',

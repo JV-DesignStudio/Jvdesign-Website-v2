@@ -45,7 +45,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper1-canvas',
   downloadName: 'my-godot-gatekeeper-1.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=gatekeeper-1', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/gatekeeper-1.zip', label: 'Download the Gatekeeper Part 1 starter' },
   nextStep: { url: '/workshops/godot-gatekeeper-3d-part2-canvas.html', label: 'Gatekeeper Part 2' },
 
   hints: [
@@ -97,7 +97,7 @@ window.CW_CONFIG = {
     },
     4: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS + 'let dx=0,dy=0,guard_facing=0;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
@@ -116,7 +116,7 @@ window.CW_CONFIG = {
     },
     5: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS + 'let dx=0,dy=0,guard_facing=0;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
@@ -138,7 +138,7 @@ window.CW_CONFIG = {
     },
     6: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS + 'let dx=0,dy=0,guard_facing=0;' +
         'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;gTarget=0;gx=200;gy=120;gameState="play"}});',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
@@ -196,6 +196,18 @@ window.CW_CONFIG = {
       title: 'The Scene',
       activity: '\uD83D\uDDFA\uFE0F Build scene',
       goal: 'Set up the stealth scene: player, guard, walls and exit.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.tscn',
+        intro: 'Player, Guard, walls and Exit are already in the scene.',
+        do: [
+          'Open main.tscn.',
+          'Select Player and set its start position to (40, 360).',
+          'Select Exit and place it at (360, 20).',
+          'Press F5.'
+        ],
+        check: 'Player, guard, walls and the green EXIT are all visible.'
+      },
       checkpoint: 'You should see a blue dot at the bottom-left, a red dot in the middle, grey walls, and a green EXIT box at the top-right.',
       points: [
         'The player is a blue circle starting at the bottom-left',
@@ -227,6 +239,19 @@ window.CW_CONFIG = {
       title: 'Player Movement',
       activity: '\uD83D\uDEB6 Move it',
       goal: 'Move the player with arrow keys, blocked by walls.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://player.gd',
+        intro: 'Player.gd has the movement frame.',
+        do: [
+          'Open player.gd.',
+          'Find _physics_process(delta).',
+          'Move with the arrow keys at speed 2.5.',
+          'After moving, push the player out of any wall.',
+          'Press F5 and walk into a wall.'
+        ],
+        check: 'The player moves but cannot pass through walls.'
+      },
       checkpoint: 'Move with WASD or arrows - the blue dot should slide around but stop when it hits grey walls.',
       points: [
         'WASD or arrows move the player at speed 2.5 (slow for stealth)',
@@ -258,6 +283,18 @@ window.CW_CONFIG = {
       title: 'Guard Patrol',
       activity: '\uD83D\uDC6E Patrol',
       goal: 'Make the guard walk a square patrol route between four waypoints.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Guard.gd already has the patrol list.',
+        do: [
+          'Open guard.gd.',
+          'Find the patrol waypoint list.',
+          'Move toward the current waypoint and advance when within 4 pixels.',
+          'Play and watch a full loop.'
+        ],
+        check: 'The guard walks the square patrol route.'
+      },
       checkpoint: 'The red dot should now move in a square loop between four points - watch it for a full cycle.',
       points: [
         'Patrol waypoints form a rectangle the guard walks around',
@@ -289,6 +326,17 @@ window.CW_CONFIG = {
       title: 'Vision Cone',
       activity: '\uD83D\uDC41\uFE0F Vision',
       goal: 'Draw a vision cone showing where the guard can see.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Keep guard.gd open.',
+        do: [
+          'Set vision_range to 100 and vision_angle to 0.6.',
+          'Draw the cone in the guard facing direction.',
+          'Play and watch it sweep.'
+        ],
+        check: 'A yellow cone sweeps around as the guard patrols.'
+      },
       checkpoint: 'A yellow triangle-ish cone should extend from the red dot in the direction it is moving. Watch it sweep around the patrol.',
       points: [
         'The cone extends visionRange (100) pixels from the guard',
@@ -320,6 +368,17 @@ window.CW_CONFIG = {
       title: 'Detection',
       activity: '\uD83D\uDEA8 Detect',
       goal: 'Detect when the player enters the guard vision cone.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://guard.gd',
+        intro: 'Keep guard.gd open.',
+        do: [
+          'Check the distance and the angle difference to the player.',
+          'When both are inside the cone, set the caught state.',
+          'Walk into the cone.'
+        ],
+        check: 'Entering the cone shows the SPOTTED overlay and freezes the game.'
+      },
       checkpoint: 'Walk into the yellow vision cone - a red overlay should flash "SPOTTED!" and freeze the game.',
       points: [
         'Check two conditions: distance < visionRange AND angle difference < visionAngle',
@@ -351,6 +410,18 @@ window.CW_CONFIG = {
       title: 'Escape!',
       activity: '\uD83C\uDFC3 Escape!',
       goal: 'Reach the EXIT zone to win, with restart on R.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'Main.gd owns the win and restart states.',
+        do: [
+          'Open main.gd.',
+          'Check the player rectangle against the EXIT rectangle.',
+          'Show the ESCAPED overlay on a win.',
+          'Reset player and guard on R.'
+        ],
+        check: 'Reaching EXIT shows ESCAPED and R restarts.'
+      },
       checkpoint: 'Sneak past the guard and reach the green EXIT box - a green overlay should show "ESCAPED!". Press R to try again.',
       points: [
         'Check overlap with the exit rectangle for the win condition',
@@ -382,6 +453,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '\uD83C\uDFE0 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own stealth game.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Change the guard speed, vision range or map colours.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own stealth level runs and one thing is different.'
+      },
       checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
       points: [
         'At home: open Godot and create a new 2D project',

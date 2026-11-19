@@ -50,7 +50,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-racing2-canvas',
   downloadName: 'my-godot-racing-2.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=zoom-zoom', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/zoom-zoom.zip', label: 'Download the Zoom Zoom starter' },
   nextStep: { url: '/workshops/godot-puzzle-canvas.html', label: 'Godot Puzzle' },
 
   hints: [
@@ -66,7 +66,7 @@ window.CW_CONFIG = {
   templates: {
     1: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         gdscriptToJs(u),
         'function loop(){frameCount++;' +
         'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,400,400);' +
@@ -76,7 +76,7 @@ window.CW_CONFIG = {
     },
     2: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){frameCount++;' +
         'if(typeof cwStep==="function")cwStep();' +
@@ -87,7 +87,7 @@ window.CW_CONFIG = {
     },
     3: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){frameCount++;' +
         'for(var aii=0;aii<ai.length;aii++){var a=ai[aii];var wt=track[a.waypt];var adx=wt.x-a.x,ady=wt.y-a.y;var adist=Math.sqrt(adx*adx+ady*ady);if(adist<20){a.waypt=(a.waypt+1)%track.length;if(a.waypt===0)a.lap++}a.angle=Math.atan2(ady,adx);a.x+=Math.cos(a.angle)*a.speed;a.y+=Math.sin(a.angle)*a.speed;if(a.boost>0){a.x+=Math.cos(a.angle)*1.5;a.y+=Math.sin(a.angle)*1.5;a.boost--}}' +
@@ -99,7 +99,7 @@ window.CW_CONFIG = {
     },
     4: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){frameCount++;' +
         'for(var aii=0;aii<ai.length;aii++){var a=ai[aii];var wt=track[a.waypt];var adx=wt.x-a.x,ady=wt.y-a.y;var adist=Math.sqrt(adx*adx+ady*ady);if(adist<20){a.waypt=(a.waypt+1)%track.length;if(a.waypt===0)a.lap++}a.angle=Math.atan2(ady,adx);a.x+=Math.cos(a.angle)*a.speed;a.y+=Math.sin(a.angle)*a.speed}' +
@@ -113,7 +113,7 @@ window.CW_CONFIG = {
     },
     5: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){frameCount++;' +
         'if(race==="play"){' +
@@ -135,7 +135,7 @@ window.CW_CONFIG = {
     },
     6: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS,
+        SETUP + PLAYER_VARS + AI_VARS + POWERUP_VARS + LAP_VARS + KEYS + 'let aiCars=ai;',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){frameCount++;' +
         'if(race==="play"){' +
@@ -189,6 +189,18 @@ window.CW_CONFIG = {
       title: 'AI Opponents',
       activity: '🤖 AI cars',
       goal: 'Add two AI car opponents that share the track with you.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scenes/track.tscn',
+        intro: 'Duplicate the Car node for each AI car.',
+        do: [
+          'Open scenes/track.tscn.',
+          'Duplicate Car twice for the AI cars.',
+          'Give them red and orange colours and new start positions.',
+          'Press F5.'
+        ],
+        check: 'Two extra cars sit on the track beside yours.'
+      },
       checkpoint: 'You should see two extra coloured rectangles on the track - red and orange AI cars.',
       points: [
         'Each AI car has its own position, angle, speed, lap count and waypoint index',
@@ -220,6 +232,18 @@ window.CW_CONFIG = {
       title: 'AI Movement',
       activity: '🔄 AI move',
       goal: 'Make AI cars follow the track waypoints smoothly.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/car.gd',
+        intro: 'AI cars follow the same waypoints as the player.',
+        do: [
+          'Open scripts/car.gd.',
+          'For each AI car, find the waypoint it is driving toward.',
+          'Steer toward it and advance when close.',
+          'Play and watch the AI loop the track.'
+        ],
+        check: 'Both AI cars drive around the track on their own.'
+      },
       checkpoint: 'The red and orange cars should now drive around the track loop on their own.',
       points: [
         'Each AI steers toward its current waypoint, then advances to the next',
@@ -251,6 +275,18 @@ window.CW_CONFIG = {
       title: 'Power-Up Spawning',
       activity: '💚 Power-up',
       goal: 'Collect green B pickups on the track to get a speed boost.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/track.gd',
+        intro: 'Track.gd owns the power-up list.',
+        do: [
+          'Open scripts/track.gd.',
+          'Find the power-up list.',
+          'When the player is within 18 pixels of an active pickup, deactivate it.',
+          'Set boost_timer to 90.'
+        ],
+        check: 'Driving over a green pickup makes it disappear.'
+      },
       checkpoint: 'Drive over a green B circle - it should disappear and your car should turn yellow briefly.',
       points: [
         'Three power-up positions are pre-set around the track',
@@ -282,6 +318,17 @@ window.CW_CONFIG = {
       title: 'Boost Effect',
       activity: '⚡ Boost',
       goal: 'Boost raises max speed and changes car colour to yellow.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/car.gd',
+        intro: 'Keep car.gd open.',
+        do: [
+          'While boost_timer > 0, raise max speed and set the car colour to yellow.',
+          'Reduce boost_timer each frame.',
+          'Play and collect a pickup.'
+        ],
+        check: 'The car turns yellow and speeds up briefly.'
+      },
       checkpoint: 'Collect a power-up - your car turns yellow and accelerates noticeably for a second or two.',
       points: [
         'While boostTimer > 0: increase maxSpeed by 2 and colour the car yellow',
@@ -313,6 +360,17 @@ window.CW_CONFIG = {
       title: 'Drifting',
       activity: '🏎️ Drift',
       goal: 'Hold left/right while moving to drift - the car turns faster but slides sideways.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/car.gd',
+        intro: 'Keep car.gd open.',
+        do: [
+          'Add drift when left or right is held.',
+          'Decay drift when no key is held.',
+          'Play and hold a turn at speed.'
+        ],
+        check: 'The car skews and turns tighter while drifting.'
+      },
       checkpoint: 'Drive fast and hold left or right - the car should visibly skew and turn tighter than normal.',
       points: [
         'drift variable accumulates when steering; it decays when releasing keys (drift *= 0.85)',
@@ -344,6 +402,17 @@ window.CW_CONFIG = {
       title: 'Minimap & Finish',
       activity: '🗺️ Minimap',
       goal: 'Show all cars on a minimap. First to 3 laps wins.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/track.gd',
+        intro: 'Keep track.gd open.',
+        do: [
+          'Draw each car as a dot on the minimap.',
+          'Count a lap when the player passes waypoint 0.',
+          'Win after 3 laps.'
+        ],
+        check: 'The minimap shows every car and the race ends after three laps.'
+      },
       checkpoint: 'Check the bottom-right corner - three dots should show all car positions on a small track outline.',
       points: [
         'Minimap scales positions by 0.2 to fit in an 80x80 corner box',
@@ -375,6 +444,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '🏠 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and build your advanced racing game.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Change the lap count, AI count or track colour.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own advanced racer runs and one thing is different.'
+      },
       checkpoint: 'Fill in as many fields as you want, then hit Apply to see your card.',
       points: [
         'At home: open Godot and create a Path2D node, then draw your track shape',

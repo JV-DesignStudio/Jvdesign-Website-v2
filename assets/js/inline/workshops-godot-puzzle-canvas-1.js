@@ -37,6 +37,7 @@ var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
   'else{var f1=firstPick,f2=secondPick;firstPick=-1;secondPick=-1;setTimeout(function(){flipped[f1]=flipped[f2]=false;lockBoard=false},1000)}' +
   '}});';
 
+function gdscriptToJs(code){ var js=window.CWTranspileGDScript ? window.CWTranspileGDScript(code) : code; return js.replace(/\bcards\b/g,'board'); }
 function wbWrap(blobSrc) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID + CLICK_HANDLER, blobSrc, 'function loop(){drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);');
 }
@@ -44,7 +45,7 @@ function wbWrap(blobSrc) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-puzzle-canvas',
   downloadName: 'my-godot-puzzle.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=pixel-quest', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/puzzle.zip', label: 'Download the Memory Match starter' },
   nextStep: { url: '/workshops/godot-gatekeeper-3d-part1-canvas.html', label: 'Gatekeeper Stealth' },
 
   hints: [
@@ -60,9 +61,9 @@ window.CW_CONFIG = {
   templates: {
     1: function() {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
-        SETUP + GRID_VARS + 'var board=' + EMOJI_LIST + ';' +
+        SETUP + GRID_VARS + 'board=' + EMOJI_LIST + ';' +
         'var pairs=board.concat(board);for(var i=pairs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pairs[i];pairs[i]=pairs[j];pairs[j]=t}board=pairs;' +
-        'var flipped=new Array(16).fill(false);var matched=new Array(16).fill(false);',
+        'flipped=new Array(16).fill(false);matched=new Array(16).fill(false);',
         '',
         DRAW_GRID + CLICK_HANDLER + 'function loop(){drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -70,35 +71,35 @@ window.CW_CONFIG = {
     2: function(u) {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
         SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID,
-        'window.cwStep=function(){' + u + '};',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
         SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID,
-        'window.cwStep=function(){' + u + '};',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
         SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID,
-        'window.cwStep=function(){' + u + '};',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
         SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID,
-        'window.cwStep=function(){' + u + '};',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
       return cwBlobWrap(CSS_GAME, CANVAS_TAG,
         SETUP + GRID_VARS + EMOJI_LIST + ';' + INIT_BOARD + DRAW_GRID,
-        'window.cwStep=function(){' + u + '};',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -134,6 +135,17 @@ window.CW_CONFIG = {
       title: 'The Grid',
       activity: '🎴 Grid',
       goal: 'Draw a 4x4 grid of face-down cards.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.tscn',
+        intro: 'The Memory project has a Control root, a Grid container and a script.',
+        do: [
+          'Open main.tscn.',
+          'Select Grid and set columns to 4.',
+          'Press F5 and count the cards.'
+        ],
+        check: '16 cards sit in a 4 by 4 grid.'
+      },
       checkpoint: 'You should see 16 blue-grey squares arranged in four rows and four columns.',
       points: [
         '4 columns, 4 rows = 16 cards total (8 matching pairs)',
@@ -165,6 +177,18 @@ window.CW_CONFIG = {
       title: 'Clicking to Flip',
       activity: '🖥️ Click',
       goal: 'Click a card to flip it and show the emoji.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'The card buttons already call flip_card(index).',
+        do: [
+          'Open main.gd.',
+          'Find _flip_card(index).',
+          'Set face_up[index] = true and show the card face.',
+          'Play and click a card.'
+        ],
+        check: 'Clicking a card flips it face up.'
+      },
       checkpoint: 'Click any grey square - it should flip over to reveal an emoji symbol.',
       points: [
         'Convert mouse position to grid column and row using integer division',
@@ -196,6 +220,18 @@ window.CW_CONFIG = {
       title: 'Checking for Matches',
       activity: '✅ Match',
       goal: 'After flipping two cards, check if they match.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'Keep main.gd open.',
+        do: [
+          'Find _check_match().',
+          'Compare board[first_pick] and board[second_pick].',
+          'Set matched for a pair, or flip both back after a short wait.',
+          'Play and match two cards.'
+        ],
+        check: 'Matching cards stay up and different cards flip back.'
+      },
       checkpoint: 'Flip two cards with the same emoji - they should stay face-up highlighted in blue. Different emoji should flip back.',
       points: [
         'Track firstPick and secondPick indices',
@@ -227,6 +263,18 @@ window.CW_CONFIG = {
       title: 'Move Counter',
       activity: '🔢 Counter',
       goal: 'Count the number of pairs attempted and display it.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'The Moves label is already in the scene.',
+        do: [
+          'Find _check_match().',
+          'Add 1 to moves when the second card is chosen.',
+          'Call _update_hud().',
+          'Play and try three pairs.'
+        ],
+        check: 'The move counter rises by 1 for every pair you try.'
+      },
       checkpoint: 'Flip two cards - the move count at the top should increase by 1 each time you select a second card.',
       points: [
         'Increment moves each time secondPick is set (one move = one pair attempt)',
@@ -258,6 +306,18 @@ window.CW_CONFIG = {
       title: 'Win Screen',
       activity: '🏆 Win screen',
       goal: 'Show a win screen when all 8 pairs are matched.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'Keep main.gd open.',
+        do: [
+          'Find _check_match().',
+          'When every card is matched, show the win panel.',
+          'Show the final move count.',
+          'Play and match every pair.'
+        ],
+        check: 'The win panel appears when the last pair is matched.'
+      },
       checkpoint: 'Match all 16 cards - a green overlay should appear with your final move count.',
       points: [
         'Check matched.every(m => m) after each successful match',
@@ -289,6 +349,18 @@ window.CW_CONFIG = {
       title: 'Shuffle & Restart',
       activity: '🔀 Shuffle',
       goal: 'Clicking the win screen shuffles the cards and starts a new game.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://main.gd',
+        intro: 'Keep main.gd open.',
+        do: [
+          'Find _new_game().',
+          'Shuffle the cards with Array.shuffle().',
+          'Reset face_up, matched, picks, moves and the win panel.',
+          'Win a game, then click again.'
+        ],
+        check: 'The board resets in a new order after you win.'
+      },
       checkpoint: 'Win a game, then click the screen - the cards should reset and be in a different order.',
       points: [
         'Fisher-Yates shuffle: loop backward, swap each element with a random earlier one',
@@ -320,6 +392,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '🏠 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and build your own memory game.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Change the theme, grid size or add a timer.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own memory game runs and one thing is different.'
+      },
       checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
       points: [
         'At home: open Godot and create a new 2D project with a GridContainer node',

@@ -79,6 +79,7 @@ var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlig
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-racing-canvas',
   downloadName: 'my-godot-racing.html',
+engineProject: { href: '/workshops/godot-lab/projects/zoom-zoom.zip', label: 'Download the Zoom Zoom starter' },
   nextStep: { url: '/workshops/godot-racing-2-canvas.html', label: 'Godot Racing 2' },
 
   hints: [
@@ -223,6 +224,18 @@ window.CW_CONFIG = {
       title: 'The Car and the Road',
       activity: '\uD83C\uDFCE\uFE0F Build it',
       goal: 'Draw the car and the road it drives on.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scenes/track.tscn',
+        intro: 'The car and track nodes are already wired.',
+        do: [
+          'Open scenes/track.tscn.',
+          'Select Car and set its start position.',
+          'Check the road sprite sits under it.',
+          'Press F5.'
+        ],
+        check: 'A blue car sits on the grey road.'
+      },
       checkpoint: 'You should see a blue car sitting on a grey road strip in the centre of the canvas.',
       points: [
         'The canvas is 600 wide and 400 tall.',
@@ -255,6 +268,18 @@ window.CW_CONFIG = {
       title: 'Drive!',
       activity: '\uD83D\uDD79\uFE0F Drive!',
       goal: 'Move the car with the arrow keys.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/car.gd',
+        intro: 'Car.gd already has the movement frame.',
+        do: [
+          'Open scripts/car.gd.',
+          'Find _physics_process(delta).',
+          'Use ui_up and ui_down to change speed, ui_left and ui_right to steer.',
+          'Press F5 and drive.'
+        ],
+        check: 'Up accelerates, Down slows, Left and Right steer, and the car stays on the road.'
+      },
       checkpoint: 'Hold Up to accelerate and Left/Right to steer. The car should stay within the road boundaries.',
       points: [
         'Up speeds up. Down slows down.',
@@ -287,6 +312,18 @@ window.CW_CONFIG = {
       title: 'Moving Road',
       activity: '\uD83D\uDEE3\uFE0F Road scroll',
       goal: 'Make the road markings scroll so the car looks like it is moving.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/track.gd',
+        intro: 'Track.gd draws the road and dashes.',
+        do: [
+          'Open scripts/track.gd.',
+          'Find _process(delta).',
+          'Add the car speed to the dash offset.',
+          'Wrap the offset so the dashes keep coming.'
+        ],
+        check: 'The lane dashes scroll faster as you speed up.'
+      },
       checkpoint: 'Drive fast - the yellow lane dashes should scroll faster as you speed up.',
       points: [
         'The road stays still. Only the dashes scroll.',
@@ -319,6 +356,17 @@ window.CW_CONFIG = {
       title: 'Obstacles',
       activity: '\uD83D\uDEA7 Obstacles',
       goal: 'Add red obstacles that slide toward the car.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/track.gd',
+        intro: 'Keep track.gd open.',
+        do: [
+          'Move each obstacle down by the car speed.',
+          'Recycle it to the top when it passes the bottom.',
+          'Play and watch three obstacles.'
+        ],
+        check: 'Three obstacles slide toward the car and reappear at the top.'
+      },
       checkpoint: 'Three red rectangles should appear at the top of the road and slide toward you as you drive.',
       points: [
         'Obstacles start above the screen and move down with the car speed.',
@@ -351,6 +399,17 @@ window.CW_CONFIG = {
       title: 'Crash!',
       activity: '\uD83D\uDCA5 Crash!',
       goal: 'Slow the car down when it hits an obstacle.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/car.gd',
+        intro: 'Keep car.gd open.',
+        do: [
+          'Check each obstacle rectangle for an overlap with the car.',
+          'On a crash, multiply speed by 0.3 and move the obstacle away.',
+          'Play and drive into one.'
+        ],
+        check: 'The car slows sharply on impact and you can keep driving.'
+      },
       checkpoint: 'Drive into a red obstacle - your car should slow down sharply on impact, then you can keep going.',
       points: [
         'Two rectangles crash when all four edges overlap.',
@@ -383,6 +442,17 @@ window.CW_CONFIG = {
       title: 'Lap Timer',
       activity: '\uD83C\uDFC6 Lap timer',
       goal: 'Count your laps and keep your best time.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://scripts/track.gd',
+        intro: 'Keep track.gd open.',
+        do: [
+          'Add car speed to distance each frame.',
+          'Finish a lap at lap_length, keep the best time and stop after 3 laps.',
+          'Play three laps.'
+        ],
+        check: 'The timer updates each lap and the race ends after three.'
+      },
       checkpoint: 'Drive 3 laps - watch the timer count up, and see your best lap time shown at the race complete screen.',
       points: [
         'The distance grows every frame at the current speed.',
@@ -415,6 +485,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '\uD83C\uDFE0 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own racing game.',
+      engine: {
+        name: 'Godot 4',
+        file: 'res://project.godot',
+        intro: 'The whole project is ready to change.',
+        do: [
+          'Download the starter and open project.godot.',
+          'Read your Mod Card choices.',
+          'Change the car or road colour and the lap count.',
+          'Press F5 and show someone.'
+        ],
+        check: 'Your own racer runs and one thing is different.'
+      },
       checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
       points: [
         'At home: open Godot and create a new 2D project',

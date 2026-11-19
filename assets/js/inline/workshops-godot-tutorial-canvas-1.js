@@ -86,7 +86,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-tutorial-canvas',
   downloadName: 'my-godot-tutorial.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=godot-tutorial', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/godot-tutorial.zip', label: 'Download the Star Collector starter' },
   previewSolutionWhenBlank: true,
   nextStep: { url: '/workshops/godot-world-workshop.html', label: 'Godot World' },
 
@@ -97,7 +97,7 @@ window.CW_CONFIG = {
     'Yellow coin pickups are scattered around the level',
     'Collect all 8 coins to trigger the win condition',
     'Your score is displayed in the top-left corner',
-    'Your mod card - plan your own Godot scene to build at home'
+    'Your rainy day challenge - one change to make in the Godot Lab'
   ],
 
   templates: {
@@ -211,12 +211,12 @@ window.CW_CONFIG = {
         '.val{color:#f1f5f9;font-weight:bold}' +
         '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #60a5fa;font-size:.82rem;color:#94a3b8}' +
         '</style>' +
-        '<div class="card"><h2>🏠 My Godot Scene Mod Card</h2>';
-      var order = ['Game name','Sprite colour','Collectible type','Number of collectibles','Background style','Trail colour','One thing to add at home'];
+        '<div class="card"><h2>🌧️ My Rainy Day Challenge</h2>';
+      var order = ['Game name','Player colour','One thing I will change','One thing I will add','Who I will show'];
       order.forEach(function(k) {
         if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
       });
-      html += '<div class="tip">💡 At home: open Godot, create a CharacterBody2D, add a Sprite2D child and draw your character. Add a script with _physics_process(delta) and use velocity = input_dir * speed then move_and_slide() for smooth movement!</div></div>';
+      html += '<div class="tip">💡 In the Godot Lab: open this project, find the value in the Inspector, change it, then press Play. That is your rainy day game.</div></div>';
       var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
       return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
     }
@@ -294,6 +294,14 @@ window.CW_CONFIG = {
       activity: '🕹️ Input',
       goal: 'Move the sprite with WASD or arrow keys.',
       checkpoint: 'Use arrow keys or WASD - the blue arrow should move around the canvas.',
+      parsons: {
+        prompt: 'Drag the three real GDScript lines into the order a movement script needs.',
+        lines: [
+          'var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")',
+          'velocity = direction * speed',
+          'move_and_slide()'
+        ]
+      },
       expect: 'The arrow moves with the arrow keys and stays inside the 400 by 400 scene.',
       minutes: 10,
       predict: {
@@ -366,8 +374,10 @@ window.CW_CONFIG = {
         intro: 'One line handles the turn in Godot.',
         file: 'player.gd',
         do: [
+          'Open player.gd.',
           'After setting velocity, check that the direction is not zero.',
-          'Set rotation to direction.angle().'
+          'Set rotation to direction.angle().',
+          'Press F5 and move in a new direction.'
         ],
         code: 'if direction.length() > 0.1:\n    rotation = direction.angle()',
         check: 'Press Play, hold left, and watch the arrow point left.'
@@ -562,12 +572,12 @@ window.CW_CONFIG = {
     },
     {
       num: 7,
-      title: 'Take It Home',
-      activity: '🏠 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and build this scene for real.',
-      checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
-      expect: 'A filled Mod Card you can save, print or download.',
-      minutes: 5,
+      title: 'Rainy Day Challenge',
+      activity: '🌧️ Challenge',
+      goal: 'Make the game yours in the Godot Lab.',
+      checkpoint: 'Pick one change, make it in the Lab, and play it.',
+      expect: 'A plan for one change and a game you can play in the Lab.',
+      minutes: 10,
       engine: {
         name: 'Godot',
         intro: 'The finished project is ready for you.',
@@ -575,27 +585,24 @@ window.CW_CONFIG = {
         do: [
           'Switch to At home mode.',
           'Open the Godot Lab and load the lesson project.',
-          'Press Play and collect the coins.'
+          'Change one thing in the Player Inspector.',
+          'Press Play and show someone.'
         ],
         code: '# The full project is in workshops/godot-lab/godot-tutorial/\n# Player, Coins, UI and the same scripts.',
-        check: 'The Lab opens Star Collector and the arrow moves.'
+        check: 'The Lab opens Star Collector and your change is in the game.'
       },
-      makeItYours: 'Add one thing of your own: a timer, a second enemy, or a sound.',
+      makeItYours: 'Change the player colour or name, add a coin, then play it in the Lab.',
       points: [
-        'At home: open Godot, create a CharacterBody2D with a Sprite2D child',
-        'Add a script with _physics_process(delta): use Input.get_vector() and move_and_slide()',
-        'Add Area2D nodes for coins with body_entered signal connected to a collect function',
-        'Add a CanvasLayer with a Label to show score and a win panel'
+        'Pick one change: colour, name, speed or one more coin.',
+        'Open the Godot Lab and find the value in the Inspector.',
+        'Change it, press Play, and see what happens.',
+        'Show someone your version. That is the rainy day game.'
       ],
-      challenge: '✏️ Fill in your Mod Card:',
-      starter: '# My Godot Scene Mod Card\nGame name: ___\nSprite colour: ___\nCollectible type: ___\nNumber of collectibles: ___\nBackground style: ___\nTrail colour: ___\nOne thing to add at home: ___',
-      solution: '# My Godot Scene Mod Card\nGame name: Star Collector\nSprite colour: purple\nCollectible type: stars\nNumber of collectibles: 12\nBackground style: deep space\nTrail colour: pink\nOne thing to add at home: enemies that patrol and reset the score on contact',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'At home my sprite will be ___ and I will collect ___.',
-        answers: ['purple', 'stars']
-      }
+      challenge: '✏️ Your challenge: pick one change and make it real:',
+      starter: '# My rainy day challenge\nGame name: ___\nPlayer colour: ___\nOne thing I will change: ___\nOne thing I will add: ___\nWho I will show: ___',
+      solution: '# My rainy day challenge\nGame name: Star Collector\nPlayer colour: blue\nOne thing I will change: make the trail longer\nOne thing I will add: a second enemy\nWho I will show: my family',
+      checks: ['Game name'],
+      height: 150
     }
   ]
 };
