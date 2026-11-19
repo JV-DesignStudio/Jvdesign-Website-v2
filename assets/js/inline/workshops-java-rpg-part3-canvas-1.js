@@ -301,6 +301,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-rpg3-canvas',
   downloadName: 'my-java-rpg-finale.html',
+engineProject: { href: '/downloads/java-rpg-part3-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Click the NPC to start a conversation',
@@ -456,6 +457,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'NPC & Dialog',
       goal: 'Draw a village scene with a talkable NPC. Click the Elder to see dialogue advance.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the NPC distance check and dialogue advance.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a village scene with a talkable NPC. Click the Elder to see dialogue advance.'
+        ],
+        check: 'Draw a village scene with a talkable NPC. Click the Elder to see dialogue advance.'
+      },
       points: [
         'The NPC is stored at <code>int npcRow, npcCol</code> and drawn as a purple rectangle',
         'Talking requires being NEXT TO the NPC: <code>Math.abs(heroRow-npcRow) + Math.abs(heroCol-npcCol) == 1</code> (Manhattan distance)',
@@ -484,6 +497,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Quest Log',
       goal: 'Accept a quest from the Elder and track goblin kills with a HUD counter.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the quest tracking logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Accept a quest from the Elder and track goblin kills with a HUD counter.'
+        ],
+        check: 'Accept a quest from the Elder and track goblin kills with a HUD counter.'
+      },
       points: [
         'Quest state is just two variables: <code>boolean questActive; int goblinsSlain;</code>',
         'Finishing the Elder\'s dialogue the first time sets <code>questActive = true</code>',
@@ -512,6 +537,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Key & Gate',
       goal: 'Gate the boss behind the quest reward. The Dragon Key opens a locked tile.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the gate check and key consumption.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Gate the boss behind the quest reward. The Dragon Key opens a locked tile.'
+        ],
+        check: 'Gate the boss behind the quest reward. The Dragon Key opens a locked tile.'
+      },
       points: [
         'When the Elder\'s quest-complete dialogue finishes, grant the key: <code>hero.pickUp(new Item("Dragon Key","key",0))</code>',
         'Tile type 5 is the gate - only walkable when <code>hero.hasItem("Dragon Key")</code> returns true',
@@ -540,6 +577,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Dragon Boss',
       goal: 'Build a multi-phase boss fight. The Dragon enrages at half health with increased attack.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the boss enrage logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Build a multi-phase boss fight. The Dragon enrages at half health with increased attack.'
+        ],
+        check: 'Build a multi-phase boss fight. The Dragon enrages at half health with increased attack.'
+      },
       points: [
         'The Dragon has big stats: 80 HP, 9 attack, 100 XP - a boss, not a random encounter',
         'Phase 2 triggers at half HP: <code>attack += 4</code> and the log shows "ENRAGED!"',
@@ -568,6 +617,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'The Ending',
       goal: 'Defeating the Dragon triggers a victory screen with credits, stats and a replay option.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the victory state and ending display.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Defeating the Dragon triggers a victory screen with credits, stats and a replay option.'
+        ],
+        check: 'Defeating the Dragon triggers a victory screen with credits, stats and a replay option.'
+      },
       points: [
         'When the Dragon is defeated, set <code>state = "VICTORY"</code> instead of returning to EXPLORE',
         'The ending screen shows: golden title, hero level, goblins slain, gold earned, and YOUR name as developer',
@@ -596,6 +657,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'What You Learned',
       goal: 'Review all the professional patterns hiding inside your seven Java games.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Identify the design patterns in your RPG.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Review all the professional patterns hiding inside your seven Java games.'
+        ],
+        check: 'Review all the professional patterns hiding inside your seven Java games.'
+      },
       points: [
         '<strong>Game loop</strong> (every episode), <strong>state machine</strong> (MENU/EXPLORE/BATTLE), <strong>encapsulation</strong> (Hero class)',
         '<strong>Factory pattern</strong> (Monster.create), <strong>tile maps</strong> (RPG world), <strong>lock-and-key design</strong> (the gate)',

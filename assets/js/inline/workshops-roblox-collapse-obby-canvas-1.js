@@ -192,6 +192,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-collapse-obby-canvas',
   downloadName: 'my-collapse-obby.html',
+engineProject: { href: '/downloads/roblox-collapse-scripts.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to move, Space to jump onto the platforms',
@@ -263,6 +264,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Platform Layout',
       goal: 'Set up the crumbling world with platforms, a player and basic rendering.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the platform array with safe and crumble types.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Set up the crumbling world with platforms, a player and basic rendering.'
+        ],
+        check: 'Set up the crumbling world with platforms, a player and basic rendering.'
+      },
       points: [
         'A row of coloured platforms stretching across the screen',
         'Each platform has an opacity, a crumble timer and a type',
@@ -291,6 +304,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Player Movement & Gravity',
       goal: 'Add movement, gravity and platform collision with crumble triggering.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function that triggers crumbling on landing.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add movement, gravity and platform collision with crumble triggering.'
+        ],
+        check: 'Add movement, gravity and platform collision with crumble triggering.'
+      },
       points: [
         'Arrow keys move left/right, Space jumps',
         'Gravity pulls the player down each frame',
@@ -319,6 +344,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Crumble Mechanic',
       goal: 'Make platforms fade out and disappear after the player touches them.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the crumble update function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Make platforms fade out and disappear after the player touches them.'
+        ],
+        check: 'Make platforms fade out and disappear after the player touches them.'
+      },
       points: [
         'A timer counts how long since the player landed',
         'The platform\'s opacity fades from 1 to 0 over about 1 second',
@@ -347,6 +384,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Timer Display',
       goal: 'Show a live timer counting how long the player has survived.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the HUD that shows lives and elapsed time.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Show a live timer counting how long the player has survived.'
+        ],
+        check: 'Show a live timer counting how long the player has survived.'
+      },
       points: [
         'A seconds counter at the top of the screen',
         'Lives display updates when the player falls in lava',
@@ -375,6 +424,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Safe Platforms vs Crumbling',
       goal: 'Add clearly marked safe platforms that never crumble.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the drawing code that marks safe platforms differently.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add clearly marked safe platforms that never crumble.'
+        ],
+        check: 'Add clearly marked safe platforms that never crumble.'
+      },
       points: [
         'Safe platforms show a "SAFE" label and have a stronger glow',
         'They act as rest stops so the player can plan their next jumps',
@@ -399,6 +460,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Polish',
       goal: 'Add victory detection, visual polish and touch controls.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the victory overlay that shows when the player reaches the finish.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add victory detection, visual polish and touch controls.'
+        ],
+        check: 'Add victory detection, visual polish and touch controls.'
+      },
       points: [
         'Reaching the finish platform shows a victory screen with time',
         'Crumbling platforms flash red as a warning before they vanish',

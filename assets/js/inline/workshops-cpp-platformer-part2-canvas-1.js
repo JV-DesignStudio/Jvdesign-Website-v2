@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -152,6 +152,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-platformer-p2-canvas',
   downloadName: 'my-cpp-platformer-2.html',
+engineProject: { href: '/downloads/cpp-platformer-part2-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue player on platforms with a red patrolling enemy',
@@ -185,8 +186,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -202,8 +202,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -220,8 +219,7 @@ window.CW_CONFIG = {
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
         CAMERA_UPDATE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_SPIKES_CAM + DRAW_CHECKPOINTS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
         DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -309,8 +307,7 @@ window.CW_CONFIG = {
           'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){if(vy>0&&py+ph-en.y<16){en.alive=false;vy=-8;score+=50}else respawn()}}' +
         'for(var i=0;i<spikes.length;i++){var s=spikes[i];if(px+pw>s.x&&px<s.x+s.w&&py+ph>s.y&&py<s.y+s.h)respawn()}' +
         'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];if(!cp.reached&&px+pw>cp.x&&px<cp.x+cp.w&&py+ph>cp.y&&py<cp.y+cp.h){cp.reached=true;respawnX=cp.x;respawnY=cp.y-ph}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'camX=px-280;if(camX<0)camX=0;if(camX>LEVEL_W-600)camX=LEVEL_W-600;' +
         '}' +
         DRAW_BG +
@@ -340,6 +337,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Enemy Class',
       goal: 'Add patrolling enemies that walk back and forth between bounds, just like the Enemy class in real C++.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the enemy patrol logic in C++.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add patrolling enemies that walk back and forth between bounds, just like the Enemy class in real C++.'
+        ],
+        check: 'Add patrolling enemies that walk back and forth between bounds, just like the Enemy class in real C++.'
+      },
       points: [
         'Each enemy has position (<code>float x, y</code>), velocity (<code>float vx</code>), and patrol bounds (<code>float minX, maxX</code>)',
         'The patrol update: move by vx each frame; when the enemy reaches minX or maxX, flip vx',
@@ -369,6 +378,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Stomp or Suffer',
       goal: 'Implement stomp kills: fall on an enemy from above to destroy it, touch the side and respawn.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the stomp and death collision.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Implement stomp kills: fall on an enemy from above to destroy it, touch the side and respawn.'
+        ],
+        check: 'Implement stomp kills: fall on an enemy from above to destroy it, touch the side and respawn.'
+      },
       points: [
         'For each living enemy that overlaps the player: check if the player is <strong>falling</strong> and landing on its top',
         'Stomp: set <code>alive = false</code>, bounce the player upward (<code>vy = -350</code> in SFML, or -8 here), add score',
@@ -398,6 +419,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Scrolling Camera',
       goal: 'Follow the player through a wider level using a camera offset  -  what SFML does with sf::View.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the camera follow logic in C++.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Follow the player through a wider level using a camera offset - what SFML does with sf::View.'
+        ],
+        check: 'Follow the player through a wider level using a camera offset - what SFML does with sf::View.'
+      },
       points: [
         'SFML has a real camera class: <code>sf::View</code>. Centre it on the player, clamp to level edges, and call <code>window.setView(view)</code>',
         'Here we do the same thing manually: compute <code>camX</code> as <code>playerX - 280</code>, clamped between 0 and <code>LEVEL_W - 600</code>',
@@ -427,6 +460,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Spikes & Checkpoints',
       goal: 'Add deadly spike hazards and fair checkpoint flags that update the respawn point.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the spike and checkpoint logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add deadly spike hazards and fair checkpoint flags that update the respawn point.'
+        ],
+        check: 'Add deadly spike hazards and fair checkpoint flags that update the respawn point.'
+      },
       points: [
         'Spikes: red triangles on the ground. Touching one calls <code>respawn()</code>  -  same function as enemy death',
         'Checkpoints: flag shapes. When the player touches one, update <code>respawnPoint</code> so respawn sends you there',
@@ -456,6 +501,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Levels as Structs',
       goal: 'Bundle platforms, enemies, spikes, checkpoints and a door into level data, then swap between levels.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the door check and level loading.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Bundle platforms, enemies, spikes, checkpoints and a door into level data, then swap between levels.'
+        ],
+        check: 'Bundle platforms, enemies, spikes, checkpoints and a door into level data, then swap between levels.'
+      },
       points: [
         'A <strong>struct Level</strong> holds: platforms, enemies, spikes, checkpoints, door, width  -  all the data for one level',
         'A <code>loadLevel(n)</code> function copies the struct into the live game arrays and resets the player',
@@ -485,6 +542,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Polish & Ship',
       goal: 'Add a death counter, speedrun timer, and a champion win screen with restart.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer2.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer2.cpp in C++17 with SFML.',
+          'Find the code that does: Write the win detection and champion screen trigger.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a death counter, speedrun timer, and a champion win screen with restart.'
+        ],
+        check: 'Add a death counter, speedrun timer, and a champion win screen with restart.'
+      },
       points: [
         'Track <code>deaths</code> (++ inside respawn) and a speedrun timer started when the game begins',
         'When the player reaches the final door, set <code>gameWon = true</code> and show the champion screen',

@@ -251,6 +251,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-simulator-canvas',
   downloadName: 'my-simulator-game.html',
+engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to move your character around the world',
@@ -322,6 +323,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Resource Spawning',
       goal: 'Set up a player character and spawn collectible orbs across the world.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function for a top-down simulator.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Set up a player character and spawn collectible orbs across the world.'
+        ],
+        check: 'Set up a player character and spawn collectible orbs across the world.'
+      },
       points: [
         'A player character that moves with arrow keys (top-down view)',
         'Colourful coin orbs and purple gem orbs spawn randomly',
@@ -350,6 +363,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Collection Mechanics',
       goal: 'Let the player walk over orbs or click them to collect resources.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the walk-over collection function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Let the player walk over orbs or click them to collect resources.'
+        ],
+        check: 'Let the player walk over orbs or click them to collect resources.'
+      },
       points: [
         'Walking near an orb picks it up automatically',
         'Clicking an orb collects it from a distance',
@@ -378,6 +403,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Backpack & Sell Zone',
       goal: 'Add a backpack limit and a sell zone to trade resources for permanent coins.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the sell zone check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a backpack limit and a sell zone to trade resources for permanent coins.'
+        ],
+        check: 'Add a backpack limit and a sell zone to trade resources for permanent coins.'
+      },
       points: [
         'The backpack holds a limited number of items (starts at 10)',
         'A green sell zone empties the backpack when you walk into it',
@@ -406,6 +443,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Shop & Upgrade System',
       goal: 'Build a shop panel where players spend coins on upgrades.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the upgrade purchase function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Build a shop panel where players spend coins on upgrades.'
+        ],
+        check: 'Build a shop panel where players spend coins on upgrades.'
+      },
       points: [
         'Three upgrades: bigger backpack, speed boost, auto-collect',
         'Each upgrade costs coins and can only be bought once',
@@ -434,6 +483,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Auto-Collect & Speed',
       goal: 'Make the auto-collect upgrade pull nearby orbs towards the player.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the auto-collect magnet function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Make the auto-collect upgrade pull nearby orbs towards the player.'
+        ],
+        check: 'Make the auto-collect upgrade pull nearby orbs towards the player.'
+      },
       points: [
         'After buying auto-collect, nearby orbs drift towards the player',
         'Lerp (linear interpolation) creates smooth magnet-like movement',
@@ -458,6 +519,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Rebirth & Polish',
       goal: 'Add a rebirth system that resets progress for a permanent multiplier.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the rebirth function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a rebirth system that resets progress for a permanent multiplier.'
+        ],
+        check: 'Add a rebirth system that resets progress for a permanent multiplier.'
+      },
       points: [
         'Rebirth costs 100 coins and resets all upgrades',
         'Each rebirth gives a permanent +1 multiplier to all earnings',

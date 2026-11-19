@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -94,6 +94,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-platformer-canvas',
   downloadName: 'my-cpp-platformer.html',
+engineProject: { href: '/downloads/cpp-platformer-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'An orange player standing on a green ground platform',
@@ -123,8 +124,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CLAMP_X +
         GROUND_CHECK +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
@@ -140,8 +140,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -154,8 +153,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         JUMP_LOGIC + RESPAWN +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -170,8 +168,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK + JUMP_LOGIC + RESPAWN +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -188,8 +185,7 @@ window.CW_CONFIG = {
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK + JUMP_LOGIC + RESPAWN +
         COIN_COLLECT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
         'if(gameState==="won"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -207,6 +203,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Ground',
       goal: 'Draw an orange player rectangle standing on a green ground platform.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Set the player’s starting position and size.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw an orange player rectangle standing on a green ground platform.'
+        ],
+        check: 'Draw an orange player rectangle standing on a green ground platform.'
+      },
       points: [
         'The canvas is 600×400 pixels with a dark blue background',
         'The ground platform spans the full width at y=380, 600 wide and 20 tall, drawn in green (#06d6a0)',
@@ -236,6 +244,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Movement & Gravity',
       goal: 'Move the player left and right with arrow keys while gravity pulls it down each frame.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Write gravity and movement each frame.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the player left and right with arrow keys while gravity pulls it down each frame.'
+        ],
+        check: 'Move the player left and right with arrow keys while gravity pulls it down each frame.'
+      },
       points: [
         'Each frame: add gravity to vertical velocity <code>pvy += GRAV / 60</code>, then move the player by velocity / 60',
         'Left and right arrows set horizontal velocity to ±220 px/sec',
@@ -265,6 +285,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Jumping',
       goal: 'Press Space to jump, but only when standing on the ground.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Write the jump logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Press Space to jump, but only when standing on the ground.'
+        ],
+        check: 'Press Space to jump, but only when standing on the ground.'
+      },
       points: [
         'Jump: set <code>pvy = JUMP_VEL</code> (−460)  -  negative because up is negative y on canvas',
         'Only allow jumping when <code>onGround</code> is true, otherwise the player could fly',
@@ -294,6 +326,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Platforms & Landing',
       goal: 'Add floating platforms and detect when the player lands on them from above.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Write the platform collision loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add floating platforms and detect when the player lands on them from above.'
+        ],
+        check: 'Add floating platforms and detect when the player lands on them from above.'
+      },
       points: [
         'Each platform is an object with x, y, w, h  -  the ground is just the first platform in the array',
         'Landing check: player overlaps platform horizontally AND player bottom reaches platform top AND player is falling (pvy ≥ 0)',
@@ -323,6 +367,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coins & Score',
       goal: 'Place collectible gold coins above platforms and track the score.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Write the coin collection logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Place collectible gold coins above platforms and track the score.'
+        ],
+        check: 'Place collectible gold coins above platforms and track the score.'
+      },
       points: [
         'Coins are small gold squares (14×14) placed above each floating platform',
         'Collision: if the player rectangle overlaps a coin rectangle, remove the coin and add 10 points',
@@ -352,6 +408,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win & Restart',
       goal: 'Win when all coins are collected. Press R to play again.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'platformer.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.cpp in C++17 with SFML.',
+          'Find the code that does: Write the win condition and restart check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Win when all coins are collected. Press R to play again.'
+        ],
+        check: 'Win when all coins are collected. Press R to play again.'
+      },
       points: [
         'After collecting all coins (<code>coins.size() == 0</code>), set <code>gameState = "won"</code>',
         'In the won state, display "YOU WIN!" with the final score, and stop updating the player',

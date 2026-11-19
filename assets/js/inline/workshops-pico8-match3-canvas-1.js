@@ -115,6 +115,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-match3-canvas',
   downloadName: 'my-pico8-match3.html',
+engineProject: { href: '/downloads/pico8-match3-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'An 8x8 grid of coloured gems on a dark background',
@@ -143,8 +144,7 @@ window.CW_CONFIG = {
         SETUP + GRID_INIT + CURSOR_VARS + KEYS,
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -159,8 +159,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CURSOR +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -176,8 +175,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m)}else{doSwap()}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -194,8 +192,7 @@ window.CW_CONFIG = {
         'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){score+=clearMatches(m2);clearTimer=15}}}else{' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
@@ -214,8 +211,7 @@ window.CW_CONFIG = {
         'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){chain++;score+=clearMatches(m2)*(chain+1);clearTimer=15}else{chain=0}}}else{' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){chain=0;score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
@@ -231,6 +227,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Gem Grid',
       goal: 'Fill an 8x8 grid with random coloured gems.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Set up the grid dimensions.',
+          'Type the same code into the cart.',
+          'Run the project and check: Fill an 8x8 grid with random coloured gems.'
+        ],
+        check: 'Fill an 8x8 grid with random coloured gems.'
+      },
       points: [
         'The grid is a 2D array: grid[row][col] holds a colour index (0-4)',
         'Five gem colours from the PICO-8 palette: red(8), orange(9), yellow(10), green(11), blue(12)',
@@ -260,6 +268,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Cursor Movement',
       goal: 'Move a cursor across the grid with arrow keys.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Write the cursor movement.',
+          'Type the same code into the cart.',
+          'Run the project and check: Move a cursor across the grid with arrow keys.'
+        ],
+        check: 'Move a cursor across the grid with arrow keys.'
+      },
       points: [
         'The cursor highlights TWO adjacent cells (the swap pair)',
         'btnp(0-3) moves one cell at a time: left, right, up, down',
@@ -289,6 +309,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Swapping Gems',
       goal: 'Press Z to swap the two gems under the cursor.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Write the swap.',
+          'Type the same code into the cart.',
+          'Run the project and check: Press Z to swap the two gems under the cursor.'
+        ],
+        check: 'Press Z to swap the two gems under the cursor.'
+      },
       points: [
         'Swap means: temp = grid[curY][curX], grid[curY][curX] = grid[curY][curX+1], grid[curY][curX+1] = temp',
         'This is the classic three-variable swap pattern used everywhere in programming',
@@ -318,6 +350,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Finding Matches',
       goal: 'Scan the grid for 3+ gems in a row or column.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Write the horizontal match check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Scan the grid for 3+ gems in a row or column.'
+        ],
+        check: 'Scan the grid for 3+ gems in a row or column.'
+      },
       points: [
         'Horizontal scan: for each row, check if three consecutive cells share the same colour',
         'Vertical scan: for each column, check if three consecutive cells share the same colour',
@@ -347,6 +391,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Gravity Drop',
       goal: 'After clearing matches, gems fall down and new gems fill the top.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Write the gravity drop for one column.',
+          'Type the same code into the cart.',
+          'Run the project and check: After clearing matches, gems fall down and new gems fill the top.'
+        ],
+        check: 'After clearing matches, gems fall down and new gems fill the top.'
+      },
       points: [
         'Set matched cells to -1 (empty). Then "drop": scan each column from bottom up',
         'Move non-empty cells down to fill gaps, like stacking blocks',
@@ -376,6 +432,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Chain Combos',
       goal: 'After gems drop, check for new matches and multiply points for chains.',
+      engine: {
+        name: 'PICO-8',
+        file: 'match3.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open match3.p8 in PICO-8.',
+          'Find the code that does: Write the chain scoring.',
+          'Type the same code into the cart.',
+          'Run the project and check: After gems drop, check for new matches and multiply points for chains.'
+        ],
+        check: 'After gems drop, check for new matches and multiply points for chains.'
+      },
       points: [
         'After dropping, call findMatches again - if new matches formed, that is a chain',
         'Chain multiplier: first clear = x1, chain 1 = x2, chain 2 = x3, etc.',

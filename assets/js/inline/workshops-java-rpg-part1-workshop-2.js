@@ -104,6 +104,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-rpg1-workshop',
   downloadName: 'my-java-rpg.html',
+engineProject: { href: '/downloads/java-rpg-part1-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Your hero appears on screen with HP and name',
@@ -200,6 +201,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Hero',
       goal: 'Create a hero with a name, HP, and attack stat - display them on screen.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Set up the hero stats in Java.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Create a hero with a name, HP, and attack stat - display them on screen.'
+        ],
+        check: 'Create a hero with a name, HP, and attack stat - display them on screen.'
+      },
       points: [
         'In Java, the hero is a class with fields: <code>String name</code>, <code>int maxHp, hp, attack</code>',
         'The constructor sets starting values: <code>new Hero("Aria")</code> gives 30 HP and 5 attack',
@@ -228,6 +241,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Items & Inventory',
       goal: 'Add items to the hero\'s inventory and display them on screen.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Add items to the hero\'s inventory.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add items to the hero\'s inventory and display them on screen.'
+        ],
+        check: 'Add items to the hero\'s inventory and display them on screen.'
+      },
       points: [
         'An Item has a name, type ("potion"/"weapon"/"key"), and a power value',
         'The hero\'s inventory is an <code>ArrayList&lt;Item&gt;</code> - items are added with <code>pickUp()</code>',
@@ -256,6 +281,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Tile Map',
       goal: 'Draw a grid-based world from a 2D array: grass, walls, water, and chests.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the tile drawing loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a grid-based world from a 2D array: grass, walls, water, and chests.'
+        ],
+        check: 'Draw a grid-based world from a 2D array: grass, walls, water, and chests.'
+      },
       points: [
         'The world is an <code>int[][] map</code> - each number is a tile type: 0=grass, 1=wall, 2=water, 3=chest',
         'A nested loop draws each tile: row controls y, column controls x',
@@ -284,6 +321,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Walking the World',
       goal: 'Move the hero around the tile map with arrow keys, blocked by walls and water.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the movement logic for arrow keys.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the hero around the tile map with arrow keys, blocked by walls and water.'
+        ],
+        check: 'Move the hero around the tile map with arrow keys, blocked by walls and water.'
+      },
       points: [
         'The hero\'s position is a grid position: <code>heroRow, heroCol</code> - not pixels',
         'On key press, calculate the target tile - only move if <code>walkable(r, c)</code> returns true',
@@ -312,6 +361,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Chests & Pickups',
       goal: 'Walk onto chest tiles to collect loot - gold and items added to inventory.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the chest collection logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Walk onto chest tiles to collect loot - gold and items added to inventory.'
+        ],
+        check: 'Walk onto chest tiles to collect loot - gold and items added to inventory.'
+      },
       points: [
         'After moving, check if the new tile is a chest (type 3)',
         'If it is: add an item to inventory, add gold, then set the tile to 0 (grass) so it cannot be looted again',
@@ -340,6 +401,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'HUD & Save',
       goal: 'Draw an HP bar, gold counter, and item count - the essentials of an RPG HUD.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the HUD drawing function.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw an HP bar, gold counter, and item count - the essentials of an RPG HUD.'
+        ],
+        check: 'Draw an HP bar, gold counter, and item count - the essentials of an RPG HUD.'
+      },
       points: [
         'The HUD is a dark strip across the top: <code>fillRect(0, 0, 480, 28)</code> with alpha',
         'The HP bar is red background + green foreground scaled by <code>hp / maxHp</code>',

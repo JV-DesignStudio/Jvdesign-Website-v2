@@ -79,6 +79,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-snake-canvas',
   downloadName: 'my-defold-snake.html',
+engineProject: { href: '/downloads/defold-snake-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green square on a dark 20x20 grid',
@@ -188,6 +189,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Snake Head',
       goal: 'Place a green square on a 20x20 grid.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Set the snake starting position.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Place a green square on a 20x20 grid.'
+        ],
+        check: 'Place a green square on a 20x20 grid.'
+      },
       points: [
         'The game uses a 20x20 grid where each cell is 20 pixels (400x400 canvas)',
         'The snake is an array of {x, y} grid positions - starting with one segment at (10, 10)',
@@ -217,6 +230,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Grid Movement',
       goal: 'Move the snake head one cell per tick in the current direction.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Write the movement logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Move the snake head one cell per tick in the current direction.'
+        ],
+        check: 'Move the snake head one cell per tick in the current direction.'
+      },
       points: [
         'Direction is stored as dx, dy: (1,0) means right, (-1,0) left, (0,-1) up, (0,1) down',
         'Each tick: <code>head.x = head.x + dx</code> and <code>head.y = head.y + dy</code>',
@@ -246,6 +271,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Spawning Food',
       goal: 'Place red food at a random grid cell for the snake to eat.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Write the food spawning function.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Place red food at a random grid cell for the snake to eat.'
+        ],
+        check: 'Place red food at a random grid cell for the snake to eat.'
+      },
       points: [
         'Food is a single {x, y} position on the grid',
         '<code>math.random(0, 19)</code> picks a random cell in the 20x20 grid',
@@ -275,6 +312,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Eating & Growing',
       goal: 'When the snake reaches the food, grow by one segment and respawn the food.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Write the eating logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: When the snake reaches the food, grow by one segment and respawn the food.'
+        ],
+        check: 'When the snake reaches the food, grow by one segment and respawn the food.'
+      },
       points: [
         'If head position equals food position: the snake eats',
         'Growing: skip the <code>snake.pop()</code> this tick so the tail stays, making the snake longer',
@@ -304,6 +353,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Wall & Self Collision',
       goal: 'End the game when the snake hits a wall or its own body.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Write the collision checks.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: End the game when the snake hits a wall or its own body.'
+        ],
+        check: 'End the game when the snake hits a wall or its own body.'
+      },
       points: [
         'Wall collision: head.x < 0 or >= 20, same for head.y',
         'Self collision: loop through body segments and check if any match head position',
@@ -333,6 +394,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Ramp & Restart',
       goal: 'Speed up as the snake grows and allow restarting with R.',
+      engine: {
+        name: 'Defold',
+        file: 'snake.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.script in Defold.',
+          'Find the code that does: Write the speed ramp.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Speed up as the snake grows and allow restarting with R.'
+        ],
+        check: 'Speed up as the snake grows and allow restarting with R.'
+      },
       points: [
         'Decrease tickRate as score grows: <code>tickRate = 150 - score * 5</code>',
         'Cap minimum at 60ms so the game stays playable',

@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -96,6 +96,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-snake-canvas',
   downloadName: 'my-cpp-snake.html',
+engineProject: { href: '/downloads/cpp-snake-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green head cell on a dark 20×20 grid',
@@ -210,6 +211,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Grid & Head',
       goal: 'Draw a 20×20 grid and place the snake head as a green cell at the centre.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Place the head on the grid and set the initial direction.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a 20×20 grid and place the snake head as a green cell at the centre.'
+        ],
+        check: 'Draw a 20×20 grid and place the snake head as a green cell at the centre.'
+      },
       points: [
         'The world is a 20×20 grid of 20px cells, giving a 400×400 canvas',
         'A grid cell is a coordinate pair: <code>struct Cell { int x, y; };</code>  -  your first struct!',
@@ -239,6 +252,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Movement & Input',
       goal: 'Move the snake one cell per tick and steer with arrow keys, blocking 180° reversal.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Write the direction change with the 180° safety check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the snake one cell per tick and steer with arrow keys, blocking 180° reversal.'
+        ],
+        check: 'Move the snake one cell per tick and steer with arrow keys, blocking 180° reversal.'
+      },
       points: [
         'Snake uses TICK-based movement: a timer fires every ~150ms and the snake steps one cell',
         'Arrow keys set the direction, but you must block the exact opposite (right→left kills you instantly)',
@@ -268,6 +293,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Growing the Snake',
       goal: 'Add food, grow the body when eaten, and track segments with an array (deque).',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Write the grow-or-move logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add food, grow the body when eaten, and track segments with an array (deque).'
+        ],
+        check: 'Add food, grow the body when eaten, and track segments with an array (deque).'
+      },
       points: [
         'The body is a <code>std::deque&lt;Cell&gt;</code>: push the new head at the front, pop the tail at the back',
         'When the head lands on food: skip <code>pop_back()</code> so the snake grows by one',
@@ -297,6 +334,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Wall Collision',
       goal: 'End the game when the snake hits any edge of the grid.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Write the wall collision check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: End the game when the snake hits any edge of the grid.'
+        ],
+        check: 'End the game when the snake hits any edge of the grid.'
+      },
       points: [
         'The grid runs from 0 to 19 in both axes (20 cells, indexed 0-19)',
         'Wall death: new head x < 0 or x >= 20, or y < 0 or y >= 20',
@@ -326,6 +375,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Self Collision',
       goal: 'Detect when the snake runs into its own body.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Write the self-collision check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect when the snake runs into its own body.'
+        ],
+        check: 'Detect when the snake runs into its own body.'
+      },
       points: [
         'Self-bite: compare the new head position against every existing body segment',
         'Check BEFORE pushing the new head, so you do not compare the head to itself',
@@ -355,6 +416,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Score & Polish',
       goal: 'Display the score, speed up with each food eaten, track high score, and restart with R.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'snake.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.cpp in C++17 with SFML.',
+          'Find the code that does: Write the score and speed-up on eating.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Display the score, speed up with each food eaten, track high score, and restart with R.'
+        ],
+        check: 'Display the score, speed up with each food eaten, track high score, and restart with R.'
+      },
       points: [
         'Score displayed top-left, high score top-right  -  no font file needed, canvas <code>fillText</code> works',
         'Speed-up: decrease the tick interval each time food is eaten: <code>tickSpeed = std::max(50, 150 - score * 5)</code>',

@@ -103,6 +103,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-platformer-canvas',
   downloadName: 'my-python-platformer.html',
+engineProject: { href: '/downloads/python-platformer-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue player standing on a green ground platform',
@@ -135,8 +136,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -151,8 +151,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER +
         APPLY_GRAVITY + SIMPLE_GROUND_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -168,8 +167,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         JUMP_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -184,8 +182,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -208,8 +205,7 @@ window.CW_CONFIG = {
         MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
         'for(var i=coins.length-1;i>=0;i--){var c=coins[i];' +
         'if(px+pw>c.x-c.r&&px<c.x+c.r&&py+ph>c.y-c.r&&py<c.y+c.r){score+=10;coins.splice(i,1)}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_GOAL + DRAW_PLAYER + DRAW_SCORE + DRAW_LIVES +
         'if(levelComplete){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
@@ -229,6 +225,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Project Setup & Player',
       goal: 'Draw a blue player rectangle standing on a green ground platform.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the player position and dimensions.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a blue player rectangle standing on a green ground platform.'
+        ],
+        check: 'Draw a blue player rectangle standing on a green ground platform.'
+      },
       points: [
         'The canvas is 600x400 pixels with a dark background (#111827)',
         'The player is a blue rectangle: 24 wide, 32 tall',
@@ -258,6 +266,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Gravity & Velocity',
       goal: 'Add vertical velocity so the player falls and lands on the ground.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the gravity and ground collision.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add vertical velocity so the player falls and lands on the ground.'
+        ],
+        check: 'Add vertical velocity so the player falls and lands on the ground.'
+      },
       points: [
         'Vertical velocity <code>vy</code> starts at 0 and increases by <code>gravity</code> (0.5) each frame',
         'Each frame: <code>vy += gravity</code> pulls the player down, then <code>py += vy</code> applies the motion',
@@ -287,6 +307,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Jumping',
       goal: 'Press Up or Space to jump when the player is on the ground.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the jump condition.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Press Up or Space to jump when the player is on the ground.'
+        ],
+        check: 'Press Up or Space to jump when the player is on the ground.'
+      },
       points: [
         'The engine tracks <code>upPressed</code> - in real Pygame you would check for the UP key event',
         'Jump only when <code>onGround</code> is true - this prevents infinite mid-air jumps',
@@ -316,6 +348,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Platforms',
       goal: 'Add floating platforms the player can land on.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the platform collision loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add floating platforms the player can land on.'
+        ],
+        check: 'Add floating platforms the player can land on.'
+      },
       points: [
         'Platforms are stored in a <code>platforms[]</code> array, each with <code>{x, y, w, h}</code>',
         'Loop through every platform and check: is the player falling onto the top edge?',
@@ -345,6 +389,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coins & Score',
       goal: 'Collect coins on overlap and display the score.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the coin collection logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Collect coins on overlap and display the score.'
+        ],
+        check: 'Collect coins on overlap and display the score.'
+      },
       points: [
         'Coins are stored in <code>coins[]</code> as circles with <code>{x, y, r}</code>',
         'Check overlap: player rectangle intersects coin circle (simplified to bounding box check)',
@@ -374,6 +430,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'The Goal & Falling Off',
       goal: 'Reach the goal flag to win. Falling off the screen costs a life. R to restart.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the goal check and fall detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Reach the goal flag to win. Falling off the screen costs a life. R to restart.'
+        ],
+        check: 'Reach the goal flag to win. Falling off the screen costs a life. R to restart.'
+      },
       points: [
         'The goal is a green flag at the top of the level - touch it to show "LEVEL COMPLETE"',
         'If the player falls below the canvas (<code>py > 420</code>), lose a life and respawn',

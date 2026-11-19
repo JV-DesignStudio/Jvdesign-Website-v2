@@ -102,6 +102,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-snake-canvas',
   downloadName: 'my-pico8-snake.html',
+engineProject: { href: '/downloads/pico8-snake-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green square on a dark 16x16 grid',
@@ -221,6 +222,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Snake Head',
       goal: 'Draw a green snake head on a 16x16 grid.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Set the starting snake head position.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw a green snake head on a 16x16 grid.'
+        ],
+        check: 'Draw a green snake head on a 16x16 grid.'
+      },
       points: [
         'The PICO-8 screen is 128x128 pixels - we divide it into a 16x16 grid of 8-pixel cells',
         'The snake is stored as an array of {x, y} grid positions',
@@ -250,6 +263,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Grid Movement',
       goal: 'Move the snake one cell per tick using direction variables.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Write the direction input.',
+          'Type the same code into the cart.',
+          'Run the project and check: Move the snake one cell per tick using direction variables.'
+        ],
+        check: 'Move the snake one cell per tick using direction variables.'
+      },
       points: [
         'The snake moves on a timer: every <code>moveRate</code> frames (8), shift one grid cell',
         'Direction is stored in <code>dx, dy</code>: (1,0)=right, (-1,0)=left, (0,-1)=up, (0,1)=down',
@@ -279,6 +304,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Food Pickup',
       goal: 'Place food on the grid and detect when the snake eats it.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Write the food check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Place food on the grid and detect when the snake eats it.'
+        ],
+        check: 'Place food on the grid and detect when the snake eats it.'
+      },
       points: [
         'Food sits at a random grid cell: <code>fx = flr(rnd(16)), fy = flr(rnd(16))</code>',
         'When the head lands on the food cell: <code>head.x == fx and head.y == fy</code>',
@@ -308,6 +345,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Score Display',
       goal: 'Show the score on screen using PICO-8 print.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Write the score display.',
+          'Type the same code into the cart.',
+          'Run the project and check: Show the score on screen using PICO-8 print.'
+        ],
+        check: 'Show the score on screen using PICO-8 print.'
+      },
       points: [
         'In PICO-8: <code>print("score "..score, 2, 2, 7)</code> draws white text at (2,2)',
         'The <code>..</code> operator joins strings and numbers in Lua',
@@ -337,6 +386,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Self Collision',
       goal: 'End the game when the snake head hits its own body.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Write the self-collision check.',
+          'Type the same code into the cart.',
+          'Run the project and check: End the game when the snake head hits its own body.'
+        ],
+        check: 'End the game when the snake head hits its own body.'
+      },
       points: [
         'Before adding the new head, loop through every body segment',
         'If any segment matches the new head position: game over',
@@ -366,6 +427,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Restart & Speed Up',
       goal: 'Press R to restart and make the snake faster as it grows.',
+      engine: {
+        name: 'PICO-8',
+        file: 'snake.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open snake.p8 in PICO-8.',
+          'Find the code that does: Write the speed ramp.',
+          'Type the same code into the cart.',
+          'Run the project and check: Press R to restart and make the snake faster as it grows.'
+        ],
+        check: 'Press R to restart and make the snake faster as it grows.'
+      },
       points: [
         'On game over, R resets: snake back to one segment, score to 0, direction to right',
         'Speed ramp: <code>moveRate = max(3, 8 - flr(score / 3))</code> - faster every 3 points',

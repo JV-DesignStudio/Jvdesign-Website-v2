@@ -75,6 +75,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-platformer-workshop',
   downloadName: 'my-java-platformer.html',
+engineProject: { href: '/downloads/java-platformer-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Your player falls with gravity and lands on the ground',
@@ -164,6 +165,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Gravity',
       goal: 'Draw a player rectangle that falls with gravity and lands on the ground.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the gravity and ground collision in Java.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a player rectangle that falls with gravity and lands on the ground.'
+        ],
+        check: 'Draw a player rectangle that falls with gravity and lands on the ground.'
+      },
       points: [
         'In Java, the player is stored as <code>int px, py, pw, ph</code> - position and size',
         'Each frame: <code>vy += 1</code> accelerates the player downward (gravity)',
@@ -192,6 +205,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Arrow Keys & Jump',
       goal: 'Move left and right with arrow keys and jump with Up or Space.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the movement and jump logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move left and right with arrow keys and jump with Up or Space.'
+        ],
+        check: 'Move left and right with arrow keys and jump with Up or Space.'
+      },
       points: [
         'Java tracks keys with <code>boolean leftHeld, rightHeld, upHeld</code> - set in keyPressed/keyReleased',
         'Each frame: read booleans to set <code>px -= speed</code> or <code>px += speed</code>',
@@ -220,6 +245,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Platforms & Collision',
       goal: 'Add platform rectangles and make the player land on them.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the platform collision loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add platform rectangles and make the player land on them.'
+        ],
+        check: 'Add platform rectangles and make the player land on them.'
+      },
       points: [
         'Each platform is stored as <code>{ x, y, w, h }</code> - just like <code>java.awt.Rectangle</code>',
         'Check overlap: player right > plat left AND player left < plat right AND same for vertical',
@@ -248,6 +285,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Coins & Score',
       goal: 'Place collectible coins and track the player\'s score.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the coin collection logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Place collectible coins and track the player\'s score.'
+        ],
+        check: 'Place collectible coins and track the player\'s score.'
+      },
       points: [
         'Coins use a <code>collected</code> boolean - like an <code>ArrayList</code> with a flag per item',
         'Each frame, check if the player overlaps each coin - if so, mark it collected',
@@ -276,6 +325,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Enemies & Health',
       goal: 'Add patrolling enemies that cost a heart on contact.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the enemy patrol and damage logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add patrolling enemies that cost a heart on contact.'
+        ],
+        check: 'Add patrolling enemies that cost a heart on contact.'
+      },
       points: [
         'Each enemy has <code>speed, minX, maxX</code> - it walks back and forth between boundaries',
         'Reverse <code>speed</code> when the enemy hits its boundary: <code>speed *= -1</code>',
@@ -304,6 +365,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Camera & Polish',
       goal: 'Make the camera follow the player through a wider level.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the camera follow logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the camera follow the player through a wider level.'
+        ],
+        check: 'Make the camera follow the player through a wider level.'
+      },
       points: [
         'A camera is just an x offset - in Java: <code>int camera</code>, applied with <code>g.translate(-camera, 0)</code>',
         'Each frame: <code>camera = px - 200</code> keeps the player near the left side',

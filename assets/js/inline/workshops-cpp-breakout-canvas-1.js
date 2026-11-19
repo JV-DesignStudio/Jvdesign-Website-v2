@@ -1,7 +1,7 @@
 'use strict';
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -100,6 +100,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-breakout-canvas',
   downloadName: 'my-cpp-breakout.html',
+engineProject: { href: '/downloads/cpp-breakout-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'An orange paddle at the bottom of a dark court',
@@ -210,6 +211,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Paddle & Controls',
       goal: 'Draw an orange paddle at the bottom and move it with arrow keys or the mouse.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the paddle movement logic in C++.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw an orange paddle at the bottom and move it with arrow keys or the mouse.'
+        ],
+        check: 'Draw an orange paddle at the bottom and move it with arrow keys or the mouse.'
+      },
       points: [
         'The court is 600x400 pixels with a dark background',
         'The paddle is 100 wide, 12 tall, drawn in orange at y=375',
@@ -239,6 +252,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ball & Bouncing',
       goal: 'Add a ball that moves each frame and bounces off the top, left and right walls.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the ball movement and wall bounce.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a ball that moves each frame and bounces off the top, left and right walls.'
+        ],
+        check: 'Add a ball that moves each frame and bounces off the top, left and right walls.'
+      },
       points: [
         'The ball has position (<code>float bx, by</code>) and velocity (<code>float bvx, bvy</code>)',
         'Each frame: <code>bx += bvx; by += bvy;</code> moves the ball',
@@ -268,6 +293,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Hit & Spin',
       goal: 'Make the ball rebound off the paddle with a launch angle based on where it strikes.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the paddle rebound with spin.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the ball rebound off the paddle with a launch angle based on where it strikes.'
+        ],
+        check: 'Make the ball rebound off the paddle with a launch angle based on where it strikes.'
+      },
       points: [
         'Check if the ball overlaps the paddle (y padY..padY+padH, x px..px+padW) AND is moving down',
         'On hit: flip <code>bvy</code> so the ball heads back up',
@@ -297,6 +334,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Brick Grid',
       goal: 'Build a grid of colourful bricks using nested loops and an array.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the nested loop to build the brick wall.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Build a grid of colourful bricks using nested loops and an array.'
+        ],
+        check: 'Build a grid of colourful bricks using nested loops and an array.'
+      },
       points: [
         'The wall is 8 columns by 4 rows  -  32 bricks in total',
         'Each brick has x, y, width, height, alive (bool), and a row index for colour',
@@ -326,6 +375,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Brick Collision',
       goal: 'Detect when the ball hits a brick, remove it and add to the score.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the brick collision loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect when the ball hits a brick, remove it and add to the score.'
+        ],
+        check: 'Detect when the ball hits a brick, remove it and add to the score.'
+      },
       points: [
         'Loop through all bricks; skip dead ones (<code>if (!b.alive) continue</code>)',
         'Axis-aligned bounding box (AABB) test: the ball and brick rectangles overlap',
@@ -355,6 +416,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win, Lose & Polish',
       goal: 'Add lives, game over, win detection and a restart key to complete the game.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'breakout.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open breakout.cpp in C++17 with SFML.',
+          'Find the code that does: Write the lose-life, win and game-over logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add lives, game over, win detection and a restart key to complete the game.'
+        ],
+        check: 'Add lives, game over, win detection and a restart key to complete the game.'
+      },
       points: [
         'Ball below the screen (<code>by &gt; 410</code>): lose a life and re-serve from centre',
         '0 lives: set <code>gameState = "over"</code> and freeze physics',

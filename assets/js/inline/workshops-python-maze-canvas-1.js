@@ -134,6 +134,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-maze-canvas',
   downloadName: 'my-python-maze.html',
+engineProject: { href: '/downloads/python-maze-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A dark grid with gray walls forming a maze',
@@ -244,6 +245,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Maze Grid',
       goal: 'Define a 2D maze array and draw walls and paths on the canvas.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the maze dimensions and cell size.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Define a 2D maze array and draw walls and paths on the canvas.'
+        ],
+        check: 'Define a 2D maze array and draw walls and paths on the canvas.'
+      },
       points: [
         'The canvas is 400x400 pixels - a 20x20 grid of 20-pixel cells',
         'The maze is a 2D array: <code>0</code> = path, <code>1</code> = wall',
@@ -273,6 +286,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Tile-by-Tile Movement',
       goal: 'Move the player one tile at a time with arrow keys, blocked by walls.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the movement and wall-check logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the player one tile at a time with arrow keys, blocked by walls.'
+        ],
+        check: 'Move the player one tile at a time with arrow keys, blocked by walls.'
+      },
       points: [
         'The player is a green circle sitting in one cell of the grid',
         'Arrow keys move one tile at a time: calculate the next position <code>(nx, ny)</code> before moving',
@@ -302,6 +327,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Keys & Doors',
       goal: 'Add a collectible key and a locked door. The key unlocks the door.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Add key and door tiles to the maze.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a collectible key and a locked door. The key unlocks the door.'
+        ],
+        check: 'Add a collectible key and a locked door. The key unlocks the door.'
+      },
       points: [
         'Tile type <code>2</code> = key (yellow circle), type <code>3</code> = door (brown rectangle)',
         'Walking onto a key tile sets <code>hasKey = True</code> and clears the tile to <code>0</code>',
@@ -331,6 +368,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'The Ghost',
       goal: 'Add a ghost that chases the player through the maze.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the ghost chase AI.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a ghost that chases the player through the maze.'
+        ],
+        check: 'Add a ghost that chases the player through the maze.'
+      },
       points: [
         'The ghost is a red circle that starts at the far corner (18, 18)',
         'Every <code>ghostInterval</code> frames, the ghost moves one tile toward the player',
@@ -360,6 +409,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Exit, Win & Lose',
       goal: 'Add an exit tile. Reaching it wins. Losing all lives ends the game. R to restart.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the exit tile and win/lose conditions.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add an exit tile. Reaching it wins. Losing all lives ends the game. R to restart.'
+        ],
+        check: 'Add an exit tile. Reaching it wins. Losing all lives ends the game. R to restart.'
+      },
       points: [
         'Tile type <code>4</code> = exit (blue rectangle) placed near the bottom-right',
         'When the player steps on the exit: <code>gameState = "win"</code> and show "YOU WIN!"',
@@ -389,6 +450,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Design Your Own Levels',
       goal: 'Edit the maze array to create your own custom level layout.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Design your own maze layout.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Edit the maze array to create your own custom level layout.'
+        ],
+        check: 'Edit the maze array to create your own custom level layout.'
+      },
       points: [
         'Change <code>0</code>s and <code>1</code>s in the maze array to reshape walls and paths',
         'Place a key (<code>2</code>), door (<code>3</code>), and exit (<code>4</code>) somewhere reachable',

@@ -84,6 +84,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-dodge-canvas',
   downloadName: 'my-python-dodge.html',
+engineProject: { href: '/downloads/python-dodge-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green runner at the bottom of a dark screen',
@@ -113,8 +114,7 @@ window.CW_CONFIG = {
         SETUP + PLAYER_VARS + KEYS,
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(600-pw,px));' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -129,8 +129,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -145,8 +144,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -162,8 +160,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
         COLLISION_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -179,8 +176,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS + COLLISION_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
@@ -198,6 +194,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Runner',
       goal: 'Draw a green rectangle player at the bottom-centre of the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the runner position and size.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a green rectangle player at the bottom-centre of the screen.'
+        ],
+        check: 'Draw a green rectangle player at the bottom-centre of the screen.'
+      },
       points: [
         'The canvas is 600x400 pixels with a dark background (#1a1a2e)',
         'The runner is a green rectangle: 30 wide, 30 tall, sitting at y=360',
@@ -227,6 +235,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Keyboard Movement',
       goal: 'Move the runner left and right with the arrow keys, clamped to the screen edges.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the runner movement logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the runner left and right with the arrow keys, clamped to the screen edges.'
+        ],
+        check: 'Move the runner left and right with the arrow keys, clamped to the screen edges.'
+      },
       points: [
         'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in real Pygame you would use <code>pygame.key.get_pressed()</code>',
         'Move by <code>speed</code> (6) pixels each frame while a key is held',
@@ -256,6 +276,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Spawn Timer',
       goal: 'Spawn falling star objects from random x positions at timed intervals.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the spawn and fall logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Spawn falling star objects from random x positions at timed intervals.'
+        ],
+        check: 'Spawn falling star objects from random x positions at timed intervals.'
+      },
       points: [
         'A spawn timer counts frames: when <code>spawnTimer >= spawnInterval</code>, spawn a new object',
         'Each object starts above the screen at <code>y = -20</code> so it slides in smoothly',
@@ -285,6 +317,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Bombs: Weighted Random',
       goal: 'Introduce bomb objects alongside stars using a random threshold.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the weighted spawn logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Introduce bomb objects alongside stars using a random threshold.'
+        ],
+        check: 'Introduce bomb objects alongside stars using a random threshold.'
+      },
       points: [
         'Use <code>random.random() < 0.3</code> to give a 30% chance of spawning a bomb instead of a star',
         'Stars are yellow circles (<code>#fbbf24</code>), bombs are red circles (<code>#ef4444</code>)',
@@ -314,6 +358,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Catch or Boom',
       goal: 'Detect collisions: catch stars for points, hit bombs to lose lives. Game over at 0 lives.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the collision logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect collisions: catch stars for points, hit bombs to lose lives. Game over at 0 lives.'
+        ],
+        check: 'Detect collisions: catch stars for points, hit bombs to lose lives. Game over at 0 lives.'
+      },
       points: [
         'Check if any object overlaps the runner using circle-vs-rectangle collision',
         'Star collision: <code>score += 1</code>, remove the star',
@@ -343,6 +399,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'The Difficulty Curve',
       goal: 'Increase spawn rate and fall speed based on score. Track high score. Press R to restart.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the difficulty ramp.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Increase spawn rate and fall speed based on score. Track high score. Press R to restart.'
+        ],
+        check: 'Increase spawn rate and fall speed based on score. Track high score. Press R to restart.'
+      },
       points: [
         'Increase <code>fallSpeed</code> as score grows: <code>fallSpeed = 3 + score // 5</code>',
         'Decrease <code>spawnInterval</code> so objects appear faster: <code>spawnInterval = max(20, 60 - score * 2)</code>',

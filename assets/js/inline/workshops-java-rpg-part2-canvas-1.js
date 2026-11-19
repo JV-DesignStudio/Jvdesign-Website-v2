@@ -146,6 +146,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-rpg2-canvas',
   downloadName: 'my-java-rpg-battles.html',
+engineProject: { href: '/downloads/java-rpg-part2-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A monster appears with its name and HP bar',
@@ -313,6 +314,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Monster',
       goal: 'Create a monster with a factory method and draw it on the battle screen with its HP bar.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Create a monster using the factory and store it.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Create a monster with a factory method and draw it on the battle screen with its HP bar.'
+        ],
+        check: 'Create a monster with a factory method and draw it on the battle screen with its HP bar.'
+      },
       points: [
         'In Java, the Monster class has <code>String name, int hp, maxHp, attack, xpReward, goldReward</code>',
         'A <code>static Monster create(String type)</code> factory builds different enemies from one method',
@@ -341,6 +354,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Battle Layout',
       goal: 'Draw the full battle screen: hero on the left, monster on the right, action menu at the bottom.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Set the battle screen state and log message.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw the full battle screen: hero on the left, monster on the right, action menu at the bottom.'
+        ],
+        check: 'Draw the full battle screen: hero on the left, monster on the right, action menu at the bottom.'
+      },
       points: [
         'The battle screen is drawn INSTEAD of the map when <code>state.equals("BATTLE")</code>',
         'Both fighters show name + HP bar - reuse the same bar-drawing code for both',
@@ -369,6 +394,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Attack & Damage',
       goal: 'Click Attack to deal damage - HP bars decrease, damage numbers float up.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Calculate the attack damage with variance.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Click Attack to deal damage - HP bars decrease, damage numbers float up.'
+        ],
+        check: 'Click Attack to deal damage - HP bars decrease, damage numbers float up.'
+      },
       points: [
         'Damage has variance: <code>hero.getAttack() + (int)(Math.random()*4) - 1</code> for attack-1 to attack+2',
         'After your attack, if the foe survives, it strikes back - <code>monsterAttack()</code>',
@@ -397,6 +434,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Defend & Flee',
       goal: 'Defend halves the incoming damage. Flee has a 60% chance to escape the battle.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the defend and flee logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Defend halves the incoming damage. Flee has a 60% chance to escape the battle.'
+        ],
+        check: 'Defend halves the incoming damage. Flee has a 60% chance to escape the battle.'
+      },
       points: [
         'Defending sets <code>boolean defending = true</code> - the monster counter-attack then divides damage by 2',
         'Flee rolls <code>Math.random() < 0.6</code> - 60% chance to escape, otherwise the monster gets a free hit',
@@ -425,6 +474,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Victory & XP',
       goal: 'Defeat the monster to earn XP and gold. Level up when XP reaches the threshold.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the level-up logic inside gainXp.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Defeat the monster to earn XP and gold. Level up when XP reaches the threshold.'
+        ],
+        check: 'Defeat the monster to earn XP and gold. Level up when XP reaches the threshold.'
+      },
       points: [
         'After your attack kills the foe: add <code>foe.xpReward</code> and <code>foe.goldReward</code> to the hero',
         'Level-up formula: while <code>xp >= level * 25</code>, subtract cost, level++, maxHp += 6, attack += 2, full heal',
@@ -453,6 +514,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Defeat & Balance',
       goal: 'Handle losing gracefully: respawn with half HP and half gold, then tune the combat numbers.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the respawn logic for a fallen hero.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Handle losing gracefully: respawn with half HP and half gold, then tune the combat numbers.'
+        ],
+        check: 'Handle losing gracefully: respawn with half HP and half gold, then tune the combat numbers.'
+      },
       points: [
         'On defeat: respawn with half max HP and half gold - a sting, not a total wipe',
         'Click to fight again after defeat - the hero keeps their level but feels the cost',

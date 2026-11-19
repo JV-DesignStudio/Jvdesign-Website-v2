@@ -111,6 +111,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gml-pong-canvas',
   downloadName: 'my-gml-pong.html',
+engineProject: { href: '/downloads/gml-pong-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Two white paddles on a dark court with a dashed centre line',
@@ -141,8 +142,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -158,8 +158,7 @@ window.CW_CONFIG = {
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE +
         'otherY=bx<300?p1Y:p2Y;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bvx=Math.max(-10,Math.min(10,bvx));' +
         'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
@@ -176,8 +175,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -192,8 +190,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'p2Y=Math.max(0,Math.min(304,p2Y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -212,8 +209,7 @@ window.CW_CONFIG = {
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
         AI_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(flash>0)flash--;' +
         '}else if(rPressed){score_l=0;score_r=0;flash=0;serve(1);gameState="play";rPressed=false}' +
         DRAW_BG +
@@ -233,6 +229,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Room, Sprite & First Object',
       goal: 'Set up the court: two paddles, dark background, dashed centre line. Move the left paddle with W/S.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the paddle Step event in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Set up the court: two paddles, dark background, dashed centre line. Move the left paddle with W/S.'
+        ],
+        check: 'Set up the court: two paddles, dark background, dashed centre line. Move the left paddle with W/S.'
+      },
       points: [
         'GameMaker has three building blocks: <strong>Sprites</strong> (images), <strong>Objects</strong> (behaviour) and <strong>Rooms</strong> (levels)',
         'spr_paddle is 16x96 pixels, white. obj_paddle uses it and lives in Room1 (800x500, dark background)',
@@ -262,6 +270,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Ball: hspeed & vspeed',
       goal: 'Launch a ball with built-in speed variables and bounce it off the top and bottom walls.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the ball Create + Step events in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Launch a ball with built-in speed variables and bounce it off the top and bottom walls.'
+        ],
+        check: 'Launch a ball with built-in speed variables and bounce it off the top and bottom walls.'
+      },
       points: [
         'GameMaker objects have motion built in: set <code>hspeed</code> and <code>vspeed</code> in Create and the instance moves itself',
         '<code>choose(-4, 4)</code> is GML\'s coin-flip: a random serve direction each run',
@@ -291,6 +311,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Collision Events & Spin',
       goal: 'Bounce the ball off both paddles with position-based spin using GameMaker collision events.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the collision event in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Bounce the ball off both paddles with position-based spin using GameMaker collision events.'
+        ],
+        check: 'Bounce the ball off both paddles with position-based spin using GameMaker collision events.'
+      },
       points: [
         'Add a <strong>Collision event</strong> to obj_ball targeting obj_paddle - the code runs exactly when they touch',
         'Reverse and slightly grow <code>hspeed</code>: <code>hspeed = -hspeed * 1.05</code> for rally speed-up',
@@ -320,6 +352,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scoring & the Controller Object',
       goal: 'Track score with global variables in a controller object and re-serve after points.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the scoring logic in obj_ball Step.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Track score with global variables in a controller object and re-serve after points.'
+        ],
+        check: 'Track score with global variables in a controller object and re-serve after points.'
+      },
       points: [
         'Create <strong>obj_game</strong> with no sprite - invisible manager objects are a core GameMaker pattern',
         '<code>global.score_l</code> and <code>global.score_r</code> are reachable from any object',
@@ -349,6 +393,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'AI Paddle with Dead Zone',
       goal: 'Replace player 2 with an AI that chases the ball but can be beaten.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the AI chase in obj_paddle_ai Step.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Replace player 2 with an AI that chases the ball but can be beaten.'
+        ],
+        check: 'Replace player 2 with an AI that chases the ball but can be beaten.'
+      },
       points: [
         'Compare paddle centre to ball centre: <code>var gap = obj_ball.y - y</code>',
         '<code>abs(gap) > 12</code> is the dead zone - the AI ignores tiny differences, adding human-like hesitation',
@@ -378,6 +434,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Screen & Polish',
       goal: 'Add a score flash, first-to-7 win condition, and a restart loop.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the scoring with flash and win detection.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add a score flash, first-to-7 win condition, and a restart loop.'
+        ],
+        check: 'Add a score flash, first-to-7 win condition, and a restart loop.'
+      },
       points: [
         'When either score reaches 7: set <code>gameState = "over"</code> and show the winner',
         'Flash effect: set <code>flash = 12</code> on every score - a white overlay fades each frame',

@@ -250,6 +250,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-pirate-canvas',
   downloadName: 'my-pirate-game.html',
+engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to sail your ship across the ocean',
@@ -320,6 +321,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Ship & Ocean Rendering',
       goal: 'Draw the ocean and your pirate ship on the canvas.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the ocean wave animation that makes the water feel alive.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Draw the ocean and your pirate ship on the canvas.'
+        ],
+        check: 'Draw the ocean and your pirate ship on the canvas.'
+      },
       points: [
         'A dark ocean background with animated wave dots',
         'A triangular ship shape drawn at its position and angle',
@@ -348,6 +361,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ship Movement',
       goal: 'Steer the ship with arrow keys using angle-based movement.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function that applies thrust and turning.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Steer the ship with arrow keys using angle-based movement.'
+        ],
+        check: 'Steer the ship with arrow keys using angle-based movement.'
+      },
       points: [
         'Left/Right arrows rotate the ship\'s heading angle',
         'Up arrow thrusts forward along the current angle',
@@ -376,6 +401,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Cannon Firing',
       goal: 'Fire cannonballs in the direction the ship is facing.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the cannon firing function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Fire cannonballs in the direction the ship is facing.'
+        ],
+        check: 'Fire cannonballs in the direction the ship is facing.'
+      },
       points: [
         'Pressing Space creates a cannonball at the ship\'s position',
         'The ball travels along the ship\'s angle at BALL_SPEED',
@@ -404,6 +441,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Enemy Ships with AI',
       goal: 'Add enemy ships that chase the player and fire back.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the enemy AI that chases and fires at the player.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add enemy ships that chase the player and fire back.'
+        ],
+        check: 'Add enemy ships that chase the player and fire back.'
+      },
       points: [
         'Enemy ships spawn at random edges of the screen',
         'They rotate to face the player and move toward them',
@@ -432,6 +481,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Treasure Collection',
       goal: 'Place golden treasure chests that the player can sail over to collect.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the treasure collection check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Place golden treasure chests that the player can sail over to collect.'
+        ],
+        check: 'Place golden treasure chests that the player can sail over to collect.'
+      },
       points: [
         'Five treasure chests are placed at fixed positions',
         'Sailing close to a chest collects it and adds +25 gold',
@@ -456,6 +517,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Health, Damage & Victory',
       goal: 'Add a win condition when all treasure is collected and the ship survives.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the win condition check and victory display.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a win condition when all treasure is collected and the ship survives.'
+        ],
+        check: 'Add a win condition when all treasure is collected and the ship survives.'
+      },
       points: [
         'Collecting all 5 treasures (125+ gold) triggers the win screen',
         'Enemy cannonballs reduce the player\'s HP by 10 each hit',

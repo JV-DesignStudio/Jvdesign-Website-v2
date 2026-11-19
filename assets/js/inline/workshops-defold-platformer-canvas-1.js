@@ -98,6 +98,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-platformer-canvas',
   downloadName: 'my-defold-platformer.html',
+engineProject: { href: '/downloads/defold-platformer-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue player square standing on a green ground platform',
@@ -127,8 +128,7 @@ window.CW_CONFIG = {
         SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS,
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px+=pvx;if(px<0)px=0;if(px+pw>600)px=600-pw;' +
         APPLY_GRAVITY +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
@@ -143,8 +143,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'py+=pvy;onGround=false;' +
         'for(var pi=0;pi<platforms.length;pi++){var pl=platforms[pi];' +
         'if(px+pw>pl.x&&px<pl.x+pl.w&&py+ph>=pl.y&&py+ph<=pl.y+12&&pvy>=0){py=pl.y-ph;pvy=0;onGround=true}}' +
@@ -161,8 +160,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
       )
@@ -174,8 +172,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -189,8 +186,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP + COIN_COLLECT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_FLAG + DRAW_PLAYER + DRAW_SCORE +
         'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -207,6 +203,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Ground',
       goal: 'Draw a blue player on a green ground platform.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Set the player position and ground.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Draw a blue player on a green ground platform.'
+        ],
+        check: 'Draw a blue player on a green ground platform.'
+      },
       points: [
         'The player is a 24x32 rectangle representing a character sprite',
         'The ground platform spans the full width at y=372, 28 pixels tall',
@@ -236,6 +244,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Horizontal Movement',
       goal: 'Move the player left and right with arrow keys, clamped to the screen.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the movement logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Move the player left and right with arrow keys, clamped to the screen.'
+        ],
+        check: 'Move the player left and right with arrow keys, clamped to the screen.'
+      },
       points: [
         'Set velocity based on input: left = -4, right = +4, neither = 0',
         'Apply velocity to position each frame: <code>px = px + pvx</code>',
@@ -265,6 +285,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Gravity & Platforms',
       goal: 'Add gravity that pulls the player down, stopped by platforms.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the gravity and platform landing.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Add gravity that pulls the player down, stopped by platforms.'
+        ],
+        check: 'Add gravity that pulls the player down, stopped by platforms.'
+      },
       points: [
         'Gravity adds to vertical velocity each frame: <code>pvy = pvy + 0.6</code>',
         'Apply velocity: <code>py = py + pvy</code>',
@@ -294,6 +326,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Jumping',
       goal: 'Let the player jump when on a platform by pressing Up or Space.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the jump logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Let the player jump when on a platform by pressing Up or Space.'
+        ],
+        check: 'Let the player jump when on a platform by pressing Up or Space.'
+      },
       points: [
         'Jump only when <code>onGround</code> is true - prevents double jumping',
         'Apply an upward impulse: <code>pvy = -10</code> (negative y is up on canvas)',
@@ -323,6 +367,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coins',
       goal: 'Place collectible coins on platforms. Touch them to pick them up.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the coin collection.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Place collectible coins on platforms. Touch them to pick them up.'
+        ],
+        check: 'Place collectible coins on platforms. Touch them to pick them up.'
+      },
       points: [
         'Coins are small circles on each platform with a <code>got</code> flag',
         'Check overlap between player rect and coin circle each frame',
@@ -352,6 +408,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Goal Flag & Win',
       goal: 'Reach the flag at the top with all coins collected to win.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the win check.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Reach the flag at the top with all coins collected to win.'
+        ],
+        check: 'Reach the flag at the top with all coins collected to win.'
+      },
       points: [
         'The flag is at the highest platform - a red and white rectangle',
         'Win condition: player touches flag AND score equals 4 (all coins)',

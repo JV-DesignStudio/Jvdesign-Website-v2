@@ -89,6 +89,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-platformer-canvas',
   downloadName: 'my-gdevelop-platformer.html',
+engineProject: { href: '/downloads/gdevelop-platformer-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A blue square on a green ground with a sky background',
@@ -118,8 +119,7 @@ window.CW_CONFIG = {
         SETUP + PLAYER_VARS + PLATFORM_DATA + KEYS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(600-pw,px));' +
         APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
@@ -134,8 +134,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'py+=vy;onGround=false;' +
         COLLIDE_PLATFORMS + CLAMP_PLAYER +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
@@ -150,8 +149,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CLAMP_PLAYER +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -165,8 +163,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -181,8 +178,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER + COIN_COLLECT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -198,6 +194,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Ground',
       goal: 'Place a player on a ground platform with a sky background.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Set the player starting position.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place a player on a ground platform with a sky background.'
+        ],
+        check: 'Place a player on a ground platform with a sky background.'
+      },
       points: [
         'The player is a 28x32 blue rectangle standing on a green ground',
         'The ground is a platform at y=370, spanning the full 600px width',
@@ -227,6 +235,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Horizontal Movement',
       goal: 'Move the player left and right with arrow keys, staying on screen.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the movement events.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Move the player left and right with arrow keys, staying on screen.'
+        ],
+        check: 'Move the player left and right with arrow keys, staying on screen.'
+      },
       points: [
         'In GDevelop, the <strong>Platformer character</strong> behaviour handles movement automatically',
         'Here we set horizontal velocity: left subtracts speed, right adds speed',
@@ -256,6 +276,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Gravity & Jumping',
       goal: 'Add gravity that pulls the player down and a jump with Space.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the gravity and jump logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Add gravity that pulls the player down and a jump with Space.'
+        ],
+        check: 'Add gravity that pulls the player down and a jump with Space.'
+      },
       points: [
         'Gravity adds to vertical velocity each frame: <code>vy += 0.5</code>',
         'Jumping sets vy to a negative value (upward): <code>vy = -jumpPower</code>',
@@ -285,6 +317,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Platform Collision',
       goal: 'Land on platforms by detecting collision from above.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the landing logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Land on platforms by detecting collision from above.'
+        ],
+        check: 'Land on platforms by detecting collision from above.'
+      },
       points: [
         'For each platform, check if the player rectangle overlaps it',
         'Only land if the player is falling downward (vy >= 0) and was above the platform',
@@ -314,6 +358,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coin Collection',
       goal: 'Place coins on platforms and collect them by touching.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the coin collection.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place coins on platforms and collect them by touching.'
+        ],
+        check: 'Place coins on platforms and collect them by touching.'
+      },
       points: [
         'Coins are yellow circles placed above each platform',
         'Check distance between player centre and coin centre',
@@ -343,6 +399,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Screen & Restart',
       goal: 'Show a win message when all coins are collected. Press R to replay.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the win condition.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Show a win message when all coins are collected. Press R to replay.'
+        ],
+        check: 'Show a win message when all coins are collected. Press R to replay.'
+      },
       points: [
         'Check if score equals totalCoins (5) after each collection',
         'Set gameState to "win" and display a congratulations message',

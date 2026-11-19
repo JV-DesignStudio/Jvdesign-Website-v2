@@ -126,6 +126,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-dungeon-canvas',
   downloadName: 'my-pico8-dungeon.html',
+engineProject: { href: '/downloads/pico8-dungeon-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue player in a walled dungeon room',
@@ -155,8 +156,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         COLLIDE_WALLS +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -170,8 +170,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -185,8 +184,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
@@ -204,8 +202,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
         ATTACK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
@@ -223,8 +220,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH + ATTACK + COLLECT_GEMS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_GEMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
@@ -241,6 +237,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Dungeon Room',
       goal: 'Draw the player in a walled dungeon room.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Set the player start position.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw the player in a walled dungeon room.'
+        ],
+        check: 'Draw the player in a walled dungeon room.'
+      },
       points: [
         'The room has walls on all four edges: 8 pixels thick on each side',
         'Interior walls create corridors and obstacles',
@@ -270,6 +278,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Four-Way Movement',
       goal: 'Walk in four directions and collide with walls.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Write the movement.',
+          'Type the same code into the cart.',
+          'Run the project and check: Walk in four directions and collide with walls.'
+        ],
+        check: 'Walk in four directions and collide with walls.'
+      },
       points: [
         'Check btn(0-3) for left, right, up, down',
         'Move at 1.5 pixels per frame on each axis',
@@ -299,6 +319,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Patrolling Enemies',
       goal: 'Add red enemies that bounce between walls.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Write the enemy patrol.',
+          'Type the same code into the cart.',
+          'Run the project and check: Add red enemies that bounce between walls.'
+        ],
+        check: 'Add red enemies that bounce between walls.'
+      },
       points: [
         'Enemies are {x, y, w, h, hp, dx, dy} - dx/dy set their patrol direction',
         'Each frame: move by dx/dy. When hitting a wall, reverse both dx and dy',
@@ -328,6 +360,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Damage & HP',
       goal: 'Touching an enemy costs 1 HP and resets the player position.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Write the enemy damage.',
+          'Type the same code into the cart.',
+          'Run the project and check: Touching an enemy costs 1 HP and resets the player position.'
+        ],
+        check: 'Touching an enemy costs 1 HP and resets the player position.'
+      },
       points: [
         'Check overlap between player and each living enemy (hp > 0)',
         'On touch: <code>hp -= 1</code> and teleport player back to (60, 60)',
@@ -357,6 +401,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Sword Attack',
       goal: 'Press X to swing a sword in the direction you face.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Write the attack.',
+          'Type the same code into the cart.',
+          'Run the project and check: Press X to swing a sword in the direction you face.'
+        ],
+        check: 'Press X to swing a sword in the direction you face.'
+      },
       points: [
         'Track the last direction with atkDir: 0=left, 1=right, 2=up, 3=down',
         'On X press: place an 8x8 attack hitbox adjacent to the player in that direction',
@@ -386,6 +442,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Gems & Victory',
       goal: 'Collect green gems to clear the dungeon.',
+      engine: {
+        name: 'PICO-8',
+        file: 'dungeon.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open dungeon.p8 in PICO-8.',
+          'Find the code that does: Write the win check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Collect green gems to clear the dungeon.'
+        ],
+        check: 'Collect green gems to clear the dungeon.'
+      },
       points: [
         'Gems work like coins: {x, y, w, h, got} with overlap detection',
         'Collect all gems to win: <code>if score >= gemsTotal then gameState = "win" end</code>',

@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -93,6 +93,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-tower-p1-canvas',
   downloadName: 'my-cpp-tower-defence.html',
+engineProject: { href: '/downloads/cpp-tower-part1-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A winding sandy road on green grass with waypoint markers',
@@ -125,8 +126,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'updateEnemies(dt);' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();' +
@@ -148,8 +148,7 @@ window.CW_CONFIG = {
         'updateEnemies(dt);' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
       )
@@ -166,8 +165,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'updateEnemies(dt);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'mouseDown=false;' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();' + DRAW_GHOST + DRAW_HUD +
@@ -189,8 +187,7 @@ window.CW_CONFIG = {
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'updateEnemies(dt);' +
         PLACE_TOWER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -212,8 +209,7 @@ window.CW_CONFIG = {
         'updateEnemies(dt);' +
         PLACE_TOWER +
         'for(var ti=0;ti<towers.length;ti++){var t=towers[ti];t.cooldown-=dt;if(t.cooldown<=0){var target=nearestInRange(t);if(target){target.hp-=t.damage;if(target.hp<=0){target.alive=false;gold+=target.bounty}t.cooldown=0.7}}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD_FULL +
         'if(lives<=0){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,600,400);ctx.fillStyle="#f87171";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,190);ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText("The enemies broke through!",300,230)}' +
@@ -228,6 +224,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Path: Waypoints',
       goal: 'Define the enemy path as waypoints and draw the road on a green field.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Set up the path corners and compute a segment direction.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Define the enemy path as waypoints and draw the road on a green field.'
+        ],
+        check: 'Define the enemy path as waypoints and draw the road on a green field.'
+      },
       points: [
         'The path is a <code>std::vector&lt;sf::Vector2f&gt;</code> of corner points from left edge to right edge',
         'Draw the road as thick line segments between consecutive waypoints using rotated rectangles',
@@ -257,6 +265,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Path-Following Enemies',
       goal: 'Make enemies walk the path corner to corner at constant speed using normalised direction vectors.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Move the enemy along its normalised direction.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make enemies walk the path corner to corner at constant speed using normalised direction vectors.'
+        ],
+        check: 'Make enemies walk the path corner to corner at constant speed using normalised direction vectors.'
+      },
       points: [
         'Enemy struct: position, speed, hp, and <code>int wp</code>  -  which waypoint it is heading for',
         'Each frame: direction = target - position; normalise it (divide by its length); move by direction * speed * dt',
@@ -286,6 +306,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Grid Placement Preview',
       goal: 'Show a snapped, colour-coded ghost tower under the cursor on a 40px grid.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Snap the mouse to the grid and check if blocked.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Show a snapped, colour-coded ghost tower under the cursor on a 40px grid.'
+        ],
+        check: 'Show a snapped, colour-coded ghost tower under the cursor on a 40px grid.'
+      },
       points: [
         'The build grid is 40px: <code>gx = mouseX / 40 * 40</code> (integer division snaps!)',
         'Draw a translucent ghost tower at the snapped cell: green = buildable, red = blocked',
@@ -315,6 +347,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Towers & the Gold Economy',
       goal: 'Place towers on click, spend gold, and block double-building on occupied cells.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Guard the build action and spend gold.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Place towers on click, spend gold, and block double-building on occupied cells.'
+        ],
+        check: 'Place towers on click, spend gold, and block double-building on occupied cells.'
+      },
       points: [
         'Tower struct: position, range (110), damage (5), fire cooldown  -  stored in a vector',
         'Start with 100 gold; a tower costs 50. Click on a valid cell with enough gold → build and subtract',
@@ -344,6 +388,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Range Circles & Targeting',
       goal: 'Visualise tower range on hover and detect enemies within it using squared-distance maths.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Find the nearest enemy in range using squared distance.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Visualise tower range on hover and detect enemies within it using squared-distance maths.'
+        ],
+        check: 'Visualise tower range on hover and detect enemies within it using squared-distance maths.'
+      },
       points: [
         'Hovering a tower draws its range: a translucent circle of radius <code>range</code>, centred on the tower',
         'In-range test: squared distance <code>dx*dx + dy*dy &lt;= range*range</code>, skipping the expensive sqrt',
@@ -373,6 +429,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Economy Balance & Lives',
       goal: 'Add lives that decrease when enemies escape, tune the economy, and prep hooks for Part 2.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Handle enemy escapes and check for game over.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add lives that decrease when enemies escape, tune the economy, and prep hooks for Part 2.'
+        ],
+        check: 'Add lives that decrease when enemies escape, tune the economy, and prep hooks for Part 2.'
+      },
       points: [
         'An escaped enemy (past last waypoint) costs 1 life; at 0 lives the game ends',
         'Balance rule of thumb: starting gold buys 2 towers; a kill bounty (~15) refunds ~30% of a tower cost',

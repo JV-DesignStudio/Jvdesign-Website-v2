@@ -100,6 +100,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-shooter-canvas',
   downloadName: 'my-gdevelop-shooter.html',
+engineProject: { href: '/downloads/gdevelop-shooter-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A cyan triangle ship at the bottom of a starfield',
@@ -129,8 +130,7 @@ window.CW_CONFIG = {
         SETUP + SHIP_VARS + STARS + KEYS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'sx=Math.max(0,Math.min(400-sw,sx));' +
         DRAW_BG + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -144,8 +144,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         UPDATE_BULLETS +
         DRAW_BG + DRAW_SHIP + DRAW_BULLETS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -159,8 +158,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + UPDATE_BULLETS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'for(var eu=enemies.length-1;eu>=0;eu--){enemies[eu].y+=enemySpeed;if(enemies[eu].y>520)enemies.splice(eu,1)}' +
         DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -174,8 +172,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + SPAWN_ENEMY + UPDATE_BULLETS + UPDATE_ENEMIES +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
         'if(lives<=0){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,260)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -191,8 +188,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + FIRE_BULLET + SPAWN_ENEMY + UPDATE_BULLETS + UPDATE_ENEMIES + HIT_CHECK + ENEMY_HIT_SHIP +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(lives<=0)gameState="over";' +
         '}' +
         DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
@@ -210,6 +206,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Ship & Starfield',
       goal: 'Place a ship at the bottom of a scrolling starfield.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Set the ship starting position.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place a ship at the bottom of a scrolling starfield.'
+        ],
+        check: 'Place a ship at the bottom of a scrolling starfield.'
+      },
       points: [
         'The ship is a cyan triangle at the bottom of a 400x500 canvas',
         'Stars scroll downward to create the feeling of flying through space',
@@ -239,6 +247,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ship Movement',
       goal: 'Move the ship left and right with arrow keys, staying on screen.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the ship movement events.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Move the ship left and right with arrow keys, staying on screen.'
+        ],
+        check: 'Move the ship left and right with arrow keys, staying on screen.'
+      },
       points: [
         'Left arrow subtracts speed from x, right arrow adds speed',
         'Clamp x between 0 and 400 - ship width so it stays in bounds',
@@ -268,6 +288,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Firing Bullets',
       goal: 'Press Space to fire yellow bullets upward from the ship.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the bullet firing logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Press Space to fire yellow bullets upward from the ship.'
+        ],
+        check: 'Press Space to fire yellow bullets upward from the ship.'
+      },
       points: [
         'Each bullet is a small yellow rectangle (4x12) that moves upward',
         'A fire delay (12 frames) prevents bullet spam',
@@ -297,6 +329,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Enemy Spawning',
       goal: 'Spawn red enemies at random X positions that fall downward.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the enemy spawning.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Spawn red enemies at random X positions that fall downward.'
+        ],
+        check: 'Spawn red enemies at random X positions that fall downward.'
+      },
       points: [
         'Enemies are 28x28 red squares that spawn above the screen',
         'A spawn timer creates a new enemy every 50 frames',
@@ -326,6 +370,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Hit Detection',
       goal: 'Destroy enemies when bullets hit them. Lose a life when enemies reach the bottom.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the hit detection.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Destroy enemies when bullets hit them. Lose a life when enemies reach the bottom.'
+        ],
+        check: 'Destroy enemies when bullets hit them. Lose a life when enemies reach the bottom.'
+      },
       points: [
         'Check every bullet against every enemy for rectangle overlap',
         'On hit: remove both the bullet and enemy, add to score',
@@ -355,6 +411,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Waves & Restart',
       goal: 'Speed up enemy spawning in waves. Press R to restart after game over.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the wave progression.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Speed up enemy spawning in waves. Press R to restart after game over.'
+        ],
+        check: 'Speed up enemy spawning in waves. Press R to restart after game over.'
+      },
       points: [
         'Every 10 points, increase the wave number and decrease spawn delay',
         'Also increase enemy speed slightly each wave',

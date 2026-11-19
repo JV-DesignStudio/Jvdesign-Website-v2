@@ -121,6 +121,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-shooter-canvas',
   downloadName: 'my-pico8-shooter.html',
+engineProject: { href: '/downloads/pico8-shooter-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue ship at the bottom of a scrolling starfield',
@@ -151,8 +152,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         MOVE_BULLETS +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -166,8 +166,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         MOVE_ENEMIES +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -181,8 +180,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -195,8 +193,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES + HIT_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -212,8 +209,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES + HIT_CHECK + ENEMY_HIT_SHIP +
         WAVE_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("game over",64*S,55*S);ctx.fillStyle=P8PAL[7];ctx.font="12px monospace";ctx.fillText("score: "+score,64*S,65*S);ctx.fillText("press r to restart",64*S,75*S)}' +
@@ -228,6 +224,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Ship & Starfield',
       goal: 'Draw a ship at the bottom of a scrolling starfield.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Set up the ship.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw a ship at the bottom of a scrolling starfield.'
+        ],
+        check: 'Draw a ship at the bottom of a scrolling starfield.'
+      },
       points: [
         'The ship is an 8x8 blue square with a small white nose piece on top',
         'It starts near the bottom centre: (60, 110)',
@@ -257,6 +265,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Firing Bullets',
       goal: 'Press Z to fire yellow bullets upward from the ship.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Write the bullet firing.',
+          'Type the same code into the cart.',
+          'Run the project and check: Press Z to fire yellow bullets upward from the ship.'
+        ],
+        check: 'Press Z to fire yellow bullets upward from the ship.'
+      },
       points: [
         'Bullets are {x, y, w, h} objects stored in an array',
         'Spawn at the ship nose: <code>x = sx + sw/2 - 1, y = sy - 4</code>',
@@ -286,6 +306,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Enemy Waves',
       goal: 'Spawn red enemies that drift down from the top.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Write the enemy spawning.',
+          'Type the same code into the cart.',
+          'Run the project and check: Spawn red enemies that drift down from the top.'
+        ],
+        check: 'Spawn red enemies that drift down from the top.'
+      },
       points: [
         'Enemies spawn on a timer: every <code>spawnRate</code> frames, add one at a random x',
         'Each enemy has {x, y, w, h, hp, dy} - dy is their fall speed',
@@ -315,6 +347,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Hit Detection',
       goal: 'Bullets destroy enemies and add to the score.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Write the hit check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Bullets destroy enemies and add to the score.'
+        ],
+        check: 'Bullets destroy enemies and add to the score.'
+      },
       points: [
         'Check every bullet against every enemy: nested loop (AABB overlap)',
         'On hit: remove the bullet, reduce enemy hp. If hp reaches 0, remove enemy and score++',
@@ -344,6 +388,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Lives & Collision',
       goal: 'Lose a life when an enemy touches the ship.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Write the ship collision.',
+          'Type the same code into the cart.',
+          'Run the project and check: Lose a life when an enemy touches the ship.'
+        ],
+        check: 'Lose a life when an enemy touches the ship.'
+      },
       points: [
         'Check each enemy against the ship using AABB overlap',
         'On contact: <code>lives -= 1</code> and remove that enemy',
@@ -373,6 +429,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Wave Difficulty & Restart',
       goal: 'Enemies spawn faster over time. Press R to restart after game over.',
+      engine: {
+        name: 'PICO-8',
+        file: 'shooter.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open shooter.p8 in PICO-8.',
+          'Find the code that does: Write the wave escalation.',
+          'Type the same code into the cart.',
+          'Run the project and check: Enemies spawn faster over time. Press R to restart after game over.'
+        ],
+        check: 'Enemies spawn faster over time. Press R to restart after game over.'
+      },
       points: [
         'Every 10 kills: wave++, reduce spawnRate by 5 (minimum 15 frames)',
         'Each wave also increases enemy speed: <code>dy = 0.8 + wave * 0.1</code>',

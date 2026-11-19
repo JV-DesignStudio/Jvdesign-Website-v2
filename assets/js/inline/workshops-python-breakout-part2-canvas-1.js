@@ -108,6 +108,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-breakout2-canvas',
   downloadName: 'my-python-breakout-2.html',
+engineProject: { href: '/downloads/python-breakout-part2-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A breakout game with paddle, ball and bricks ready for power-ups',
@@ -128,8 +129,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT + BALL_LOST + POWERUP_FALL + TIMER_TICK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
@@ -149,8 +149,7 @@ window.CW_CONFIG = {
         PAD_MOVE + BALL_MOVE + PAD_HIT +
         'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
         BALL_LOST + POWERUP_FALL + TIMER_TICK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
@@ -174,8 +173,7 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
@@ -199,8 +197,7 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
@@ -227,8 +224,7 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'checkNextLevel()' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES +
@@ -258,8 +254,7 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK + PARTICLE_UPDATE +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'checkNextLevel()' +
         '}' +
         'var ox=0,oy=0;if(shakeFrames>0){ox=Math.round((Math.random()-0.5)*6);oy=Math.round((Math.random()-0.5)*6);shakeFrames--}ctx.save();ctx.translate(ox,oy);' +
@@ -278,6 +273,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Power-Up Drops',
       goal: 'When a brick breaks, give it a 20% chance to drop a coloured power-up circle.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the power-up spawn logic that runs when a brick breaks.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: When a brick breaks, give it a 20% chance to drop a coloured power-up circle.'
+        ],
+        check: 'When a brick breaks, give it a 20% chance to drop a coloured power-up circle.'
+      },
       points: [
         'Power-ups are small circles that fall at speed 2 after a brick is destroyed',
         'Three types: <code>"wide"</code> (green #4ade80), <code>"slow"</code> (blue #60a5fa), <code>"life"</code> (pink #f472b6)',
@@ -307,6 +314,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Catching: Wide Paddle',
       goal: 'Catch the "wide" power-up to double the paddle width for 5 seconds.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the catch detection and wide-paddle timer.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Catch the "wide" power-up to double the paddle width for 5 seconds.'
+        ],
+        check: 'Catch the "wide" power-up to double the paddle width for 5 seconds.'
+      },
       points: [
         'A power-up is caught when its circle overlaps the paddle rectangle',
         'For "wide": set <code>padW = padBase * 2</code> to double the width',
@@ -336,6 +355,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Multi-Ball!',
       goal: 'Catch an orange "multi" power-up to split the ball into 3. Lose a life only when ALL balls are gone.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the multi-ball split when the "multi" power-up is caught.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Catch an orange "multi" power-up to split the ball into 3. Lose a life only when ALL balls are gone.'
+        ],
+        check: 'Catch an orange "multi" power-up to split the ball into 3. Lose a life only when ALL balls are gone.'
+      },
       points: [
         'A new power-up type: <code>"multi"</code> (orange #fb923c)',
         'On catch: copy the current ball twice with slightly different vx to fan them out',
@@ -365,6 +396,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Tough Bricks & Slow-Mo',
       goal: 'Some bricks take 2 hits to destroy. The "slow" power-up halves ball speed for 3 seconds.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the brick hp logic when a ball hits a brick.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Some bricks take 2 hits to destroy. The "slow" power-up halves ball speed for 3 seconds.'
+        ],
+        check: 'Some bricks take 2 hits to destroy. The "slow" power-up halves ball speed for 3 seconds.'
+      },
       points: [
         'Each brick gets an <code>hp</code> property - most start at 1, tough ones at 2',
         'Tough bricks (hp 2) are drawn darker (#555). After one hit they drop to hp 1 and show their normal color',
@@ -394,6 +437,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Level Patterns',
       goal: 'After clearing all bricks, load the next level with a different brick layout.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the level progression check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: After clearing all bricks, load the next level with a different brick layout.'
+        ],
+        check: 'After clearing all bricks, load the next level with a different brick layout.'
+      },
       points: [
         'Define a <code>levels</code> list where each entry is a list of brick counts per row',
         'Example: <code>[[8,8,8,8,8], [7,8,7,8,7], [6,8,6,8,6]]</code> - 3 different patterns',
@@ -423,6 +478,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Juice: Shake & Flash',
       goal: 'Add screen shake, particles and flash effects when bricks break.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the screen shake and particle spawn.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add screen shake, particles and flash effects when bricks break.'
+        ],
+        check: 'Add screen shake, particles and flash effects when bricks break.'
+      },
       points: [
         'Screen shake: offset the canvas by random +/-3px for 5 frames using <code>ctx.translate(ox, oy)</code>',
         'Particles: spawn 6 tiny squares at the brick position with random velocities',

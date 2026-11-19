@@ -165,6 +165,7 @@ var COMPLETE_SPIN = [
 window.CW_CONFIG = {
   storageKey: 'jvds-corruption-obby-canvas',
   downloadName: 'my-corruption-obby.html',
+engineProject: { href: '/downloads/roblox-corruption-obby-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Paint the three neon zones across the world',
@@ -225,6 +226,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Failing Simulation',
       goal: 'Understand the mechanic, set up the world and write the Config of zones.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the painter for the three neon zones.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Understand the mechanic, set up the world and write the Config of zones.'
+        ],
+        check: 'Understand the mechanic, set up the world and write the Config of zones.'
+      },
       points: [
         'The world deletes itself behind you as you run',
         'Three neon zones: Boot Sequence, Memory Lane, Kernel Panic',
@@ -253,6 +266,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Data Shards',
       goal: 'Scatter glowing collectibles that count exactly once each.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the pickup check for the shards.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Scatter glowing collectibles that count exactly once each.'
+        ],
+        check: 'Scatter glowing collectibles that count exactly once each.'
+      },
       points: [
         'Five shards float above the course',
         'Touching one removes it and adds to the counter',
@@ -281,6 +306,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Self-Destructing Platforms',
       goal: 'The world deletes itself behind you as you run.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the crumble for passed platforms.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: The world deletes itself behind you as you run.'
+        ],
+        check: 'The world deletes itself behind you as you run.'
+      },
       points: [
         'Only normal platforms crumble, never start or finish',
         'A platform counts as passed once fully behind the runner',
@@ -309,6 +346,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'The Corruption Zone',
       goal: 'A wall of pure glitch that slides forward and kills on touch.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the wall advance and its touch kill.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: A wall of pure glitch that slides forward and kills on touch.'
+        ],
+        check: 'A wall of pure glitch that slides forward and kills on touch.'
+      },
       points: [
         'The wall starts off screen and slides right every frame',
         'Touching it glitches the screen and costs a life',
@@ -337,6 +386,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Corrupted Obstacles',
       goal: 'Spinning neon blades and flickering unstable platforms.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the blade spin and the touch kill.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Spinning neon blades and flickering unstable platforms.'
+        ],
+        check: 'Spinning neon blades and flickering unstable platforms.'
+      },
       points: [
         'Two blades spin in place, angle growing every frame',
         'Touching a blade costs a life like the wall does',
@@ -365,6 +426,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Timer and Publish',
       goal: 'Add a live timer HUD, tweak difficulty and publish the game.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the timer HUD and the win banner.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a live timer HUD, tweak difficulty and publish the game.'
+        ],
+        check: 'Add a live timer HUD, tweak difficulty and publish the game.'
+      },
       points: [
         'The clock counts up from the run start',
         'Reaching ESCAPE freezes the win banner with shards and time',

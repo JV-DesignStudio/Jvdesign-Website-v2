@@ -113,6 +113,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-shooter-canvas',
   downloadName: 'my-defold-shooter.html',
+engineProject: { href: '/downloads/defold-shooter-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A cyan ship at the bottom of a dark starfield',
@@ -143,8 +144,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         MOVE_BULLETS +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -158,8 +158,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -172,8 +171,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -187,8 +185,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
@@ -204,8 +201,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT + ENEMY_REACH + WAVE_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
@@ -220,6 +216,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Ship',
       goal: 'Draw a cyan ship at the bottom of a scrolling starfield.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Set the ship position and size.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Draw a cyan ship at the bottom of a scrolling starfield.'
+        ],
+        check: 'Draw a cyan ship at the bottom of a scrolling starfield.'
+      },
       points: [
         'The canvas is 400x500. The ship is 28x20 pixels near the bottom at y=460',
         'A small turret (6x6) sits on top of the ship for visual detail',
@@ -249,6 +257,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Shooting Bullets',
       goal: 'Press Space to fire yellow bullets upward from the ship.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the shooting logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Press Space to fire yellow bullets upward from the ship.'
+        ],
+        check: 'Press Space to fire yellow bullets upward from the ship.'
+      },
       points: [
         'Each bullet is a small rectangle (4x8) that moves upward at 7 pixels per frame',
         'A cooldown timer (12 frames) prevents firing too fast',
@@ -278,6 +298,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Enemy Formation',
       goal: 'Spawn three rows of red enemies at the top.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the enemy wave spawner.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Spawn three rows of red enemies at the top.'
+        ],
+        check: 'Spawn three rows of red enemies at the top.'
+      },
       points: [
         'Enemies are arranged in a 7-column by 3-row grid with spacing',
         'Each enemy is 30x20 pixels with an <code>alive</code> flag',
@@ -307,6 +339,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Bullet-Enemy Collision',
       goal: 'Destroy enemies when a bullet hits them. Score 10 points each.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the bullet-enemy collision.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Destroy enemies when a bullet hits them. Score 10 points each.'
+        ],
+        check: 'Destroy enemies when a bullet hits them. Score 10 points each.'
+      },
       points: [
         'Check every bullet against every alive enemy using AABB overlap',
         'On hit: set enemy.alive = false, add 10 to score, remove the bullet',
@@ -336,6 +380,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Enemy Movement',
       goal: 'Enemies march side to side and drop down when hitting an edge.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the edge detection and direction change.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Enemies march side to side and drop down when hitting an edge.'
+        ],
+        check: 'Enemies march side to side and drop down when hitting an edge.'
+      },
       points: [
         'All enemies move in the same direction at <code>enemySpeed</code>',
         'When any alive enemy touches a screen edge, reverse direction for all',
@@ -365,6 +421,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Waves & Game Over',
       goal: 'Clear all enemies for a faster wave. Lose lives or let them reach you for game over.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the wave clear and speed ramp.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Clear all enemies for a faster wave. Lose lives or let them reach you for game over.'
+        ],
+        check: 'Clear all enemies for a faster wave. Lose lives or let them reach you for game over.'
+      },
       points: [
         'When all enemies destroyed: increase <code>enemySpeed</code> and spawn a new wave',
         'Cap speed at 4 to keep it possible',

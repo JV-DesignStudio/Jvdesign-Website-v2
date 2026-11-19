@@ -111,6 +111,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-platformer-canvas',
   downloadName: 'my-pico8-platformer.html',
+engineProject: { href: '/downloads/pico8-platformer-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A blue player square stands on a brown ground platform',
@@ -140,8 +141,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         COLLIDE_PLATS +
         'if(py>140){py=100;px=20;pvy=0}' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
@@ -156,8 +156,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         COLLIDE_PLATS +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
@@ -175,8 +174,7 @@ window.CW_CONFIG = {
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
@@ -193,8 +191,7 @@ window.CW_CONFIG = {
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS + COLLECT_COINS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
@@ -213,8 +210,7 @@ window.CW_CONFIG = {
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS + COLLECT_COINS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(py>140){py=100;px=20;pvy=0}' +
         '}' +
         CLEAR_PRESSED +
@@ -231,6 +227,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & Ground',
       goal: 'Draw a player square standing on a ground platform.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Set up the player.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw a player square standing on a ground platform.'
+        ],
+        check: 'Draw a player square standing on a ground platform.'
+      },
       points: [
         'The player is an 8x8 blue square (colour 12) at position (20, 100)',
         'The ground is a brown platform (colour 5) spanning the full width at y=120',
@@ -260,6 +268,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Gravity & Running',
       goal: 'Add gravity that pulls the player down and left/right movement.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Write the gravity and running.',
+          'Type the same code into the cart.',
+          'Run the project and check: Add gravity that pulls the player down and left/right movement.'
+        ],
+        check: 'Add gravity that pulls the player down and left/right movement.'
+      },
       points: [
         'Gravity: each frame add a small amount to pvy: <code>pvy += 0.15</code>',
         'Running: btn(0) left, btn(1) right at speed 1.5 pixels per frame',
@@ -289,6 +309,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Jumping',
       goal: 'Press Z or Up to jump, but only when standing on the ground.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Write the jump logic.',
+          'Type the same code into the cart.',
+          'Run the project and check: Press Z or Up to jump, but only when standing on the ground.'
+        ],
+        check: 'Press Z or Up to jump, but only when standing on the ground.'
+      },
       points: [
         'Jump by setting pvy to a negative value: <code>pvy = -3</code> (up is negative)',
         'Only allow jumping when <code>grounded</code> is true - prevents infinite air jumps',
@@ -318,6 +350,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'More Platforms',
       goal: 'Add platforms at different heights to create a vertical level.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Add platforms to the level.',
+          'Type the same code into the cart.',
+          'Run the project and check: Add platforms at different heights to create a vertical level.'
+        ],
+        check: 'Add platforms at different heights to create a vertical level.'
+      },
       points: [
         'Platforms are {x, y, w, h} objects - add more to the plats array',
         'Place them at staggered heights so the player can jump between them',
@@ -347,6 +391,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coins',
       goal: 'Place collectible coins on platforms.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Write the coin collection.',
+          'Type the same code into the cart.',
+          'Run the project and check: Place collectible coins on platforms.'
+        ],
+        check: 'Place collectible coins on platforms.'
+      },
       points: [
         'Coins are {x, y, w, h, got} objects - got tracks whether collected',
         'Collision check: if the player overlaps a coin and got is false, collect it',
@@ -376,6 +432,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Screen & Replay',
       goal: 'Show a win message when all coins are collected and R to replay.',
+      engine: {
+        name: 'PICO-8',
+        file: 'platformer.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open platformer.p8 in PICO-8.',
+          'Find the code that does: Write the win check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Show a win message when all coins are collected and R to replay.'
+        ],
+        check: 'Show a win message when all coins are collected and R to replay.'
+      },
       points: [
         'Check if score equals the total number of coins: <code>if score >= #coins then gameState = "win" end</code>',
         'Display "all coins!" in green text at the centre',

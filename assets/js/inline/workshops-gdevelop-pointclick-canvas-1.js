@@ -92,6 +92,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-pointclick-canvas',
   downloadName: 'my-gdevelop-pointclick.html',
+engineProject: { href: '/downloads/gdevelop-pointclick-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A room with a door, a table, and clickable objects',
@@ -121,8 +122,7 @@ window.CW_CONFIG = {
         SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_MSG +
         'clicked=false;' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -136,8 +136,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -150,8 +149,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -164,8 +162,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -180,8 +177,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         CLICK_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         WIN_CHECK +
         '}' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
@@ -200,6 +196,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Room',
       goal: 'Draw a room with coloured rectangle objects the player can see.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Define the room and its objects.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Draw a room with coloured rectangle objects the player can see.'
+        ],
+        check: 'Draw a room with coloured rectangle objects the player can see.'
+      },
       points: [
         'Point-and-click games are room-based: each room is a scene with clickable objects',
         'Objects are rectangles with colour, position, size, and a label',
@@ -229,6 +237,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Mouse Hover & Highlight',
       goal: 'Highlight objects when the mouse hovers over them and show their label.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the hover detection.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Highlight objects when the mouse hovers over them and show their label.'
+        ],
+        check: 'Highlight objects when the mouse hovers over them and show their label.'
+      },
       points: [
         'Track mouse position relative to the canvas',
         'For each object, check if the mouse is inside its rectangle',
@@ -258,6 +278,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Click to Interact',
       goal: 'Click objects to see their descriptions and pick up items.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the click interaction.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Click objects to see their descriptions and pick up items.'
+        ],
+        check: 'Click objects to see their descriptions and pick up items.'
+      },
       points: [
         'Clicking an object shows its description message at the bottom',
         'Some objects can be picked up and added to inventory (like the Key)',
@@ -287,6 +319,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Inventory System',
       goal: 'Track collected items and display them at the bottom of the screen.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the inventory check.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Track collected items and display them at the bottom of the screen.'
+        ],
+        check: 'Track collected items and display them at the bottom of the screen.'
+      },
       points: [
         'Inventory is an array of item name strings',
         'Display items in a bar at the bottom: "Inventory: Key, Star" or "empty"',
@@ -316,6 +360,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Using Items & Rooms',
       goal: 'Use inventory items on objects to unlock them and move between rooms.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the item-use logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Use inventory items on objects to unlock them and move between rooms.'
+        ],
+        check: 'Use inventory items on objects to unlock them and move between rooms.'
+      },
       points: [
         'Some objects require a specific item: the Cabinet needs the Key, the Door needs the Star',
         'Using an item: remove the old item from inventory, add the new reward',
@@ -345,6 +401,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win & Restart',
       goal: 'Find the Crystal in the Secret Room to win. Press R to replay.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the win condition.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Find the Crystal in the Secret Room to win. Press R to replay.'
+        ],
+        check: 'Find the Crystal in the Secret Room to win. Press R to replay.'
+      },
       points: [
         'The Secret Room has a treasure chest that gives the Crystal',
         'Finding the Crystal triggers the win state with a congratulations overlay',

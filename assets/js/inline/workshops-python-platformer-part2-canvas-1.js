@@ -161,6 +161,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-platformer2-canvas',
   downloadName: 'my-python-platformer-2.html',
+engineProject: { href: '/downloads/python-platformer-part2-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green player on platforms with a red patrolling enemy',
@@ -194,8 +195,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -211,8 +211,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -230,8 +229,7 @@ window.CW_CONFIG = {
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
         CAMERA_UPDATE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'for(var i=0;i<movingPlats.length;i++){var mp=movingPlats[i];' +
           'if(px+pw>mp.x&&px<mp.x+mp.w&&py+ph>mp.y&&py<mp.y+mp.h&&vy>=0&&py+ph-vy<=mp.y+4){py=mp.y-ph;vy=0;onGround=true;jumpsLeft=2;px+=mp.vx;py+=mp.vy}}' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_MOVING_PLATS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
@@ -254,8 +252,7 @@ window.CW_CONFIG = {
         'for(var i=0;i<movingPlats.length;i++){var mp=movingPlats[i];mp.x+=mp.vx;mp.y+=mp.vy;if(mp.vy!==0){if(mp.y<mp.minY||mp.y>mp.maxY)mp.vy=-mp.vy}if(mp.vx!==0){if(mp.x<mp.minX||mp.x>mp.maxX)mp.vx=-mp.vx}' +
           'if(px+pw>mp.x&&px<mp.x+mp.w&&py+ph>mp.y&&py<mp.y+mp.h&&vy>=0&&py+ph-vy<=mp.y+4){py=mp.y-ph;vy=0;onGround=true;jumpsLeft=2;px+=mp.vx;py+=mp.vy}}' +
         CAMERA_UPDATE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_MOVING_PLATS_CAM + DRAW_SPIKES_CAM + DRAW_CHECKPOINTS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
         DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -329,6 +326,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Patrolling Enemies',
       goal: 'Add enemies that walk back and forth between two patrol points.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the enemy patrol logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add enemies that walk back and forth between two patrol points.'
+        ],
+        check: 'Add enemies that walk back and forth between two patrol points.'
+      },
       points: [
         'Each enemy is a red rectangle (24x24) with a velocity <code>vx</code> and patrol bounds <code>min_x</code>, <code>max_x</code>',
         'Each frame: <code>enemy.x += enemy.vx</code> moves the enemy sideways',
@@ -358,6 +367,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Stomp',
       goal: 'Destroy enemies by landing on them from above. Touch the side and you respawn.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the stomp detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Destroy enemies by landing on them from above. Touch the side and you respawn.'
+        ],
+        check: 'Destroy enemies by landing on them from above. Touch the side and you respawn.'
+      },
       points: [
         'For each living enemy that overlaps the player: check if the player is <strong>falling</strong> (vy > 0) and feet hit the enemy top',
         'Stomp: set <code>alive = False</code>, bounce player up (<code>vy = -8</code>), add 50 to score',
@@ -387,6 +408,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Scrolling Camera',
       goal: 'Add a camera offset so the level can be wider than the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the camera follow logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a camera offset so the level can be wider than the screen.'
+        ],
+        check: 'Add a camera offset so the level can be wider than the screen.'
+      },
       points: [
         'Compute <code>camera_x = player_x - 280</code> to keep the player near the centre of the 600px view',
         'Clamp: <code>camera_x = max(0, min(LEVEL_W - 600, camera_x))</code> so it never shows past the level edges',
@@ -416,6 +449,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Moving Platforms',
       goal: 'Add platforms that move vertically or horizontally, carrying the player with them.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the moving platform logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add platforms that move vertically or horizontally, carrying the player with them.'
+        ],
+        check: 'Add platforms that move vertically or horizontally, carrying the player with them.'
+      },
       points: [
         'Each moving platform has position, velocity (<code>vx</code>, <code>vy</code>), and travel bounds',
         'Update: add velocity each frame, flip when reaching min/max  -  the same patrol pattern as enemies',
@@ -445,6 +490,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Spikes & Checkpoints',
       goal: 'Add deadly spike hazards and checkpoint flags that update the respawn point.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the spike and checkpoint logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add deadly spike hazards and checkpoint flags that update the respawn point.'
+        ],
+        check: 'Add deadly spike hazards and checkpoint flags that update the respawn point.'
+      },
       points: [
         'Spikes: red triangles on the ground. Touching one calls <code>respawn()</code>  -  same function as enemy death',
         'Checkpoints: flag shapes. When the player touches one, update <code>respawn_x</code> and <code>respawn_y</code>',
@@ -474,6 +531,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Levels & The Finale',
       goal: 'Define multiple levels as data and transition between them. The final door shows YOU WIN.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the door check and level transition.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Define multiple levels as data and transition between them. The final door shows YOU WIN.'
+        ],
+        check: 'Define multiple levels as data and transition between them. The final door shows YOU WIN.'
+      },
       points: [
         'Each level is a dict with platforms, enemies, moving platforms, spikes, checkpoints, a door, and a width',
         'A <code>load_level(n)</code> function copies the dict into the live game arrays and resets the player',

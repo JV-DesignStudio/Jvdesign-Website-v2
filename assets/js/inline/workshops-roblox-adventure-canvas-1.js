@@ -293,6 +293,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-adventure-canvas',
   downloadName: 'my-adventure-game.html',
+engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys or WASD to move around the village',
@@ -365,6 +366,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player Movement',
       goal: 'Set up top-down movement so the player can walk around the village.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function for top-down movement with wall collision.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Set up top-down movement so the player can walk around the village.'
+        ],
+        check: 'Set up top-down movement so the player can walk around the village.'
+      },
       points: [
         'A player character that moves in four directions',
         'Arrow keys or WASD control movement',
@@ -393,6 +406,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Room Layout & Walls',
       goal: 'Define rooms with walls so the player explores a structured world.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: The walls and doors are already drawn. Study the room data and add a new wall to the village room.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Define rooms with walls so the player explores a structured world.'
+        ],
+        check: 'Define rooms with walls so the player explores a structured world.'
+      },
       points: [
         'Each room has a name, background colour and wall array',
         'Walls are rectangles the player cannot walk through',
@@ -421,6 +446,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Doors & Room Transitions',
       goal: 'Let the player walk through doors to move between rooms.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the door collision check that transitions between rooms.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Let the player walk through doors to move between rooms.'
+        ],
+        check: 'Let the player walk through doors to move between rooms.'
+      },
       points: [
         'Each door has a target room (<code>to</code> property)',
         'Walking into a door teleports the player to the centre of the next room',
@@ -449,6 +486,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Collectible Items & Keys',
       goal: 'Add keys and crystals that the player can pick up by walking over them.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the item collection check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add keys and crystals that the player can pick up by walking over them.'
+        ],
+        check: 'Add keys and crystals that the player can pick up by walking over them.'
+      },
       points: [
         'Golden keys unlock the Volcano gate (need 3)',
         'Cyan crystals are bonus collectibles',
@@ -477,6 +526,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'NPC Dialogue',
       goal: 'Let NPCs speak when the player presses E nearby.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: The dialogue system is built in. Write the NPC proximity check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Let NPCs speak when the player presses E nearby.'
+        ],
+        check: 'Let NPCs speak when the player presses E nearby.'
+      },
       points: [
         'NPCs have a name, position and array of dialogue lines',
         'Pressing E within range starts the dialogue sequence',
@@ -501,6 +562,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Polish',
       goal: 'Add a boss encounter in the Volcano room and a victory screen.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the win condition check for reaching the boss.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a boss encounter in the Volcano room and a victory screen.'
+        ],
+        check: 'Add a boss encounter in the Volcano room and a victory screen.'
+      },
       points: [
         'The Volcano Beast appears in the final room',
         'Walking into the boss triggers the win (simplified from the full Roblox combat)',

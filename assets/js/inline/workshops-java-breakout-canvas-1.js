@@ -60,6 +60,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-breakout-canvas',
   downloadName: 'my-java-breakout.html',
+engineProject: { href: '/downloads/java-breakout-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Your paddle appears at the bottom - move it with arrow keys',
@@ -77,8 +78,7 @@ window.CW_CONFIG = {
         SETUP + PAD_VARS + KEYS,
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PAD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -90,8 +90,7 @@ window.CW_CONFIG = {
         SETUP + PAD_VARS + BALL_VARS + KEYS,
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         PAD_HIT +
         DRAW_BG + DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -104,8 +103,7 @@ window.CW_CONFIG = {
         SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT,
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE + BALL_MOVE + PAD_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -117,8 +115,7 @@ window.CW_CONFIG = {
         SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT + 'let score=0;',
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -154,6 +151,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Paddle',
       goal: 'Draw a paddle that moves left and right with the arrow keys.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the paddle movement and clamping.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a paddle that moves left and right with the arrow keys.'
+        ],
+        check: 'Draw a paddle that moves left and right with the arrow keys.'
+      },
       points: [
         'The paddle has position <code>padX</code>, width 110, height 14, fixed at y = 470',
         'Move it with booleans: <code>leftHeld</code> and <code>rightHeld</code> - same pattern as the platformer',
@@ -182,6 +191,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Bouncing Ball',
       goal: 'Get a ball bouncing off walls, ceiling and the paddle.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the ball movement and wall bouncing.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Get a ball bouncing off walls, ceiling and the paddle.'
+        ],
+        check: 'Get a ball bouncing off walls, ceiling and the paddle.'
+      },
       points: [
         'Ball variables: position <code>bx, by</code>, velocity <code>bvx, bvy</code>, size 14',
         'Each frame: add velocity to position. Side walls flip <code>bvx</code>, ceiling flips <code>bvy</code>',
@@ -210,6 +231,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Brick Wall',
       goal: 'Fill the top of the screen with a grid of colourful bricks.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the nested loop that builds the brick grid.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Fill the top of the screen with a grid of colourful bricks.'
+        ],
+        check: 'Fill the top of the screen with a grid of colourful bricks.'
+      },
       points: [
         'Bricks stored as objects with <code>alive</code> flag - like Java\'s <code>boolean[][] bricks</code>',
         '5 rows, 10 columns. Each brick is 64×22 pixels with spacing',
@@ -238,6 +271,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Smashing Bricks',
       goal: 'Make the ball destroy bricks on contact and rack up score.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the brick collision and scoring.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the ball destroy bricks on contact and rack up score.'
+        ],
+        check: 'Make the ball destroy bricks on contact and rack up score.'
+      },
       points: [
         'Loop over bricks: if alive and ball overlaps, set <code>alive = false</code>',
         'Flip <code>bvy</code> so the ball bounces off the brick',
@@ -266,6 +311,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Lives & Losing',
       goal: 'Lose a life when the ball drops past the paddle.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the life-lost and game-over logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Lose a life when the ball drops past the paddle.'
+        ],
+        check: 'Lose a life when the ball drops past the paddle.'
+      },
       points: [
         'Start with <code>int lives = 3</code> - drawn as hearts top-right',
         'If <code>by > 520</code> (ball fell off screen): lives--, reset ball to centre',
@@ -294,6 +351,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Check & Polish',
       goal: 'Detect when all bricks are gone and show the victory screen.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the win detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect when all bricks are gone and show the victory screen.'
+        ],
+        check: 'Detect when all bricks are gone and show the victory screen.'
+      },
       points: [
         'Count alive bricks each frame - if zero, <code>won = true</code>',
         'Draw a big message on the game-over or win screen with the final score',

@@ -88,6 +88,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gml-platformer-canvas',
   downloadName: 'my-gml-platformer.html',
+engineProject: { href: '/downloads/gml-platformer-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Orange player and green platforms in a dark room',
@@ -119,8 +120,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         PHYSICS_H + PHYSICS_V +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -136,8 +136,7 @@ window.CW_CONFIG = {
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
         'var onGround=placeMeeting(px,py+1);' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
@@ -183,8 +182,7 @@ window.CW_CONFIG = {
         'if(buffer>0&&coyote>0){vsp=jumpForce;coyote=0;buffer=0}' +
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         COIN_CHECK + SPIKE_CHECK +
         DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -210,8 +208,7 @@ window.CW_CONFIG = {
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
         COIN_CHECK + SPIKE_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(px+pw/2>flag.x&&px-pw/2<flag.x+flag.w&&py+ph/2>flag.y&&py-ph/2<flag.y+flag.h)won=true;' +
         DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_FLAG + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -225,6 +222,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player, Wall & the Grid',
       goal: 'Set up the player and wall objects, lay out a room with platforms, and declare the movement variables.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the player Create event variables in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Set up the player and wall objects, lay out a room with platforms, and declare the movement variables.'
+        ],
+        check: 'Set up the player and wall objects, lay out a room with platforms, and declare the movement variables.'
+      },
       points: [
         'Sprites: spr_player (32x48, orange), spr_wall (32x32, green). Set player origin to Middle Centre',
         'Room: dark background, a floor, and several ledges painted from obj_wall instances',
@@ -254,6 +263,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'place_meeting Movement',
       goal: 'Implement collision-safe horizontal and vertical movement - the most famous 10 lines in GameMaker.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the horizontal collision block in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Implement collision-safe horizontal and vertical movement - the most famous 10 lines in GameMaker.'
+        ],
+        check: 'Implement collision-safe horizontal and vertical movement - the most famous 10 lines in GameMaker.'
+      },
       points: [
         '<code>place_meeting(x, y, obj)</code>: "if I stood at this position, would I overlap that object?" - collision BEFORE moving',
         'Horizontal: compute hsp from input; if ahead is blocked, inch pixel-by-pixel then zero the speed',
@@ -283,6 +304,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Jumping & Coyote Time',
       goal: 'Add jumping with coyote time and jump buffering - the pro-level polish that makes jumps feel psychic.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the coyote time and jump logic in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add jumping with coyote time and jump buffering - the pro-level polish that makes jumps feel psychic.'
+        ],
+        check: 'Add jumping with coyote time and jump buffering - the pro-level polish that makes jumps feel psychic.'
+      },
       points: [
         'Grounded test: <code>place_meeting(x, y + 1, obj_wall)</code> - is there floor one pixel below?',
         'Coyote time: reset to 6 when grounded, count down in air; jump allowed while > 0 (0.1s forgiveness)',
@@ -312,6 +345,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Camera & A Bigger World',
       goal: 'Expand the room and add a smooth-follow camera using lerp.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the smooth-follow camera in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Expand the room and add a smooth-follow camera using lerp.'
+        ],
+        check: 'Expand the room and add a smooth-follow camera using lerp.'
+      },
       points: [
         'Resize the room to 2400x500 and build a longer level with more platforms',
         'Enable Viewport 0 in Room editor, camera 800x500',
@@ -341,6 +386,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Coins, Spikes & Respawn',
       goal: 'Add collectable coins and deadly spikes with a respawn point.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the coin and spike collision events in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add collectable coins and deadly spikes with a respawn point.'
+        ],
+        check: 'Add collectable coins and deadly spikes with a respawn point.'
+      },
       points: [
         'obj_coin collision with player: <code>instance_destroy()</code> and <code>global.coins++</code> - pickups in two lines',
         'obj_spike collision: move the player back to global respawn coordinates and zero vsp',
@@ -370,6 +427,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'The Goal & Multiple Rooms',
       goal: 'Add a goal flag that advances to the next room, completing the game loop.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the flag collision and room flow in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add a goal flag that advances to the next room, completing the game loop.'
+        ],
+        check: 'Add a goal flag that advances to the next room, completing the game loop.'
+      },
       points: [
         'obj_flag collision with player: <code>room_goto_next()</code> - GameMaker rooms ARE your level system',
         'Build rm_level2 by copying and redesigning. Room order in the asset browser IS the level order',

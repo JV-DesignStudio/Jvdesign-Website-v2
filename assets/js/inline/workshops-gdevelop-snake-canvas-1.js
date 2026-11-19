@@ -87,6 +87,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-snake-canvas',
   downloadName: 'my-gdevelop-snake.html',
+engineProject: { href: '/downloads/gdevelop-snake-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A green square on a dark grid',
@@ -115,8 +116,7 @@ window.CW_CONFIG = {
         SETUP + SNAKE_VARS + STATE_VARS + KEYS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -130,8 +130,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SNAKE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(moveTimer===0&&snake.length>1)snake.pop();' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -146,8 +145,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SNAKE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(moveTimer===0&&!(snake[0].x===foodx&&snake[0].y===foody))snake.pop();' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -163,8 +161,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SNAKE + EAT_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
@@ -183,8 +180,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SNAKE + EAT_CHECK + WALL_CHECK + SELF_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
@@ -201,6 +197,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Snake Head',
       goal: 'Place a green square on a 20x20 grid. This is the snake head.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Set the snake starting position.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place a green square on a 20x20 grid. This is the snake head.'
+        ],
+        check: 'Place a green square on a 20x20 grid. This is the snake head.'
+      },
       points: [
         'The grid is 20 columns by 20 rows, each cell is 20 pixels',
         'The snake is an array of {x, y} grid positions',
@@ -230,6 +238,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Direction Control',
       goal: 'Change the snake direction with arrow keys, preventing reversal.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the direction change events.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Change the snake direction with arrow keys, preventing reversal.'
+        ],
+        check: 'Change the snake direction with arrow keys, preventing reversal.'
+      },
       points: [
         'Direction is stored as dx/dy: right=(1,0), left=(-1,0), up=(0,-1), down=(0,1)',
         'You cannot reverse into yourself: if going right, left is blocked',
@@ -259,6 +279,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Food on the Grid',
       goal: 'Place a red food square at a random grid position.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the food placement.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place a red food square at a random grid position.'
+        ],
+        check: 'Place a red food square at a random grid position.'
+      },
       points: [
         'Food spawns at a random column (0 to 19) and row (0 to 19)',
         'It must not spawn inside the snake body',
@@ -288,6 +320,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Eating & Growing',
       goal: 'When the snake head reaches the food, grow the snake and score a point.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the eating logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: When the snake head reaches the food, grow the snake and score a point.'
+        ],
+        check: 'When the snake head reaches the food, grow the snake and score a point.'
+      },
       points: [
         'Check if the head position matches the food position',
         'On eat: increase score, place new food, keep the tail (do not pop)',
@@ -317,6 +361,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Wall Collision',
       goal: 'End the game when the snake hits any wall.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the wall collision check.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: End the game when the snake hits any wall.'
+        ],
+        check: 'End the game when the snake hits any wall.'
+      },
       points: [
         'The snake dies if head x < 0, x >= 20, y < 0, or y >= 20',
         'These are boundary checks: going past any edge of the grid',
@@ -346,6 +402,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Self Collision & Restart',
       goal: 'End the game if the snake hits its own body. Press R to restart.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the self-collision and speed ramp.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: End the game if the snake hits its own body. Press R to restart.'
+        ],
+        check: 'End the game if the snake hits its own body. Press R to restart.'
+      },
       points: [
         'Loop through every body segment and check if the head overlaps it',
         'Skip index 0 (the head itself) when checking',

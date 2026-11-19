@@ -113,6 +113,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-pico8-pong-canvas',
   downloadName: 'my-pico8-pong.html',
+engineProject: { href: '/downloads/pico8-pong-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Two white paddles on a dark navy court',
@@ -143,8 +144,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -157,8 +157,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bvx=Math.max(-3,Math.min(3,bvx));' +
         'if(bx<-8||bx>136){bx=62;by=62;bvx=Math.random()<.5?1:-1;bvy=Math.random()<.5?1:-1}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
@@ -174,8 +173,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -189,8 +187,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'p2y=Math.max(0,Math.min(128-ph,p2y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -208,8 +205,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
         AI_LOGIC +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 18px monospace";ctx.textAlign="center";' +
@@ -225,6 +221,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Court & Paddles',
       goal: 'Draw two paddles and a dashed centre line on the PICO-8 screen.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Set up the paddle positions.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw two paddles and a dashed centre line on the PICO-8 screen.'
+        ],
+        check: 'Draw two paddles and a dashed centre line on the PICO-8 screen.'
+      },
       points: [
         'The court is the full 128x128 PICO-8 screen with a dark navy background (colour 1)',
         'Each paddle is 4 pixels wide and 24 tall - small for the tiny screen',
@@ -254,6 +262,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ball Movement',
       goal: 'Launch a ball and bounce it off the top and bottom walls.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Write the ball movement and wall bounce.',
+          'Type the same code into the cart.',
+          'Run the project and check: Launch a ball and bounce it off the top and bottom walls.'
+        ],
+        check: 'Launch a ball and bounce it off the top and bottom walls.'
+      },
       points: [
         'The ball starts at the centre: <code>bx=62, by=62</code> with velocity <code>bvx=1, bvy=1</code>',
         'Each frame: <code>bx += bvx</code> and <code>by += bvy</code>',
@@ -283,6 +303,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Collision',
       goal: 'Bounce the ball off paddles with angle spin.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Write the paddle bounce.',
+          'Type the same code into the cart.',
+          'Run the project and check: Bounce the ball off paddles with angle spin.'
+        ],
+        check: 'Bounce the ball off paddles with angle spin.'
+      },
       points: [
         'Check if the ball overlaps a paddle using edge comparisons (AABB)',
         'On hit: reverse bvx and multiply by 1.05 for slight rally speed-up',
@@ -312,6 +344,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scoring',
       goal: 'Award points when the ball exits left or right and re-serve.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Write the scoring logic.',
+          'Type the same code into the cart.',
+          'Run the project and check: Award points when the ball exits left or right and re-serve.'
+        ],
+        check: 'Award points when the ball exits left or right and re-serve.'
+      },
       points: [
         'Ball past left edge (bx < -8): right player scores, serve goes left',
         'Ball past right edge (bx > 136): left player scores, serve goes right',
@@ -341,6 +385,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'AI Paddle',
       goal: 'Make the right paddle chase the ball with a beatable AI.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Write the AI chase.',
+          'Type the same code into the cart.',
+          'Run the project and check: Make the right paddle chase the ball with a beatable AI.'
+        ],
+        check: 'Make the right paddle chase the ball with a beatable AI.'
+      },
       points: [
         'Compare ball centre to paddle centre: <code>gap = by + bsz/2 - (p2y + ph/2)</code>',
         'Dead zone: only move if <code>abs(gap) > 6</code> - the AI ignores tiny differences',
@@ -370,6 +426,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Restart',
       goal: 'First to 5 wins. Show the winner and press R to restart.',
+      engine: {
+        name: 'PICO-8',
+        file: 'pong.p8',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open pong.p8 in PICO-8.',
+          'Find the code that does: Write the win check.',
+          'Type the same code into the cart.',
+          'Run the project and check: First to 5 wins. Show the winner and press R to restart.'
+        ],
+        check: 'First to 5 wins. Show the winner and press R to restart.'
+      },
       points: [
         'Check after each score: <code>if s1 >= 5 or s2 >= 5 then gameState = "over" end</code>',
         'Display "you win!" or "cpu wins!" based on who reached 5 first',

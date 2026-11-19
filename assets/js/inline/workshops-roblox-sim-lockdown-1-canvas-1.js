@@ -87,6 +87,7 @@ function scene(user) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-sim-lockdown-1-canvas',
   downloadName: 'my-sim-lockdown-ep1.html',
+engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Keep every tuning number in one Config module',
@@ -111,6 +112,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Set Up the Project',
       goal: 'Create the shared Config that holds every number the match needs.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the Config table with the match numbers.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Create the shared Config that holds every number the match needs.'
+        ],
+        check: 'Create the shared Config that holds every number the match needs.'
+      },
       points: [
         'The server runs the rules, each client shows the player their screen',
         'MIN_PLAYERS is how many are needed before a match can start',
@@ -139,6 +152,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Build the Lobby',
       goal: 'Give every player a place to wait on the lobby floor.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write placeBeans() to spread the players around the lobby.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Give every player a place to wait on the lobby floor.'
+        ],
+        check: 'Give every player a place to wait on the lobby floor.'
+      },
       points: [
         'The lobby is a single platform high above the course',
         'Each player is placed around a circle so they do not stack',
@@ -167,6 +192,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Match Loop',
       goal: 'Run the whole match in one loop that changes a "phase" as it goes.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write nextPhase() so the match moves through its stages.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Run the whole match in one loop that changes a "phase" as it goes.'
+        ],
+        check: 'Run the whole match in one loop that changes a "phase" as it goes.'
+      },
       points: [
         'A while loop repeats the match forever',
         'phase tells us which stage we are in: lobby, countdown, race',
@@ -195,6 +232,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Wait, Count Down, Launch',
       goal: 'Wait for enough players, then show a countdown before the round.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write countdownText() to turn elapsed time into a countdown number.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Wait for enough players, then show a countdown before the round.'
+        ],
+        check: 'Wait for enough players, then show a countdown before the round.'
+      },
       points: [
         'waitForPlayers waits until the count reaches MIN_PLAYERS',
         'The countdown ticks down from START_COUNTDOWN',
@@ -223,6 +272,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Run One Round',
       goal: 'A round function the loop can call, moving players along the course.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write raceProgress() so a player edges along the course, capped at 1.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: A round function the loop can call, moving players along the course.'
+        ],
+        check: 'A round function the loop can call, moving players along the course.'
+      },
       points: [
         'A start position is set above a start platform',
         'Every player is moved there at the start of a round',
@@ -251,6 +312,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Test With Two Players',
       goal: 'Show the live match state so you can watch a full loop.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside Roblox Studio and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write updateHUD() to show the phase, round and players left.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Show the live match state so you can watch a full loop.'
+        ],
+        check: 'Show the live match state so you can watch a full loop.'
+      },
       points: [
         'The HUD shows the current phase and round',
         'It shows how many players are still in',

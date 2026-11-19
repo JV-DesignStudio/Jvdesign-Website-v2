@@ -91,6 +91,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-puzzle-canvas',
   downloadName: 'my-defold-puzzle.html',
+engineProject: { href: '/downloads/defold-puzzle-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'An 8x8 grid of coloured tiles on a dark background',
@@ -193,6 +194,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Tile Grid',
       goal: 'Fill an 8x8 grid with random coloured tiles.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Fill the grid with random tiles.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Fill an 8x8 grid with random coloured tiles.'
+        ],
+        check: 'Fill an 8x8 grid with random coloured tiles.'
+      },
       points: [
         'The grid is 8 columns by 8 rows, each tile is 40x40 pixels (320x320)',
         'Five tile colours: red, blue, green, yellow, purple (indices 0-4)',
@@ -222,6 +235,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Tile Selection',
       goal: 'Click a tile to select it, shown with a white border.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Write the tile selection from click position.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Click a tile to select it, shown with a white border.'
+        ],
+        check: 'Click a tile to select it, shown with a white border.'
+      },
       points: [
         'Convert mouse click (pixels) to grid position: <code>col = math.floor(mx / 40)</code>',
         'Store selected row and column: selR, selC. Set to -1 when nothing selected',
@@ -251,6 +276,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Swapping Tiles',
       goal: 'Click a second adjacent tile to swap them.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Write the adjacency check and swap.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Click a second adjacent tile to swap them.'
+        ],
+        check: 'Click a second adjacent tile to swap them.'
+      },
       points: [
         'Adjacent means exactly 1 tile apart horizontally or vertically (not diagonal)',
         'Check: <code>(dr == 1 and dc == 0) or (dr == 0 and dc == 1)</code>',
@@ -280,6 +317,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Match Detection',
       goal: 'Find 3 or more tiles of the same colour in a row or column.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Write the horizontal match scan.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Find 3 or more tiles of the same colour in a row or column.'
+        ],
+        check: 'Find 3 or more tiles of the same colour in a row or column.'
+      },
       points: [
         'Scan every row: compare grid[r][c] with grid[r][c+1] and grid[r][c+2]',
         'Scan every column: compare grid[r][c] with grid[r+1][c] and grid[r+2][c]',
@@ -309,6 +358,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Dropping Tiles',
       goal: 'After clearing matches, tiles above fall down to fill the gaps.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Write the drop logic for one column.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: After clearing matches, tiles above fall down to fill the gaps.'
+        ],
+        check: 'After clearing matches, tiles above fall down to fill the gaps.'
+      },
       points: [
         'Cleared tiles are set to -1 (empty)',
         'For each column: scan from bottom up, moving non-empty tiles down',
@@ -338,6 +399,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Refill & Chain Combos',
       goal: 'Fill empty cells with new random tiles and check for chain matches.',
+      engine: {
+        name: 'Defold',
+        file: 'board.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open board.script in Defold.',
+          'Find the code that does: Write the refill with chain detection.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Fill empty cells with new random tiles and check for chain matches.'
+        ],
+        check: 'Fill empty cells with new random tiles and check for chain matches.'
+      },
       points: [
         'Replace every -1 cell with a new random colour (0-4)',
         'After refilling, check for matches again - this creates chain combos',

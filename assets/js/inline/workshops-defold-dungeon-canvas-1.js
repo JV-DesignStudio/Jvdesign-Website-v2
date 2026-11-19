@@ -137,6 +137,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-dungeon-canvas',
   downloadName: 'my-defold-dungeon.html',
+engineProject: { href: '/downloads/defold-dungeon-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A green player square in a dark dungeon room with grey walls',
@@ -166,8 +167,7 @@ window.CW_CONFIG = {
         SETUP + MAP_DATA + PLAYER_VARS + STATE_VARS + KEYS,
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_MAP + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -180,8 +180,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -195,8 +194,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
@@ -212,8 +210,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
@@ -229,8 +226,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT + DOOR_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
@@ -246,6 +242,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Dungeon Map',
       goal: 'Draw a tile-based dungeon with walls and a player character.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Set the player start position.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Draw a tile-based dungeon with walls and a player character.'
+        ],
+        check: 'Draw a tile-based dungeon with walls and a player character.'
+      },
       points: [
         'The dungeon is a 20x20 grid of tiles, each 20 pixels (400x400 canvas)',
         'The map is an array of strings: "1" = wall (grey), "0" = floor (dark)',
@@ -275,6 +283,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Tile-Based Movement',
       goal: 'Move the player one tile at a time, blocked by walls.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the movement with wall collision.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Move the player one tile at a time, blocked by walls.'
+        ],
+        check: 'Move the player one tile at a time, blocked by walls.'
+      },
       points: [
         'Calculate the target tile before moving: <code>nx = playerX + dx</code>',
         'Check the map: if <code>map[ny][nx] ~= "1"</code>, the tile is walkable',
@@ -304,6 +324,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Patrolling Enemies',
       goal: 'Add red enemies that patrol back and forth through the rooms.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the enemy patrol logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Add red enemies that patrol back and forth through the rooms.'
+        ],
+        check: 'Add red enemies that patrol back and forth through the rooms.'
+      },
       points: [
         'Each enemy has a position, direction (dx, dy), and a timer for movement speed',
         'When the timer reaches the rate, move one tile in the current direction',
@@ -333,6 +365,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Sword Attack',
       goal: 'Press Space to swing a sword and defeat adjacent enemies.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the attack logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Press Space to swing a sword and defeat adjacent enemies.'
+        ],
+        check: 'Press Space to swing a sword and defeat adjacent enemies.'
+      },
       points: [
         'Space triggers a sword swing that hits all tiles within 1 step of the player',
         'Check each enemy: if <code>math.abs(enemy.x - playerX) <= 1</code> on both axes, it is in range',
@@ -362,6 +406,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Key & Door',
       goal: 'Place a golden key and a locked door. The key unlocks the exit.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the key collection.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Place a golden key and a locked door. The key unlocks the exit.'
+        ],
+        check: 'Place a golden key and a locked door. The key unlocks the exit.'
+      },
       points: [
         'The key is a gold square at (18, 1) - walk over it to collect',
         'The door at (18, 18) shows red when locked, green when the key is held',
@@ -391,6 +447,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Escape & Victory',
       goal: 'Reach the door with the key to escape. Lose all HP and it is game over.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the win condition.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Reach the door with the key to escape. Lose all HP and it is game over.'
+        ],
+        check: 'Reach the door with the key to escape. Lose all HP and it is game over.'
+      },
       points: [
         'Win: player on door tile AND keyItem.got is true',
         'Lose: HP drops to 0 from enemy contact (player respawns at start on each hit)',

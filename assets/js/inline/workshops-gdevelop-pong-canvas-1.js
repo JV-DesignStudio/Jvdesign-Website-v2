@@ -91,6 +91,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-pong-canvas',
   downloadName: 'my-gdevelop-pong.html',
+engineProject: { href: '/downloads/gdevelop-pong-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Two white paddles on a dark court with a dashed centre line',
@@ -121,8 +122,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -136,8 +136,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bvx=Math.max(-10,Math.min(10,bvx));' +
         'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
@@ -153,8 +152,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -168,8 +166,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'p2Y=Math.max(0,Math.min(304,p2Y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -186,8 +183,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + AI_LOGIC + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(flash>0)flash--;' +
         '}else if(rPressed){scoreL=0;scoreR=0;flash=0;serve(1);gameState="play";rPressed=false}' +
         DRAW_BG +
@@ -207,6 +203,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Court & Paddles',
       goal: 'Set up a dark court with two paddles and a dashed centre line.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Set the paddle dimensions and starting position.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Set up a dark court with two paddles and a dashed centre line.'
+        ],
+        check: 'Set up a dark court with two paddles and a dashed centre line.'
+      },
       points: [
         'In GDevelop, you create <strong>objects</strong> and place them in <strong>scenes</strong>',
         'Each paddle is 16 pixels wide and 96 pixels tall, white on a dark court',
@@ -236,6 +244,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ball Movement',
       goal: 'Launch a ball that moves diagonally and bounces off the top and bottom walls.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the wall bounce logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Launch a ball that moves diagonally and bounces off the top and bottom walls.'
+        ],
+        check: 'Launch a ball that moves diagonally and bounces off the top and bottom walls.'
+      },
       points: [
         'The ball has velocity: bvx (horizontal) and bvy (vertical)',
         'Each frame: x += bvx, y += bvy moves it diagonally',
@@ -265,6 +285,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Collision & Spin',
       goal: 'Make the ball rebound off paddles with angle based on where it hits.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the paddle collision with spin.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Make the ball rebound off paddles with angle based on where it hits.'
+        ],
+        check: 'Make the ball rebound off paddles with angle based on where it hits.'
+      },
       points: [
         'Check if the ball overlaps a paddle using position comparisons',
         'On hit: reverse horizontal velocity and slightly increase speed (* 1.05)',
@@ -294,6 +326,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scoring System',
       goal: 'Award points when the ball passes a paddle and re-serve.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the scoring events.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Award points when the ball passes a paddle and re-serve.'
+        ],
+        check: 'Award points when the ball passes a paddle and re-serve.'
+      },
       points: [
         'Ball past left edge: right player scores. Ball past right edge: left player scores',
         'After scoring, reset the ball to centre and serve toward the scorer',
@@ -323,6 +367,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'AI Opponent',
       goal: 'Make the right paddle chase the ball with a beatable dead zone.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the AI paddle logic.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Make the right paddle chase the ball with a beatable dead zone.'
+        ],
+        check: 'Make the right paddle chase the ball with a beatable dead zone.'
+      },
       points: [
         'The AI compares the ball Y position to its own centre',
         'Only move if the gap exceeds a dead zone (14 pixels) - this creates hesitation',
@@ -352,6 +408,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Restart',
       goal: 'First to 7 wins. Add a score flash and press R to restart.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the win condition.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: First to 7 wins. Add a score flash and press R to restart.'
+        ],
+        check: 'First to 7 wins. Add a score flash and press R to restart.'
+      },
       points: [
         'Check if either score reaches 7 after each point',
         'Flash effect: a brief white overlay on score, fading over 12 frames',

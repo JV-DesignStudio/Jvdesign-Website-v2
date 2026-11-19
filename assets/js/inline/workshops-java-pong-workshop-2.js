@@ -102,6 +102,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-pong-workshop',
   downloadName: 'my-java-pong.html',
+engineProject: { href: '/downloads/java-pong-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Two white paddles on a black court with a dashed centre line',
@@ -199,6 +200,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Court & Paddles',
       goal: 'Draw the Pong court with a centre line and two paddles. Move the left paddle with W/S or arrow keys.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the paddle movement logic in Java.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw the Pong court with a centre line and two paddles. Move the left paddle with W/S or arrow keys.'
+        ],
+        check: 'Draw the Pong court with a centre line and two paddles. Move the left paddle with W/S or arrow keys.'
+      },
       points: [
         'The court is 600x400 pixels with a black background and a dashed centre line',
         'Two white paddles: left at x=15, right at x=575, both 10 wide and 70 tall',
@@ -228,6 +241,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Ball & Bouncing',
       goal: 'Add a ball that moves each frame and bounces off the top and bottom walls.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the ball movement and wall bounce.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a ball that moves each frame and bounces off the top and bottom walls.'
+        ],
+        check: 'Add a ball that moves each frame and bounces off the top and bottom walls.'
+      },
       points: [
         'The ball has position (<code>bx, by</code>) and velocity (<code>bvx, bvy</code>)',
         'Each frame: <code>bx += bvx; by += bvy</code> moves the ball',
@@ -257,6 +282,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Hits',
       goal: 'Make the ball rebound off both paddles with spin based on where it strikes.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the paddle collision for both sides.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the ball rebound off both paddles with spin based on where it strikes.'
+        ],
+        check: 'Make the ball rebound off both paddles with spin based on where it strikes.'
+      },
       points: [
         'Check if the ball overlaps the left paddle (x 15..25, y p1Y..p1Y+70) AND is moving left',
         'On hit: flip <code>bvx</code> so the ball heads the other way',
@@ -286,6 +323,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scoring & First to 7',
       goal: 'Award points when the ball exits left or right, and end the match at 7.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the scoring and win detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Award points when the ball exits left or right, and end the match at 7.'
+        ],
+        check: 'Award points when the ball exits left or right, and end the match at 7.'
+      },
       points: [
         'Ball exits left (<code>bx &lt; -10</code>): player 2 scores, <code>serve(-1)</code> toward the loser',
         'Ball exits right (<code>bx &gt; 610</code>): player 1 scores, <code>serve(1)</code>',
@@ -315,6 +364,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Computer Opponent',
       goal: 'Replace player 2 with an AI that chases the ball but can be beaten.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the AI chase logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Replace player 2 with an AI that chases the ball but can be beaten.'
+        ],
+        check: 'Replace player 2 with an AI that chases the ball but can be beaten.'
+      },
       points: [
         'Simple AI: compare the paddle centre (<code>p2Y + 35</code>) to the ball centre (<code>by + bs/2</code>)',
         'If the paddle is above the ball, move down; if below, move up',
@@ -344,6 +405,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Polish & Win Screen',
       goal: 'Add a score flash, rally speed-up, and a proper win screen with restart.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the scoring with flash and win detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Add a score flash, rally speed-up, and a proper win screen with restart.'
+        ],
+        check: 'Add a score flash, rally speed-up, and a proper win screen with restart.'
+      },
       points: [
         'Flash effect: set <code>flash = 12</code> when someone scores; paint a white overlay that fades each frame',
         'Rally speed-up: each paddle hit increases <code>bvx</code> slightly (already built in), capped at 10',

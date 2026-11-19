@@ -114,6 +114,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gml-rpg-canvas',
   downloadName: 'my-gml-rpg.html',
+engineProject: { href: '/downloads/gml-rpg-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A top-down green world with an orange hero and walls',
@@ -303,6 +304,18 @@ window.CW_CONFIG = {
       num: 1,
       title: '8-Way Movement & Depth',
       goal: 'Set up a top-down RPG room with smooth 8-directional movement and wall collisions.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the player Step event for 8-way movement in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Set up a top-down RPG room with smooth 8-directional movement and wall collisions.'
+        ],
+        check: 'Set up a top-down RPG room with smooth 8-directional movement and wall collisions.'
+      },
       points: [
         'Sprites: spr_player (28x28, orange), spr_wall (32x32, brown). Top-down origin at Middle Centre',
         'Room: grass-green background tiled with two shades, walls define rooms and corridors',
@@ -332,6 +345,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Dialogue Box & Typewriter',
       goal: 'Add NPCs with a dialogue box that reveals text character by character.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the typewriter dialogue variables in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add NPCs with a dialogue box that reveals text character by character.'
+        ],
+        check: 'Add NPCs with a dialogue box that reveals text character by character.'
+      },
       points: [
         'obj_npc stores a <code>msg</code> string. Collision or proximity triggers the dialogue box',
         'A controller draws a black rectangle at the screen bottom. Each frame, one more character is revealed',
@@ -361,6 +386,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Enemy States: Idle / Chase / Attack',
       goal: 'Give enemies a state machine that switches between idling, wandering, and chasing the player.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the enemy state machine in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Give enemies a state machine that switches between idling, wandering, and chasing the player.'
+        ],
+        check: 'Give enemies a state machine that switches between idling, wandering, and chasing the player.'
+      },
       points: [
         '<code>state = "idle"</code> in Create. The Step event uses a <code>switch</code> on state',
         'Idle: wait, then pick a random wander target. If player enters detection radius → chase',
@@ -390,6 +427,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Combat: Hearts & I-Frames',
       goal: 'Add a health system with hearts, contact damage with invincibility frames, and a melee attack.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the Z-key attack in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add a health system with hearts, contact damage with invincibility frames, and a melee attack.'
+        ],
+        check: 'Add a health system with hearts, contact damage with invincibility frames, and a melee attack.'
+      },
       points: [
         'Player Create: <code>hp = 3; max_hp = 3; iframes = 0;</code> Three hearts, classic RPG style',
         'Enemy contact: if iframes == 0, lose a heart and set iframes = 45 (0.75s invincibility)',
@@ -419,6 +468,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'World & Room Warps',
       goal: 'Connect rooms with warp objects that teleport the player between areas.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the warp collision in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Connect rooms with warp objects that teleport the player between areas.'
+        ],
+        check: 'Connect rooms with warp objects that teleport the player between areas.'
+      },
       points: [
         'obj_warp stores: <code>target_room, target_x, target_y</code>. Place it at doorways',
         'Player collision with warp: <code>room_goto(target_room)</code>, set x/y to target coordinates',
@@ -448,6 +509,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Save & Load with JSON',
       goal: 'Persist the game state to a file using json_stringify and json_parse.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the save and load functions in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Persist the game state to a file using json_stringify and json_parse.'
+        ],
+        check: 'Persist the game state to a file using json_stringify and json_parse.'
+      },
       points: [
         'Build a save struct: <code>{ px: x, py: y, hp: hp, room: room }</code> - everything needed to restore',
         '<code>json_stringify(save_struct)</code> → a JSON string. Write it with <code>file_text_write_string</code>',

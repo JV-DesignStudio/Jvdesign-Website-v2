@@ -180,6 +180,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-tycoon-canvas',
   downloadName: 'my-tycoon-game.html',
+engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Watch the dropper spawn yellow bricks that fall down',
@@ -252,6 +253,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Build the Dropper',
       goal: 'Create a dropper that spawns falling bricks every 2 seconds.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the function that creates a new falling brick.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Create a dropper that spawns falling bricks every 2 seconds.'
+        ],
+        check: 'Create a dropper that spawns falling bricks every 2 seconds.'
+      },
       points: [
         'A dropper box sits at the top of the screen',
         'Every 2 seconds a new yellow brick spawns below it',
@@ -280,6 +293,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Add the Collector',
       goal: 'Place a collector that catches falling bricks.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the brick physics with collector collision.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Place a collector that catches falling bricks.'
+        ],
+        check: 'Place a collector that catches falling bricks.'
+      },
       points: [
         'A green collector box sits at the bottom of the screen',
         'Bricks that land on it are removed from the game',
@@ -308,6 +333,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Cash System',
       goal: 'Award cash when bricks are collected and display it on screen.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the collect function that awards cash.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Award cash when bricks are collected and display it on screen.'
+        ],
+        check: 'Award cash when bricks are collected and display it on screen.'
+      },
       points: [
         'Each collected brick adds $10 to the cash counter',
         'The HUD shows current cash and total bricks',
@@ -336,6 +373,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Buy Pad Upgrades',
       goal: 'Add upgrade buttons that let players spend cash on improvements.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the upgrade button renderer.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add upgrade buttons that let players spend cash on improvements.'
+        ],
+        check: 'Add upgrade buttons that let players spend cash on improvements.'
+      },
       points: [
         'Three upgrade pads: faster drops, more valuable bricks, double bricks',
         'Each costs a different amount of cash',
@@ -364,6 +413,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Cash GUI Display',
       goal: 'Add an on-canvas cash display with glow effects.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the glow effects for the dropper and collector.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add an on-canvas cash display with glow effects.'
+        ],
+        check: 'Add an on-canvas cash display with glow effects.'
+      },
       points: [
         'A large cash readout drawn on the canvas',
         'Glow effects pulse around the dropper and collector',
@@ -392,6 +453,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Polish & Particles',
       goal: 'Add collection particle effects and final visual polish.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the particle spawner for brick collection.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add collection particle effects and final visual polish.'
+        ],
+        check: 'Add collection particle effects and final visual polish.'
+      },
       points: [
         'Gold particles burst from the collector when a brick lands',
         'Particles fade out over time with decreasing opacity',

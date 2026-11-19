@@ -288,6 +288,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-horror-canvas',
   downloadName: 'my-horror-game.html',
+engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to move through the dark maze',
@@ -374,6 +375,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Dark Room & Flashlight',
       goal: 'Render a pitch-black canvas with a flashlight cone that follows the mouse.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the flashlight rendering function that clips a cone toward the mouse.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Render a pitch-black canvas with a flashlight cone that follows the mouse.'
+        ],
+        check: 'Render a pitch-black canvas with a flashlight cone that follows the mouse.'
+      },
       points: [
         'The canvas starts completely dark, just like Roblox Lighting.Brightness = 0',
         'A cone of light follows the mouse direction from the player',
@@ -402,6 +415,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Player Movement in the Dark',
       goal: 'Move the player with arrow keys, blocked by maze walls.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function with wall collision.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Move the player with arrow keys, blocked by maze walls.'
+        ],
+        check: 'Move the player with arrow keys, blocked by maze walls.'
+      },
       points: [
         'Arrow keys move the player up, down, left and right',
         'Wall collision prevents the player walking through walls',
@@ -430,6 +455,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Key Collection',
       goal: 'Place glowing keys in the maze and collect them on touch.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the key collection function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Place glowing keys in the maze and collect them on touch.'
+        ],
+        check: 'Place glowing keys in the maze and collect them on touch.'
+      },
       points: [
         'Three golden keys are hidden in maze dead ends',
         'Walking into a key collects it and increments the counter',
@@ -458,6 +495,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Locked Door',
       goal: 'A door that only opens when all 3 keys are collected.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the door check function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: A door that only opens when all 3 keys are collected.'
+        ],
+        check: 'A door that only opens when all 3 keys are collected.'
+      },
       points: [
         'The door glows red when locked and green when unlocked',
         'Walking into an unlocked door triggers the win condition',
@@ -486,6 +535,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Ghost Enemy',
       goal: 'A flickering ghost that chases the player through the maze.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the ghost movement and kill logic.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: A flickering ghost that chases the player through the maze.'
+        ],
+        check: 'A flickering ghost that chases the player through the maze.'
+      },
       points: [
         'The ghost floats toward the nearest player each frame',
         'It passes through walls (CanCollide = false in Roblox)',
@@ -514,6 +575,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Timer & Atmospheric Polish',
       goal: 'Add a countdown timer and win/lose conditions with spooky effects.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the countdown timer update function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a countdown timer and win/lose conditions with spooky effects.'
+        ],
+        check: 'Add a countdown timer and win/lose conditions with spooky effects.'
+      },
       points: [
         'A 3-minute countdown timer, matching the Roblox TimerGui',
         'Timer turns red at 30 seconds. Zero = game over',

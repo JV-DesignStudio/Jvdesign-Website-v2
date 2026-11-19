@@ -84,6 +84,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-catch-canvas',
   downloadName: 'my-python-catch.html',
+engineProject: { href: '/downloads/python-catch-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'An orange basket at the bottom of a dark screen',
@@ -113,8 +114,7 @@ window.CW_CONFIG = {
         SETUP + BASKET_VARS + KEYS,
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bx=Math.max(0,Math.min(600-bw,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -129,8 +129,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(fy>410)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -145,8 +144,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(fy>410)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -161,8 +159,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -178,8 +175,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
@@ -196,6 +192,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Basket',
       goal: 'Draw an orange basket at the bottom of the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the basket position and size.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw an orange basket at the bottom of the screen.'
+        ],
+        check: 'Draw an orange basket at the bottom of the screen.'
+      },
       points: [
         'The canvas is 600x400 pixels with a dark blue background',
         'The basket is an orange rectangle: 90 wide, 22 tall, sitting near the bottom at y=365',
@@ -225,6 +233,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Keyboard Movement',
       goal: 'Move the basket left and right with the arrow keys, clamped to the screen edges.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the basket movement logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Move the basket left and right with the arrow keys, clamped to the screen edges.'
+        ],
+        check: 'Move the basket left and right with the arrow keys, clamped to the screen edges.'
+      },
       points: [
         'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in real Pygame you would use <code>pygame.key.get_pressed()</code>',
         'Move by <code>speed</code> (7) pixels each frame while a key is held',
@@ -254,6 +274,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Falling Fruit',
       goal: 'Spawn a fruit at a random x position and let it fall down the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the fruit falling logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Spawn a fruit at a random x position and let it fall down the screen.'
+        ],
+        check: 'Spawn a fruit at a random x position and let it fall down the screen.'
+      },
       points: [
         'The fruit starts above the screen at <code>fy = -20</code> so it slides in smoothly',
         'Each frame: <code>fy += fallSpeed</code> moves it downward (positive y is down on canvas)',
@@ -283,6 +315,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching Fruit',
       goal: 'Detect when the fruit overlaps the basket and award a point.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the catch detection.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect when the fruit overlaps the basket and award a point.'
+        ],
+        check: 'Detect when the fruit overlaps the basket and award a point.'
+      },
       points: [
         'Two rectangles overlap when: right edges pass each other AND bottom edges pass each other',
         'In Pygame you would use <code>basket.colliderect(fruit)</code> - here we check the four edges manually',
@@ -312,6 +356,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Lives & Missing',
       goal: 'Lose a life when fruit hits the ground, game over at zero.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the miss penalty.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Lose a life when fruit hits the ground, game over at zero.'
+        ],
+        check: 'Lose a life when fruit hits the ground, game over at zero.'
+      },
       points: [
         'When the fruit passes the bottom without being caught: <code>lives -= 1</code>',
         'If lives reach 0: <code>gameState = "over"</code> - freeze the game',
@@ -341,6 +397,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Ramp & Restart',
       goal: 'Make the fruit fall faster as the score grows, and let R restart the game.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the speed ramp.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the fruit fall faster as the score grows, and let R restart the game.'
+        ],
+        check: 'Make the fruit fall faster as the score grows, and let R restart the game.'
+      },
       points: [
         'Increase <code>fallSpeed</code> every few catches: <code>fallSpeed = 4 + score // 5</code> speeds up every 5 points',
         'Cap it with <code>min(fallSpeed, 10)</code> so it stays playable',

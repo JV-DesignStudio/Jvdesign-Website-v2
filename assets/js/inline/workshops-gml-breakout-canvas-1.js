@@ -113,6 +113,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gml-breakout-canvas',
   downloadName: 'my-gml-breakout.html',
+engineProject: { href: '/downloads/gml-breakout-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Mouse-controlled paddle at the bottom, ball bouncing off three walls',
@@ -211,8 +212,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(!gameOver){' +
         MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT + BALL_LOST +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
         DRAW_WIN + DRAW_GAMEOVER +
@@ -227,6 +227,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Mouse Paddle & Ball',
       goal: 'Set up a mouse-controlled paddle and a bouncing ball with wall bounces on three edges.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the paddle Step and ball bounce in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Set up a mouse-controlled paddle and a bouncing ball with wall bounces on three edges.'
+        ],
+        check: 'Set up a mouse-controlled paddle and a bouncing ball with wall bounces on three edges.'
+      },
       points: [
         'spr_paddle is 110x14, spr_ball 14x14, room 700x520 with a dark background',
         '<code>x = clamp(mouse_x, 55, room_width - 55)</code> centres the paddle on the cursor (origin centred!)',
@@ -256,6 +268,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Spawning the Brick Wall',
       goal: 'Generate a 5x10 coloured brick grid from code using instance_create_layer and image_blend.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the brick spawning loop in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Generate a 5x10 coloured brick grid from code using instance_create_layer and image_blend.'
+        ],
+        check: 'Generate a 5x10 coloured brick grid from code using instance_create_layer and image_blend.'
+      },
       points: [
         'obj_brick: 64x22 sprite. Do NOT hand-place 50 bricks - spawn them with code!',
         'Nested for loops in obj_game Create call <code>instance_create_layer</code> for each brick',
@@ -285,6 +309,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Brick Breaking & Paddle Spin',
       goal: 'Wire collision events: bricks die on hit, the paddle steers the ball with spin.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the two collision events in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Wire collision events: bricks die on hit, the paddle steers the ball with spin.'
+        ],
+        check: 'Wire collision events: bricks die on hit, the paddle steers the ball with spin.'
+      },
       points: [
         'obj_ball + obj_brick collision: flip vspeed, add points, <code>with (other) instance_destroy()</code>',
         '<code>with</code> runs code AS another instance - the cleanest way to affect what you hit',
@@ -314,6 +350,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Native Particles',
       goal: 'Make bricks explode into sparks using GameMaker\'s built-in particle system.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the particle setup and burst call in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Make bricks explode into sparks using GameMaker\'s built-in particle system.'
+        ],
+        check: 'Make bricks explode into sparks using GameMaker\'s built-in particle system.'
+      },
       points: [
         'GameMaker has particles BUILT IN: create a system, define a type, emit bursts',
         'obj_game Create: <code>part_system_create()</code> + <code>part_type_create()</code> with shape, size, speed, life',
@@ -343,6 +391,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Screen Shake & Lives',
       goal: 'Add camera shake on brick hits and the three-lives system.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the shake decay and lives logic in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Add camera shake on brick hits and the three-lives system.'
+        ],
+        check: 'Add camera shake on brick hits and the three-lives system.'
+      },
       points: [
         'shake = 4 on brick death; each Step it decays by 0.3 and offsets the camera with <code>random_range</code>',
         'Shake decaying smoothly creates a punch-then-settle feel, like real impacts',
@@ -372,6 +432,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Polish',
       goal: 'Detect the cleared wall, add alarms for serve delay, and complete the game loop.',
+      engine: {
+        name: 'GameMaker (GML)',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the win check and alarm setup in GML.',
+          'Open the downloaded event code and add the same GML to your object.',
+          'Run the project and check: Detect the cleared wall, add alarms for serve delay, and complete the game loop.'
+        ],
+        check: 'Detect the cleared wall, add alarms for serve delay, and complete the game loop.'
+      },
       points: [
         'Win check: <code>if (instance_number(obj_brick) == 0) room_goto(rm_win)</code>',
         'Serve delay with Alarm events: set <code>alarm[0] = 60</code> in Create (fires in 1 second)',

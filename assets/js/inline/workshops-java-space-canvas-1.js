@@ -104,6 +104,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-java-space-canvas',
   downloadName: 'my-java-space-shooter.html',
+engineProject: { href: '/downloads/java-space-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Your ship sits at the bottom of space, ready to defend Earth',
@@ -133,8 +134,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -147,8 +147,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -161,8 +160,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -175,8 +173,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -191,8 +188,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         DRAW_GAME_OVER +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE + WAVE_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -205,6 +201,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player Ship',
       goal: 'Draw a triangle ship at the bottom of space that moves left and right with arrow keys.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the ship movement and clamping in Java.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a triangle ship at the bottom of space that moves left and right with arrow keys.'
+        ],
+        check: 'Draw a triangle ship at the bottom of space that moves left and right with arrow keys.'
+      },
       points: [
         'In Java, the ship is stored as <code>int shipX, shipW, shipH</code> - position and size',
         'Arrow keys set <code>boolean leftHeld, rightHeld</code> - read each frame to move smoothly',
@@ -233,6 +241,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Firing Lasers',
       goal: 'Press Space to fire lasers that fly upward and disappear off screen.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the bullet firing and movement.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Press Space to fire lasers that fly upward and disappear off screen.'
+        ],
+        check: 'Press Space to fire lasers that fly upward and disappear off screen.'
+      },
       points: [
         'Bullets live in an <code>ArrayList&lt;Rectangle&gt;</code> - they come and go constantly',
         'On Space: add a new bullet at the ship nose - <code>shipX + shipW/2 - 2</code> centres it',
@@ -261,6 +281,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Alien Wave',
       goal: 'Spawn a grid of aliens that march side-to-side and step down at the walls.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the alien wave movement.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Spawn a grid of aliens that march side-to-side and step down at the walls.'
+        ],
+        check: 'Spawn a grid of aliens that march side-to-side and step down at the walls.'
+      },
       points: [
         'Aliens are stored in an <code>ArrayList</code> - spawn a 6x4 grid in the constructor',
         'One shared <code>int alienDir = 1</code> - every alien moves <code>alienDir * 2</code> horizontally',
@@ -289,6 +321,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Blasting Aliens',
       goal: 'Lasers destroy aliens on contact - remove both objects and add to the score.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the bullet-alien collision.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Lasers destroy aliens on contact - remove both objects and add to the score.'
+        ],
+        check: 'Lasers destroy aliens on contact - remove both objects and add to the score.'
+      },
       points: [
         'Loop bullets backwards (so removal is safe), and for each bullet check every alien',
         'Overlap test: bullet right > alien left AND bullet left < alien right, same for vertical',
@@ -317,6 +361,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Waves & Difficulty',
       goal: 'When a wave is cleared, spawn the next one faster and worth more points.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the wave completion and difficulty ramp.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: When a wave is cleared, spawn the next one faster and worth more points.'
+        ],
+        check: 'When a wave is cleared, spawn the next one faster and worth more points.'
+      },
       points: [
         'Add <code>int wave = 1</code> - increment it each time all aliens are destroyed',
         'Check <code>aliens.every(a => !a.alive)</code> - if true, wave++, respawn the grid',
@@ -345,6 +401,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Game Over & Polish',
       goal: 'Lose when aliens reach the ship line, show a game over screen with score and wave.',
+      engine: {
+        name: 'Java 17',
+        file: 'GamePanel.java',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open GamePanel.java in Java 17.',
+          'Find the code that does: Write the game over check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Lose when aliens reach the ship line, show a game over screen with score and wave.'
+        ],
+        check: 'Lose when aliens reach the ship line, show a game over screen with score and wave.'
+      },
       points: [
         'Add <code>boolean gameOver = false</code> - if any alien passes y = 450, the invasion succeeded',
         'When gameOver: freeze the game loop and draw GAME OVER, score, and wave reached',

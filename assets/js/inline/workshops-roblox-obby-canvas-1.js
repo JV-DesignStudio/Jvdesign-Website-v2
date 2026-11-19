@@ -200,6 +200,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-obby-canvas',
   downloadName: 'my-obby-game.html',
+engineProject: { href: '/downloads/roblox-obby-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to move, Space to jump onto the platforms',
@@ -271,6 +272,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Build the Obby Layout',
       goal: 'Set up the player and the basic movement physics.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function that applies gravity and keyboard input.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Set up the player and the basic movement physics.'
+        ],
+        check: 'Set up the player and the basic movement physics.'
+      },
       points: [
         'A player character with gravity, speed and jump power',
         'Arrow keys move left/right, Space jumps',
@@ -299,6 +312,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Lava! Kill Floor',
       goal: 'Add a lava floor that kills the player and costs a life.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the lava collision check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a lava floor that kills the player and costs a life.'
+        ],
+        check: 'Add a lava floor that kills the player and costs a life.'
+      },
       points: [
         'A red lava zone sits below all the platforms',
         'Touching it kills the player and removes a life',
@@ -327,6 +352,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Moving Platforms',
       goal: 'Make two platforms slide back and forth using sine waves.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the function that moves the platforms.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Make two platforms slide back and forth using sine waves.'
+        ],
+        check: 'Make two platforms slide back and forth using sine waves.'
+      },
       points: [
         'Each platform has a base position, range and speed',
         '<code>Math.sin()</code> creates smooth back-and-forth motion',
@@ -355,6 +392,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Jump Pad',
       goal: 'Add a launch pad that blasts the player upward.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the jump pad collision check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a launch pad that blasts the player upward.'
+        ],
+        check: 'Add a launch pad that blasts the player upward.'
+      },
       points: [
         'A cyan pad that glows with a pulsing effect',
         'Landing on it sets a high negative velocity (launches up)',
@@ -383,6 +432,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Touch Controls',
       goal: 'Swipe detection for mobile play.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the touch handlers for mobile.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Swipe detection for mobile play.'
+        ],
+        check: 'Swipe detection for mobile play.'
+      },
       points: [
         'Track where the finger lands, compare on release',
         'Vertical swipe up = jump, horizontal = move',
@@ -407,6 +468,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Victory & Polish',
       goal: 'Add a win check on the finish platform and visual polish.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the finish-line check and victory display.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a win check on the finish platform and visual polish.'
+        ],
+        check: 'Add a win check on the finish platform and visual polish.'
+      },
       points: [
         'Reaching the green finish platform triggers the win state',
         'A victory overlay shows time taken',

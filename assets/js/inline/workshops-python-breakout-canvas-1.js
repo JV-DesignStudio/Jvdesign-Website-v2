@@ -103,6 +103,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-python-breakout-canvas',
   downloadName: 'my-python-breakout.html',
+engineProject: { href: '/downloads/python-breakout-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'A white paddle at the bottom of a dark screen',
@@ -145,8 +146,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -173,8 +173,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -190,8 +189,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE + BRICK_COLLIDE + BALL_LOST +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         CHECK_WIN +
         '}' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE + DRAW_LIVES +
@@ -212,6 +210,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Setup & Paddle',
       goal: 'Draw a white paddle at the bottom of the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the paddle position and size.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Draw a white paddle at the bottom of the screen.'
+        ],
+        check: 'Draw a white paddle at the bottom of the screen.'
+      },
       points: [
         'The canvas is 600x400 pixels with a dark background (#0f0f1a)',
         'The paddle is a white rectangle: 100 wide, 14 tall, sitting near the bottom at y=375',
@@ -241,6 +251,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Ball',
       goal: 'Launch a ball from the centre that bounces off walls and ceiling.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the ball velocity so it launches upward and to the right.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Launch a ball from the centre that bounces off walls and ceiling.'
+        ],
+        check: 'Launch a ball from the centre that bounces off walls and ceiling.'
+      },
       points: [
         'The ball starts at the centre (300, 200) with radius 8',
         'It has velocity: <code>bvx</code> (horizontal) and <code>bvy</code> (vertical) - typically 4 and -4',
@@ -270,6 +292,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Spin',
       goal: 'Make the ball bounce off the paddle with angle control.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the paddle bounce with spin.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make the ball bounce off the paddle with angle control.'
+        ],
+        check: 'Make the ball bounce off the paddle with angle control.'
+      },
       points: [
         'When the ball touches the paddle, reverse its vertical direction',
         'Calculate an <code>offset</code>: how far from the paddle centre the ball hit',
@@ -299,6 +333,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'The Brick Wall',
       goal: 'Build a grid of colourful bricks at the top of the screen.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Define the brick grid dimensions.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Build a grid of colourful bricks at the top of the screen.'
+        ],
+        check: 'Build a grid of colourful bricks at the top of the screen.'
+      },
       points: [
         'The wall has 5 rows and 8 columns of bricks, each 60 wide and 20 tall',
         'Each row gets a different colour: red, orange, yellow, green, blue',
@@ -328,6 +374,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Smashing & Scoring',
       goal: 'Detect ball-brick collisions, smash bricks and earn points.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the brick collision loop.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Detect ball-brick collisions, smash bricks and earn points.'
+        ],
+        check: 'Detect ball-brick collisions, smash bricks and earn points.'
+      },
       points: [
         'Loop through every brick. If it is alive, check if the ball overlaps it',
         'Collision: <code>bx + br > brick.x</code> AND <code>bx - br < brick.x + brick.w</code> AND same for y',
@@ -357,6 +415,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Lives, Loss & Victory',
       goal: 'Handle ball loss, game over, win condition and restart.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the win check.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Handle ball loss, game over, win condition and restart.'
+        ],
+        check: 'Handle ball loss, game over, win condition and restart.'
+      },
       points: [
         'When the ball falls below the paddle (<code>by - br > 400</code>): lose a life, reset ball to centre',
         'At 0 lives: <code>gameState = "over"</code> and show GAME OVER',

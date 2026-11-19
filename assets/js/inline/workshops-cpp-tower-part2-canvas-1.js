@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -83,6 +83,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-cpp-tower-p2-canvas',
   downloadName: 'my-cpp-tower-defence-2.html',
+engineProject: { href: '/downloads/cpp-tower-part2-workshop-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Towers firing yellow bullets at enemies on a winding path',
@@ -241,6 +242,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Towers Open Fire',
       goal: 'Make towers spawn bullets at the nearest enemy on a cooldown timer. Click the canvas to place towers.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the tower firing loop with cooldown.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Make towers spawn bullets at the nearest enemy on a cooldown timer. Click the canvas to place towers.'
+        ],
+        check: 'Make towers spawn bullets at the nearest enemy on a cooldown timer. Click the canvas to place towers.'
+      },
       points: [
         'Each tower has a <code>float cooldown</code> that counts down by <code>dt</code> every frame',
         'When cooldown hits zero AND <code>nearestInRange(t)</code> returns a target, push a new bullet',
@@ -270,6 +283,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Homing Bullets',
       goal: 'Bullets home in on their target, deal damage on hit, and pay gold bounties on kills.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the bullet homing, damage, and bounty logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Bullets home in on their target, deal damage on hit, and pay gold bounties on kills.'
+        ],
+        check: 'Bullets home in on their target, deal damage on hit, and pay gold bounties on kills.'
+      },
       points: [
         'Each frame: normalise <code>(target.pos - bullet.pos)</code> and move by <code>speed * dt</code>',
         'Within 8 px of the target: apply <code>b.damage</code> to the enemy\'s hp, mark bullet dead',
@@ -299,6 +324,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'The Wave System',
       goal: 'Spawn enemies in numbered waves with growing difficulty, separated by rest periods.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the wave spawning system.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Spawn enemies in numbered waves with growing difficulty, separated by rest periods.'
+        ],
+        check: 'Spawn enemies in numbered waves with growing difficulty, separated by rest periods.'
+      },
       points: [
         'Wave state: <code>int wave, toSpawn</code>, a spawn-gap timer (0.8 s), and a between-waves rest (5 s)',
         'Wave n spawns <code>4 + n*2</code> enemies with hp <code>20 + n*8</code> and speed <code>70 + n*4</code>',
@@ -328,6 +365,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Tower Upgrades',
       goal: 'Right-click a tower to upgrade it: more damage, wider range, faster firing.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the upgrade logic (runs on right-click near tower t).',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Right-click a tower to upgrade it: more damage, wider range, faster firing.'
+        ],
+        check: 'Right-click a tower to upgrade it: more damage, wider range, faster firing.'
+      },
       points: [
         'Tower gains <code>int level = 1</code>. Right-click within 20 px of a tower to upgrade it',
         'Cost: <code>40 * level</code> gold. Effects: damage +4, range +25, cooldown * 0.8',
@@ -357,6 +406,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'The Boss Wave',
       goal: 'Wave 5 spawns a boss: massive HP, slow speed, instant defeat if it escapes.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the boss spawn logic (runs when spawning each enemy).',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: Wave 5 spawns a boss: massive HP, slow speed, instant defeat if it escapes.'
+        ],
+        check: 'Wave 5 spawns a boss: massive HP, slow speed, instant defeat if it escapes.'
+      },
       points: [
         'Enemy gains <code>bool isBoss = false</code> to distinguish boss from regular enemies',
         'The last spawn of the final wave is a boss: hp 600, speed 40, bounty 200, drawn larger with a purple tint',
@@ -386,6 +447,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Victory, Defeat & Restart',
       goal: 'End the game on defeat or victory, show the result, and let the player restart with R.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'tower.cpp',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open tower.cpp in C++17 with SFML.',
+          'Find the code that does: Write the defeat check and victory/restart state logic.',
+          'Type the same code from the canvas into the file.',
+          'Run the project and check: End the game on defeat or victory, show the result, and let the player restart with R.'
+        ],
+        check: 'End the game on defeat or victory, show the result, and let the player restart with R.'
+      },
       points: [
         'DEFEAT when <code>lives <= 0</code>  -  freeze gameplay, show wave reached',
         'VICTORY when the boss dies and all waves are cleared  -  you built the whole game!',

@@ -105,6 +105,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-gdevelop-adventure-canvas',
   downloadName: 'my-gdevelop-adventure.html',
+engineProject: { href: '/downloads/gdevelop-adventure-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'A blue player square on a green field with grey walls',
@@ -134,8 +135,7 @@ window.CW_CONFIG = {
         SETUP + PLAYER_VARS + WALL_DATA + KEYS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         WALL_COLLIDE +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -149,8 +149,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -163,8 +162,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + WALL_COLLIDE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_WALLS + DRAW_NPCS + DRAW_PLAYER + DRAW_DIALOG +
         'ePressed=false;' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -178,8 +176,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + WALL_COLLIDE + NPC_TALK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_WALLS + DRAW_ITEMS + DRAW_NPCS + DRAW_PLAYER + DRAW_HUD + DRAW_DIALOG +
         'ePressed=false;' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -195,8 +192,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + WALL_COLLIDE + NPC_TALK + ITEM_COLLECT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_WALLS + DRAW_ITEMS + DRAW_NPCS + DRAW_PLAYER + DRAW_HUD + DRAW_DIALOG +
         'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);' +
@@ -215,6 +211,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Player & World',
       goal: 'Place a player on a green field surrounded by grey walls.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Set the player starting position.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place a player on a green field surrounded by grey walls.'
+        ],
+        check: 'Place a player on a green field surrounded by grey walls.'
+      },
       points: [
         'The world is a 400x400 green field with 16-pixel-thick border walls',
         'The player is a 24x24 blue square starting at (50, 200)',
@@ -244,6 +252,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Four-Way Movement',
       goal: 'Move the player in all four directions with arrow keys.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the four-way movement.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Move the player in all four directions with arrow keys.'
+        ],
+        check: 'Move the player in all four directions with arrow keys.'
+      },
       points: [
         'Top-down movement uses all four arrow keys: up, down, left, right',
         'Each direction adds or subtracts speed from x or y',
@@ -273,6 +293,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Wall Collision',
       goal: 'Block the player from walking through walls.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the wall collision.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Block the player from walking through walls.'
+        ],
+        check: 'Block the player from walking through walls.'
+      },
       points: [
         'Save the old position before moving. If the new position overlaps a wall, restore the old one',
         'This "try and undo" approach is simple and effective for grid-free movement',
@@ -302,6 +334,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'NPCs & Dialog',
       goal: 'Add characters the player can talk to by pressing E.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the NPC interaction.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Add characters the player can talk to by pressing E.'
+        ],
+        check: 'Add characters the player can talk to by pressing E.'
+      },
       points: [
         'NPCs are coloured squares with name labels floating above them',
         'Press E near an NPC to show their dialog in a box at the bottom',
@@ -331,6 +375,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Item Collection',
       goal: 'Place gem items around the world that the player can pick up.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the gem collection.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Place gem items around the world that the player can pick up.'
+        ],
+        check: 'Place gem items around the world that the player can pick up.'
+      },
       points: [
         'Three gems (Ruby, Sapphire, Emerald) are placed at different locations',
         'Walking near a gem collects it: mark it not alive, increment counter',
@@ -360,6 +416,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Restart',
       goal: 'Win when all gems are collected. Press R to explore again.',
+      engine: {
+        name: 'GDevelop 5',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: x1f3a8; Write the win condition.',
+          'Rebuild the step with the same objects and events in GDevelop.',
+          'Run the project and check: Win when all gems are collected. Press R to explore again.'
+        ],
+        check: 'Win when all gems are collected. Press R to explore again.'
+      },
       points: [
         'Check if collected equals totalItems (3) after each pickup',
         'Show a "ALL GEMS FOUND!" overlay with a semi-transparent background',

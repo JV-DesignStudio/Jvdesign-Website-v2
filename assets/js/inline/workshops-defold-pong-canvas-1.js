@@ -97,6 +97,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-defold-pong-canvas',
   downloadName: 'my-defold-pong.html',
+engineProject: { href: '/downloads/defold-pong-reference.zip', label: 'Download the reference project' },
 
   hints: [
     'Two white paddles on a dark court with a dashed centre line',
@@ -127,8 +128,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_P2 +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -141,8 +141,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_P2 + BALL_MOVE + WALL_BOUNCE +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bvx=Math.max(-10,Math.min(10,bvx));' +
         'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
@@ -158,8 +157,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_P2 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -173,8 +171,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_P2 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'p1y=Math.max(0,Math.min(320,p1y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -191,8 +188,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_P2 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + AI_LOGIC + SCORING +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -209,6 +205,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Paddles',
       goal: 'Draw two white paddles on a dark court and move the right one with W/S.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Set the paddle dimensions and position.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Draw two white paddles on a dark court and move the right one with W/S.'
+        ],
+        check: 'Draw two white paddles on a dark court and move the right one with W/S.'
+      },
       points: [
         'The court is 600x400. Each paddle is 12 wide and 80 tall',
         'Left paddle (AI) at x=16, right paddle (player) at x=572',
@@ -238,6 +246,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Ball',
       goal: 'Launch a ball with velocity and bounce it off the top and bottom walls.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Write the ball movement and wall bounce.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Launch a ball with velocity and bounce it off the top and bottom walls.'
+        ],
+        check: 'Launch a ball with velocity and bounce it off the top and bottom walls.'
+      },
       points: [
         'The ball has velocity: bvx (horizontal) and bvy (vertical)',
         'Each frame: position += velocity. In Defold you would set this in <code>update(self, dt)</code>',
@@ -267,6 +287,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Paddle Bounce & Spin',
       goal: 'Bounce the ball off paddles with angle based on where it hits.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Write the paddle bounce with spin.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Bounce the ball off paddles with angle based on where it hits.'
+        ],
+        check: 'Bounce the ball off paddles with angle based on where it hits.'
+      },
       points: [
         'Check if the ball overlaps a paddle using AABB collision',
         'Reverse horizontal speed and increase by 5%: <code>bvx = -bvx * 1.05</code>',
@@ -296,6 +328,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Scoring',
       goal: 'Award a point when the ball passes a paddle and re-serve.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Write the scoring logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Award a point when the ball passes a paddle and re-serve.'
+        ],
+        check: 'Award a point when the ball passes a paddle and re-serve.'
+      },
       points: [
         'Ball past left edge (x < -20): right player scores, serve goes left',
         'Ball past right edge (x > 620): left player scores, serve goes right',
@@ -325,6 +369,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'AI Paddle',
       goal: 'Make the left paddle chase the ball automatically with a dead zone.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Write the AI chase logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Make the left paddle chase the ball automatically with a dead zone.'
+        ],
+        check: 'Make the left paddle chase the ball automatically with a dead zone.'
+      },
       points: [
         'Compare ball centre to paddle centre: <code>gap = ball_y - paddle_centre</code>',
         'Dead zone: only move if <code>math.abs(gap) > 10</code> pixels',
@@ -354,6 +410,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Win Condition & Restart',
       goal: 'First to 5 wins. Show the winner and let R restart.',
+      engine: {
+        name: 'Defold',
+        file: 'ball.script',
+        intro: 'The reference project is the finished game. Open it to compare after each step.',
+        do: [
+          'Open ball.script in Defold.',
+          'Find the code that does: Write the win check.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: First to 5 wins. Show the winner and let R restart.'
+        ],
+        check: 'First to 5 wins. Show the winner and let R restart.'
+      },
       points: [
         'Check after each score: if either reaches 5, set <code>gameState = "over"</code>',
         'Display "YOU WIN!" or "AI WINS!" in the centre',

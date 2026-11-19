@@ -276,6 +276,7 @@ function wrap(css, html, code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-roblox-battle-canvas',
   downloadName: 'my-battle-game.html',
+engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label: 'Download the reference guide' },
 
   hints: [
     'Arrow keys to move around the arena',
@@ -348,6 +349,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Build the Arena & Player',
       goal: 'Set up the player and top-down movement inside a walled arena.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the movement function for top-down arena controls.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Set up the player and top-down movement inside a walled arena.'
+        ],
+        check: 'Set up the player and top-down movement inside a walled arena.'
+      },
       points: [
         'A player character that moves in all 4 directions',
         'Arrow keys move up/down/left/right',
@@ -376,6 +389,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Spawn Enemies',
       goal: 'Add enemy NPCs that chase the player around the arena.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the enemy spawner and AI movement.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add enemy NPCs that chase the player around the arena.'
+        ],
+        check: 'Add enemy NPCs that chase the player around the arena.'
+      },
       points: [
         'Five enemies spawn at different positions around the arena',
         'Each enemy has HP, speed and colour properties',
@@ -404,6 +429,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Click to Attack!',
       goal: 'Add a sword swing attack triggered by clicking.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the attack processing function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add a sword swing attack triggered by clicking.'
+        ],
+        check: 'Add a sword swing attack triggered by clicking.'
+      },
       points: [
         'Clicking triggers a sword swing in the direction the player faces',
         'The attack lasts a few frames then resets',
@@ -432,6 +469,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Health & Damage',
       goal: 'Add health bars and let enemies deal contact damage.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the enemy contact damage function.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add health bars and let enemies deal contact damage.'
+        ],
+        check: 'Add health bars and let enemies deal contact damage.'
+      },
       points: [
         'Player and enemies display health bars above them',
         'Enemies deal damage when they touch the player',
@@ -460,6 +509,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Knockback & Effects',
       goal: 'Add knockback so enemies fly back when hit by the sword.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the knockback logic (already wired into the attack).',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add knockback so enemies fly back when hit by the sword.'
+        ],
+        check: 'Add knockback so enemies fly back when hit by the sword.'
+      },
       points: [
         'Hitting an enemy pushes them away from the player',
         'Knockback decays smoothly over time using friction',
@@ -484,6 +545,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Victory & Defeat',
       goal: 'Add win/lose conditions and a retry mechanic.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'README.txt',
+        intro: 'The reference guide is in the download. Open it beside the engine and follow the step.',
+        do: [
+          'Download the reference guide and open README.txt.',
+          'Find the section that does: Write the win/lose check.',
+          'Rebuild the step with the same parts and scripts in Roblox Studio.',
+          'Run the project and check: Add win/lose conditions and a retry mechanic.'
+        ],
+        check: 'Add win/lose conditions and a retry mechanic.'
+      },
       points: [
         'When all enemies are defeated, show a victory screen',
         'When the player dies, show a defeat screen with retry',
