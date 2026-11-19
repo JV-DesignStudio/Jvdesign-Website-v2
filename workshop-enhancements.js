@@ -1107,6 +1107,12 @@
   loadScript('/assets/js/workshop-course-nav.js');
   loadScript('/assets/js/workshop-recommend.js');
   loadScript('/assets/js/workshop-kit.js');
+  if (/\/workshops\/minecraft-[^/]+\.html$/i.test(window.location.pathname)) {
+    loadScript('/assets/js/minecraft-lanes.js');
+  }
+  if (/\/workshops\/mugen-[^/]+\.html$/i.test(window.location.pathname)) {
+    loadScript('/assets/js/mugen-lanes.js');
+  }
 
   var isArticlePage = !!(document.body && (document.body.dataset.workshopKey || document.body.dataset.profileId));
   if (isArticlePage) loadScript('/assets/js/workshop-reader.js');
