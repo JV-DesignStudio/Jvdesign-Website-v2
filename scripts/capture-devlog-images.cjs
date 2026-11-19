@@ -53,6 +53,11 @@ const TARGETS = {
   532: { url: '/tools/sound-studio.html', note: 'Audio Studio' },
   533: { url: '/tools/arcade-game-maker.html', note: 'Arcade Game Maker' },
   534: { url: '/games/pips-cozy-cove.html', note: "Pip's Cozy Cove" },
+  521: { url: '/workshops/3d-builder.html', note: '3D Builders hub' },
+  520: { url: '/workshops/engine-godot.html', note: 'Engine hubs' },
+  446: { url: '/tools/pixel-studio.html', note: 'Tools talking to each other' },
+  445: { url: '/tools/story-player.html', note: 'Jump to any tool' },
+  444: { url: '/games/stardust-snake.html', note: 'Stardust Snake' },
 };
 
 const START_SELECTORS = [
@@ -61,9 +66,10 @@ const START_SELECTORS = [
   '[data-start]', '.pz-play', '.rune-btn',
 ];
 const OVERLAY_SELECTORS = [
+  '.jvs-tour-actions button',
   '.jvds-hide', '#cookie-decline', '#cookie-accept', '#welcome', '#introModal',
   '.welcome-modal', '.intro-overlay', '#guideOverlay', '[data-dismiss]', '.modal-close',
-  '#coachClose', '#tourClose',
+  '#coachClose', '#tourClose', '.jvs-tour-actions button',
 ];
 const AREA_SELECTORS = ['.game-frame-wrap', '.game-wrap', '.stage-wrap', '.gallery-grid', 'main', '.wrap'];
 
@@ -138,6 +144,11 @@ async function capture(page, base, job) {
     }, job.autopilot, { timeout: 30000 }).catch(() => {});
     await new Promise(r => setTimeout(r, 200));
   }
+  // The generic studio tour can arrive a little after the first settle. Try once
+  // more so the finished page is captured without the onboarding card on top.
+  await new Promise(r => setTimeout(r, 500));
+  await clickFirst(page, OVERLAY_SELECTORS);
+  await new Promise(r => setTimeout(r, 300));
   if (job.viewport) return { buffer: await page.screenshot(), mode: 'viewport' };
   const area = await pickArea(page);
   if (area) {

@@ -10,6 +10,7 @@ const ROOT = path.resolve(__dirname, '..');
 const QUEUE_DIR = path.join(ROOT, 'social-posts', 'queue');
 const INDEX = path.join(QUEUE_DIR, 'INDEX.md');
 const TASKS = path.join(ROOT, '..', 'studio-workspace', 'tasks.json');
+const SOCIAL_STATE = path.join(ROOT, '..', 'studio-workspace', 'social-cards-state.json');
 
 function readTasks() {
   try {
@@ -18,6 +19,26 @@ function readTasks() {
   } catch {
     return [];
   }
+}
+
+// The board keeps posted/archived decisions in social-cards-state.json. Honour
+// them here so a draft that has already been posted or archived stops showing
+// up in "Needs Review" just because the file is still sitting in the queue.
+function readSocialState() {
+  try {
+    if (!fs.existsSync(SOCIAL_STATE)) return { used: new Set(), archived: new Set() };
+    const state = JSON.parse(fs.readFileSync(SOCIAL_STATE, 'utf8'));
+    return {
+      used: new Set(Object.keys(state.used || {})),
+      archived: new Set(Object.keys(state.archived || {})),
+    };
+  } catch {
+    return { used: new Set(), archived: new Set() };
+  }
+}
+
+function stateHas(set, id, file) {
+  return set.has('post:' + id) || set.has('file:' + file);
 }
 
 function frontMatter(md) {
@@ -61,6 +82,7 @@ function main() {
   if (!fs.existsSync(QUEUE_DIR)) fs.mkdirSync(QUEUE_DIR, { recursive: true });
 
   const tasks = readTasks();
+  const state = readSocialState();
   const queueFiles = fs.readdirSync(QUEUE_DIR);
   const files = queueFiles
     .filter((file) => /^\d{4}-\d{2}-\d{2}-\d+-.*\.md$/.test(file))
@@ -75,6 +97,9 @@ function main() {
     const title = meta.title || file;
     const task = taskForDraft(tasks, id, title);
     const image = queueFiles.find((candidate) => candidate.endsWith('.png') && candidate.includes('-' + id + '-'));
+    let status = task ? commsStatus(task) : 'needs board task';
+    if (stateHas(state.used, id, file)) status = 'posted';
+    else if (stateHas(state.archived, id, file)) status = 'archived';
     return {
       file,
       id,
@@ -84,7 +109,7 @@ function main() {
       url: meta.url || '',
       taskId: task ? task.id : '',
       taskStatus: task ? task.status : 'needs board task',
-      commsStatus: task ? commsStatus(task) : 'needs board task',
+      commsStatus: status,
       image,
       x: codeBlock(md, 'X / Threads (280ch) - copy-paste, keep URL'),
       instagram: codeBlock(md, 'Instagram / Facebook (long)'),
@@ -92,14 +117,15 @@ function main() {
     };
   });
 
-  const needsReview = rows.filter((row) => !['approved', 'posted'].includes(row.commsStatus));
+  const needsReview = rows.filter((row) => !['approved', 'posted', 'archived'].includes(row.commsStatus));
   const ready = rows.filter((row) => row.commsStatus === 'approved');
   const posted = rows.filter((row) => row.commsStatus === 'posted');
+  const archived = rows.filter((row) => row.commsStatus === 'archived');
 
   const lines = [];
   lines.push('# Newsletter and Social Queue');
   lines.push('');
-  lines.push('Copy-ready drafts live here only while they still need review, posting, or send confirmation. Approved work should move from review into Ready; posted/sent work should be recorded and kept out of the daily action pile.');
+  lines.push('Copy-ready drafts live here only while they still need review, posting, or send confirmation. Approved work should move from review into Ready; posted/sent work should be recorded and kept out of the daily action pile. Drafts marked posted or archived in `social-cards-state.json` are listed at the bottom and no longer count as needing review.');
   lines.push('');
   lines.push('## How to use');
   lines.push('- Run `npm run comms:queue` after adding or approving devlog entries.');
@@ -112,9 +138,10 @@ function main() {
   lines.push(`Needs review: ${needsReview.length}`);
   lines.push(`Ready to post/send: ${ready.length}`);
   lines.push(`Posted or sent: ${posted.length}`);
+  lines.push(`Archived: ${archived.length}`);
   lines.push('');
 
-  for (const [heading, sectionRows] of [['Needs Review', needsReview], ['Ready To Post Or Send', ready], ['Posted Or Sent', posted]]) {
+  for (const [heading, sectionRows] of [['Needs Review', needsReview], ['Ready To Post Or Send', ready], ['Posted Or Sent', posted], ['Archived', archived]]) {
     lines.push(`## ${heading}`);
     lines.push('');
     if (!sectionRows.length) {
