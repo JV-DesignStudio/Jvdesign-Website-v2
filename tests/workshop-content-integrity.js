@@ -87,22 +87,25 @@ function checkConfig(file, config) {
   if (!config.storageKey) add('no-storageKey', 'CW_CONFIG has no storageKey');
   if (!config.downloadName) add('no-downloadName', 'CW_CONFIG has no downloadName');
 
-  if (config.storageKey && !PARITY_BASELINE.has(config.storageKey)) {
-    if (!config.engineProject || !config.engineProject.href) {
-      add('missing-engine-project', 'CW_CONFIG has no downloadable engine starter project');
-    } else {
-      const href = String(config.engineProject.href);
-      const file = href.startsWith('/') ? path.join(SITE, href.slice(1)) : path.resolve(SITE, href);
-      if (!fs.existsSync(file)) add('engine-project-missing-file', 'engine starter not found: ' + href);
-    }
-    for (const step of config.steps) {
-      if (!step || typeof step.num !== 'number') continue;
-      const e = step.engine;
-      if (!e || !e.name || !Array.isArray(e.do) || !e.do.length) {
-        add('missing-engine-lane', 'step ' + step.num + ' has no In-engine instructions');
-      }
-    }
-  }
+if (config.storageKey && !PARITY_BASELINE.has(config.storageKey)) {
+if (!config.engineProject || !config.engineProject.href) {
+add('missing-engine-project', 'CW_CONFIG has no downloadable engine starter project');
+} else {
+const href = String(config.engineProject.href);
+const file = href.startsWith('/') ? path.join(SITE, href.slice(1)) : path.resolve(SITE, href);
+if (!fs.existsSync(file)) add('engine-project-missing-file', 'engine starter not found: ' + href);
+else if (fs.statSync(file).size < 100) add('engine-project-placeholder', 'engine starter is empty: ' + href);
+}
+for (const step of config.steps) {
+if (!step || typeof step.num !== 'number') continue;
+const e = step.engine;
+if (!e || !e.name || !e.file || !Array.isArray(e.do) || e.do.length < 3 || !e.check) {
+add('missing-engine-lane', 'step ' + step.num + ' needs engine name, file, 3 ordered actions and a checkpoint');
+} else if (e.do.some((a) => !String(a || '').trim())) {
+add('empty-engine-action', 'step ' + step.num + ' has an empty engine action');
+}
+}
+}
 
   const seen = new Set();
   for (const step of config.steps) {

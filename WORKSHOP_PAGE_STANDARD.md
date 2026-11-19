@@ -155,17 +155,23 @@ engine: {
 
 Machine checks:
 
-- `tests/workshop-content-integrity.js` requires the project and a lane on
-  every step for configs not listed in
-  `content/workshop-engine-parity-baseline.json`.
-- `tests/workshop-engine-parity.js` reports the baseline progress.
-- A page-specific lane test, such as
-  `tests/godot-autoclicker-godot-lane.js`, proves the panels render and the
-  starter zip downloads.
+- `tests/workshop-content-integrity.js` requires the starter and a lane on
+every step for configs not listed in
+`content/workshop-engine-parity-baseline.json`. A lane needs a name, the exact
+file, at least three ordered actions and a checkpoint. The starter must exist and
+must not be an empty placeholder.
+- `tests/workshop-engine-parity.js` enforces the same schema and reports the
+baseline progress. It also fails a stale baseline key, a config that already
+passes but is still on the baseline, and any baseline growth beyond `max`.
+- `tests/engine-parity-lane-http.js` proves a ready non-Godot page renders the
+panel and downloads its starter. `tests/godot-autoclicker-godot-lane.js` does the
+same for a Godot page.
 
 Rollout: the baseline lists the configs that existed before the standard. Each
 engine slice removes its configs from the baseline as it adds the lanes. A new
-build-along is never added to the baseline.
+build-along is never added to the baseline: `max` is the frozen size, and adding
+an entry fails the gate. Remove a config as soon as it passes, because a ready
+config left on the baseline also fails the gate.
 
 ## Layout and accessibility
 
