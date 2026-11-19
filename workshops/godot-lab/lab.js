@@ -46,8 +46,17 @@
   var anywayBtn = document.querySelector('[data-gl-anyway]');
   var preflightEl = document.querySelector('[data-gl-preflight]');
   var isSmall = false;
+  var isTouch = false;
   var mobileDismissed = false;
   try { isSmall = window.matchMedia('(max-width: 820px)').matches; } catch (e) {}
+  try {
+    isTouch = (navigator.maxTouchPoints || 0) > 0 ||
+      window.matchMedia('(pointer: coarse)').matches ||
+      window.matchMedia('(any-pointer: coarse)').matches;
+  } catch (e) {}
+  /* Only a touch device gets the hand-off. A narrow desktop window (split
+     screen, browser zoom, a small laptop) must still load every template. */
+  var compact = isSmall && isTouch;
 
   function mobileUrl() {
     var base = location.origin && location.origin !== 'null'
@@ -182,7 +191,7 @@
 
   function updateNetwork() {
     if (!checkNet) return;
-    if (isSmall && !mobileDismissed) {
+    if (compact && !mobileDismissed) {
       setCheck(checkNet, 'Use a computer for the editor', 'warn');
       return;
     }
@@ -194,7 +203,7 @@
   }
 
   function reveal(force) {
-    if (isSmall && !force) { showMobile(); return; }
+    if (compact && !force) { showMobile(); return; }
     if (mobileEl) mobileEl.hidden = true;
     if (preflightEl) preflightEl.hidden = false;
     if (loadBtn) loadBtn.hidden = false;
@@ -323,5 +332,5 @@
       else if (frame && !frame.getAttribute('src')) reveal();
     }, 4000);
   }
-  if (isSmall) showMobile();
+  if (compact) showMobile();
 })();
