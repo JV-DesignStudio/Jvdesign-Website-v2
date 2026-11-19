@@ -15,7 +15,10 @@ const IGN = new Set(['node_modules', '.git', '.claude', 'tmp', 'quest-board-depl
   '.aider.tags.cache.v4', 'assets', 'partials']);
 // Vendored third-party exports: their own inline scripts and CSP contracts are
 // not ours to rewrite. The Godot web editor is a copied engine build.
-const SKIP_DIRS = new Set(['workshops/godot-lab/editor']);
+// Generated finished-build demos (A3101) are standalone play pages with no CSP
+// by design: they must run the game's inline script. They are noindex and are
+// linked only from the workshop kit.
+const SKIP_DIRS = new Set(['workshops/godot-lab/editor', 'workshops/demos']);
 
 // A2625: the hashes a page needs for its inline scripts.
 function inlineHashes(s) {

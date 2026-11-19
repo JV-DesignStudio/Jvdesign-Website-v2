@@ -86,8 +86,8 @@ const server = http.createServer((req, res) => {
     check('browser workshop does not show an engine track', !snakeTabs.includes('engine'), JSON.stringify(snakeTabs));
     check('browser workshop offers see and remix', snakeTabs.includes('see') && snakeTabs.includes('remix'), JSON.stringify(snakeTabs));
     await clickTab('see');
-    const demoBtn = await page.$eval('.ws-kit-demo button', (b) => b.textContent).catch(() => '');
-    check('canvas workshop points at the finished build', /finished build/i.test(demoBtn), demoBtn);
+    const demoFrame = await page.$eval('.ws-kit-frame iframe', (f) => f.getAttribute('src')).catch(() => '');
+    check('canvas workshop embeds the finished build', /\/workshops\/demos\/js-snake-workshop\.html/.test(demoFrame), demoFrame);
     await clickTab('remix');
     const snakeCards = await page.$$eval('.ws-kit-remix .ws-kit-card', (els) => els.length);
     check('browser workshop still gets three remix prompts', snakeCards === 3, 'got ' + snakeCards);

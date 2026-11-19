@@ -24,6 +24,8 @@ const IGNORE_DIRS = new Set([
   'assets', 'Character Refrence sheets', 'StardustbookPreview',
   'Session and Notes Part 2', 'Session Notes and Documents',
   'chars', 'chars-orig', 'models', 'covers',
+  // Generated finished-build demos (A3101): pages to play, not workshops to list.
+  'demos',
   // Internal-only: never published, so never sitemap/search/validate as pages.
   'tmp', 'archive'
 ]);

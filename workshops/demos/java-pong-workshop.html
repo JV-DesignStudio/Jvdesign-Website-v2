@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head>
+<title>Finished build: java-pong-workshop</title>
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"><style>body{display:flex;flex-direction:column;align-items:center;background:#0c0e18;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style></head><body><canvas id="game" width="600" height="400"></canvas><script>const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");let p1Y=165,p2Y=165;const padW=10,padH=70,padSpeed=5;let bx=295,by=195,bs=10,bvx=4,bvy=3;let score1=0,score2=0;let aiSpeed=4,deadZone=10;let gameState="play",flash=0;let wHeld=false,sHeld=false;document.addEventListener("keydown",function(e){if(e.code==="KeyW"||e.code==="ArrowUp")wHeld=true;if(e.code==="KeyS"||e.code==="ArrowDown")sHeld=true;e.preventDefault()});document.addEventListener("keyup",function(e){if(e.code==="KeyW"||e.code==="ArrowUp")wHeld=false;if(e.code==="KeyS"||e.code==="ArrowDown")sHeld=false});document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score1=0;score2=0;flash=0;serve(1);gameState="play"}});function serve(dir){bx=295;by=195;bvx=4*dir;bvy=Math.random()<0.5?3:-3}function loop(){if(gameState==="play"){if(wHeld)p1Y-=padSpeed;if(sHeld)p1Y+=padSpeed;p1Y=Math.max(0,Math.min(330,p1Y));bx+=bvx;by+=bvy;if(by<=0||by+bs>=400)bvy=-bvy;if(bx<=25&&bx+bs>=15&&by+bs>=p1Y&&by<=p1Y+padH&&bvx<0){bvx=-(bvx-1);bvy=((by+bs/2)-(p1Y+35))/5}if(bx+bs>=575&&bx<=585&&by+bs>=p2Y&&by<=p2Y+padH&&bvx>0){bvx=-(bvx+1);bvy=((by+bs/2)-(p2Y+35))/5}bvx=Math.max(-10,Math.min(10,bvx));var padCentre=p2Y+35,ballCentre=by+bs/2;if(padCentre<ballCentre-deadZone)p2Y+=aiSpeed;if(padCentre>ballCentre+deadZone)p2Y-=aiSpeed;p2Y=Math.max(0,Math.min(330,p2Y));try{// Score with flash effect
+if (bx < -10) {
+    score2++;
+    flash = 12;
+    serve(-1);
+}
+if (bx > 610) {
+    score1++;
+    flash = 12;
+    serve(1);
+}
+
+// Win condition
+if (score1 >= 7 || score2 >= 7) {
+    gameState = "over";
+}}catch(e){}if(flash>0)flash--;}ctx.fillStyle="#0c0e18";ctx.fillRect(0,0,600,400);if(flash>0){ctx.fillStyle="rgba(255,255,255,"+(flash/12*0.15)+")";ctx.fillRect(0,0,600,400)}ctx.fillStyle="#3c4260";for(var ny=0;ny<400;ny+=20){ctx.fillRect(297,ny,6,12)}ctx.fillStyle="#fff";ctx.fillRect(15,p1Y,padW,padH);ctx.fillRect(575,p2Y,padW,padH);ctx.fillStyle="#fff";ctx.fillRect(bx,by,bs,bs);ctx.fillStyle="#fff";ctx.font="bold 48px monospace";ctx.textAlign="center";ctx.fillText(score1,220,60);ctx.fillText(score2,380,60);if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText(score1>=7?"PLAYER 1 WINS!":"PLAYER 2 WINS!",300,200);ctx.font="18px monospace";ctx.fillText("Press R to play again",300,240)}requestAnimationFrame(loop)}requestAnimationFrame(loop);</script></body></html>

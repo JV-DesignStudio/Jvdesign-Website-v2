@@ -1,0 +1,15 @@
+<!DOCTYPE html><html><head>
+<title>Finished build: js-flappy-workshop</title>
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"><style>body{display:flex;flex-direction:column;align-items:center;background:#222;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style></head><body><canvas id="game" width="400" height="500"></canvas><script>const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const bird={x:80,y:250,vy:0,size:24};const gravity=0.45;let pipes=[],frames=0;const GAP=150;let score=0,dead=false;let best=0;try{best=Number(localStorage.getItem("flappyBest")||0)}catch(x){}function hits(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by}function flap(){if(dead){bird.y=250;bird.vy=0;pipes=[];frames=0;score=0;dead=false;return}bird.vy=-8}canvas.addEventListener("mousedown",flap);document.addEventListener("keydown",function(e){if(e.code==="Space")flap()});function loop(){if(!dead){bird.vy+=gravity;bird.y+=bird.vy;frames++;if(frames%90===0)pipes.push({x:400,gapY:100+Math.random()*300});for(const p of pipes)p.x-=2.4;pipes=pipes.filter(function(p){return p.x>-60});for(const p of pipes){var topH=p.gapY-GAP/2;if(hits(bird.x,bird.y,24,24,p.x,0,52,topH)||hits(bird.x,bird.y,24,24,p.x,p.gapY+GAP/2,52,500))dead=true;if(!p.passed&&p.x+52<bird.x){p.passed=true;score++}}if(bird.y>476)dead=true;if(dead&&score>best){best=score;try{localStorage.setItem("flappyBest",best)}catch(x){}}}ctx.fillStyle="#70c5ce";ctx.fillRect(0,0,400,500);ctx.fillStyle="#06d6a0";for(const p of pipes){ctx.fillRect(p.x,0,52,p.gapY-GAP/2);ctx.fillRect(p.x,p.gapY+GAP/2,52,500)}ctx.fillStyle="#ffd166";ctx.fillRect(bird.x,bird.y,bird.size,bird.size);ctx.fillStyle="#fff";ctx.font="bold 42px sans-serif";ctx.textAlign="center";ctx.fillText(score,200,50);try{if (dead) {
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(0, 0, 400, 500);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 30px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Game Over", 200, 210);
+  ctx.font = "18px sans-serif";
+  ctx.fillText("Score " + score + "  Best " + best, 200, 250);
+  ctx.fillText("Click or Space to retry", 200, 285);
+}}catch(e){}requestAnimationFrame(loop)}requestAnimationFrame(loop);</script></body></html>

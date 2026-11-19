@@ -58,10 +58,22 @@ for (const w of workshops) {
 ok('cover art is carried into the kit', noCover.length === 0, noCover.slice(0, 5).join('; '));
 
 const badDemo = [];
+const noDemoReason = [];
+const demoKinds = {};
 for (const k of kits) {
-  if (!k.demo) continue;
+  if (!k.demo) {
+    if (!k.demoReason) noDemoReason.push(k.id);
+    continue;
+  }
+  demoKinds[k.demo.kind] = (demoKinds[k.demo.kind] || 0) + 1;
   if (k.demo.kind === 'external') {
     if (!/^https:\/\/scratch\.mit\.edu\/projects\/\d+/.test(k.demo.url)) badDemo.push(k.id + ' demo is not a Scratch project');
+    continue;
+  }
+  if (k.demo.kind === 'demo' || k.demo.kind === 'game') {
+    const isUrl = /^\/[^"']+/.test(k.demo.url || '');
+    const file = isUrl ? path.join(ROOT, k.demo.url.replace(/^\//, '')) : '';
+    if (!isUrl || !fs.existsSync(file)) badDemo.push(k.id + ' demo file missing: ' + k.demo.url);
     continue;
   }
   if (k.demo.kind !== 'self') { badDemo.push(k.id + ' unknown demo kind'); continue; }
@@ -73,6 +85,8 @@ for (const k of kits) {
 }
 const demoCount = kits.filter((k) => k.demo).length;
 ok('demo targets are real (' + demoCount + ' workshops)', badDemo.length === 0, badDemo.slice(0, 5).join('; '));
+ok('every workshop without a demo has a reason', noDemoReason.length === 0, noDemoReason.slice(0, 5).join(', '));
+ok('demo mix is reported', demoCount > 0, JSON.stringify(demoKinds));
 
 const js = read('assets/js/workshop-kit.js');
 const enh = read('workshop-enhancements.js');

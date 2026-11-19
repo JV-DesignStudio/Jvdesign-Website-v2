@@ -1,0 +1,30 @@
+<!DOCTYPE html><html><head>
+<title>Finished build: js-breakout-workshop</title>
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"><style>body{display:flex;flex-direction:column;align-items:center;background:#222;margin:0;overflow:hidden}canvas{display:block;cursor:none}</style></head><body><canvas id="game" width="400" height="500"></canvas><script>const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const paddle={x:160,y:475,w:80,h:12};const ball={x:200,y:460,r:8,vx:3,vy:-3};const BRICK_COLORS=["#ff6b6b","#ffd166","#06d6a0","#60a5fa","#c084fc"];const COLS=8,ROWS=5,BW=46,BH=18,BGAP=4;const bricks=[];for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)bricks.push({x:c*(BW+BGAP)+8,y:r*(BH+BGAP)+40,w:BW,h:BH,alive:true,color:BRICK_COLORS[r]});var particles=[];var score=0;var lives=3,level=1,dead=false,won=false;canvas.addEventListener("mousemove",function(e){var rect=canvas.getBoundingClientRect();paddle.x=e.clientX-rect.left-paddle.w/2;if(paddle.x<0)paddle.x=0;if(paddle.x>400-paddle.w)paddle.x=400-paddle.w;});function loop(){if(!dead&&!won){ball.x+=ball.vx;ball.y+=ball.vy;if(ball.x-ball.r<0){ball.x=ball.r;ball.vx=-ball.vx;}if(ball.x+ball.r>400){ball.x=400-ball.r;ball.vx=-ball.vx;}if(ball.y-ball.r<0){ball.y=ball.r;ball.vy=-ball.vy;}if(ball.y+ball.r>=paddle.y&&ball.y-ball.r<=paddle.y+paddle.h&&ball.x>=paddle.x&&ball.x<=paddle.x+paddle.w){ball.vy=-Math.abs(ball.vy);var hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.vx=hit*5;ball.y=paddle.y-ball.r;}for(var i=0;i<bricks.length;i++){var b=bricks[i];if(!b.alive)continue;if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){b.alive=false;ball.vy=-ball.vy;score+=10;for(var p=0;p<8;p++)particles.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:30,color:b.color});}}for(var i=particles.length-1;i>=0;i--){var p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life--;if(p.life<=0)particles.splice(i,1);}try{if (ball.y - ball.r > 500) {
+  lives--;
+  if (lives <= 0) {
+    dead = true;
+  } else {
+    ball.x = 200;
+    ball.y = 460;
+    ball.vx = 3 * ((Math.random() > 0.5) ? 1 : -1);
+    ball.vy = -3 - level;
+  }
+}
+var allDead = true;
+for (var i = 0; i < bricks.length; i++)
+  if (bricks[i].alive) allDead = false;
+if (allDead) {
+  level++;
+  if (level > 3) {
+    won = true;
+  } else {
+    for (var i = 0; i < bricks.length; i++) bricks[i].alive = true;
+    ball.x = 200;
+    ball.y = 460;
+    ball.vx = 3 * ((Math.random() > 0.5) ? 1 : -1);
+    ball.vy = -3 - level;
+  }
+}}catch(e){}}ctx.fillStyle="#181825";ctx.fillRect(0,0,400,500);for(var i=0;i<bricks.length;i++){var b=bricks[i];if(!b.alive)continue;ctx.shadowColor=b.color;ctx.shadowBlur=10;ctx.fillStyle=b.color;ctx.fillRect(b.x,b.y,b.w,b.h);ctx.shadowBlur=0;}ctx.fillStyle="#ffd166";ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();for(var i=0;i<particles.length;i++){var p=particles[i];ctx.globalAlpha=p.life/30;ctx.fillStyle=p.color;ctx.fillRect(p.x-2,p.y-2,4,4);}ctx.globalAlpha=1;ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Score: "+score,10,25);ctx.textAlign="right";ctx.fillText("Lives: "+lives+"  Level: "+level,390,25);ctx.textAlign="left";if(dead){ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(0,0,400,500);ctx.fillStyle="#fff";ctx.font="bold 30px sans-serif";ctx.textAlign="center";ctx.fillText("Game Over",200,220);ctx.font="18px sans-serif";ctx.fillText("Score: "+score,200,260);ctx.fillText("Click to retry",200,295);ctx.textAlign="left";}if(won){ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(0,0,400,500);ctx.fillStyle="#ffd166";ctx.font="bold 30px sans-serif";ctx.textAlign="center";ctx.fillText("You Win!",200,220);ctx.font="18px sans-serif";ctx.fillStyle="#fff";ctx.fillText("Score: "+score,200,260);ctx.fillText("Click to play again",200,295);ctx.textAlign="left";}requestAnimationFrame(loop);}requestAnimationFrame(loop);</script></body></html>

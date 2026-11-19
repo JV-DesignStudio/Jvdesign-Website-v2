@@ -139,19 +139,52 @@
 
   function buildSeePanel(kit) {
     var wrap = el('div', 'ws-kit-panel');
-    if (kit.demo) {
+    var demo = kit.demo;
+    if (demo && (demo.kind === 'demo' || demo.kind === 'game')) {
+      var head = el('div', 'ws-kit-frame-head');
+      head.appendChild(el('span', '', demo.kind === 'game' ? demo.label : 'Play the finished build'));
+      var open = el('a', 'ws-kit-open', 'Open full screen');
+      open.href = demo.url;
+      open.target = '_blank';
+      open.rel = 'noopener';
+      head.appendChild(open);
+      var frame = el('div', 'ws-kit-frame');
+      frame.appendChild(head);
+      var iframe = document.createElement('iframe');
+      iframe.src = demo.url + (demo.url.indexOf('?') >= 0 ? '&' : '?') + 'kit=embed';
+      iframe.title = demo.label;
+      iframe.loading = 'lazy';
+      iframe.setAttribute('allow', 'fullscreen; autoplay');
+      frame.appendChild(iframe);
+      wrap.appendChild(frame);
+    } else if (!demo && kit.demoReason) {
+      var reasonRow = el('div', 'ws-kit-demo');
+      reasonRow.appendChild(el('p', '', kit.demoReason));
+      if (kit.browser && !kit.browser.self) {
+        var studioBtn = el('button', '', 'Open the browser studio');
+        studioBtn.type = 'button';
+        studioBtn.addEventListener('click', function () { setState('browser'); });
+        reasonRow.appendChild(studioBtn);
+      } else if (kit.engineTrack) {
+        var stepsBtn = el('button', '', 'Show me the steps');
+        stepsBtn.type = 'button';
+        stepsBtn.addEventListener('click', function () { setState('engine'); });
+        reasonRow.appendChild(stepsBtn);
+      }
+      wrap.appendChild(reasonRow);
+    } else if (demo) {
       var row = el('div', 'ws-kit-demo');
-      row.appendChild(el('p', '', kit.demo.kind === 'external'
+      row.appendChild(el('p', '', demo.kind === 'external'
         ? 'Play the finished thing before you start. Notice one thing you want to change.'
         : 'Watch the finished build work before you type anything. Notice one thing you want to change.'));
-      if (kit.demo.kind === 'external') {
-        var a = el('a', '', kit.demo.label);
-        a.href = kit.demo.url;
+      if (demo.kind === 'external') {
+        var a = el('a', '', demo.label);
+        a.href = demo.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         row.appendChild(a);
       } else {
-        var b = el('button', '', kit.demo.label);
+        var b = el('button', '', demo.label);
         b.type = 'button';
         b.addEventListener('click', function () { showFinished(kit); });
         row.appendChild(b);
@@ -274,7 +307,7 @@
       return b;
     }
 
-    if (kit.demo || kit.cover) {
+    if (kit.demo || kit.cover || kit.demoReason) {
       tab('see', 'See it', 'See what you are going to make');
     }
     if (kit.browser && !kit.browser.self) {
@@ -289,7 +322,7 @@
     panels.wrap = el('div');
     wrap.appendChild(panels.wrap);
 
-    if (kit.demo || kit.cover) buildSeePanel(kit);
+    if (kit.demo || kit.cover || kit.demoReason) buildSeePanel(kit);
     if (kit.browser && !kit.browser.self) buildBrowserPanel(kit);
     buildRemixPanel(kit);
 
@@ -328,3 +361,4 @@
     })
     .catch(function () {});
 })();
+

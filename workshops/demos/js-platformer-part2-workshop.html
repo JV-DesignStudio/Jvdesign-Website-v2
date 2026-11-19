@@ -1,0 +1,25 @@
+<!DOCTYPE html><html><head>
+<title>Finished build: js-platformer-part2-workshop</title>
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"><style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style></head><body><canvas id="game" width="600" height="400"></canvas><script>const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const player={x:50,y:300,w:24,h:32,vx:0,vy:0,onGround:false,jumpsLeft:2,facing:1};const gravity=0.5;const moveSpeed=3;const jumpForce=-10;const keys={};document.addEventListener("keydown",function(e){keys[e.code]=true;e.preventDefault()});document.addEventListener("keyup",function(e){keys[e.code]=false});const levelStr=["....................","..........C.........",".....###...........","...C...........C...","...###....E..###...","....................",".......###.........","..C................","..###..........C...","..............###..","..E................","################..#"];const TILE=32;var tiles=[];var coins=[];var enemies=[];var score=0;var timer=60;var lastTime=Date.now();var gameOver=false;var won=false;for(var r=0;r<levelStr.length;r++){for(var c=0;c<levelStr[r].length;c++){var ch=levelStr[r].charAt(c);if(ch==="#")tiles.push({x:c*TILE,y:r*TILE,w:TILE,h:TILE});else if(ch==="C")coins.push({x:c*TILE+8,y:r*TILE+8,w:16,h:16,got:false});else if(ch==="E")enemies.push({x:c*TILE,y:r*TILE,w:TILE,h:TILE,vx:1,alive:true})}}function loop(){if(!gameOver){player.vy+=gravity;player.vx=0;if(keys["ArrowLeft"]){player.vx=-moveSpeed;player.facing=-1}if(keys["ArrowRight"]){player.vx=moveSpeed;player.facing=1}player.x+=player.vx;player.y+=player.vy;player.onGround=false;for(var i=0;i<tiles.length;i++){var t=tiles[i];if(player.x+player.w>t.x&&player.x<t.x+t.w&&player.y+player.h>=t.y&&player.y+player.h<=t.y+10&&player.vy>=0){player.y=t.y-player.h;player.vy=0;player.onGround=true;player.jumpsLeft=2}}if(player.y+player.h>=368){player.y=368-player.h;player.vy=0;player.onGround=true;player.jumpsLeft=2}else{player.onGround=false}if(player.x<0)player.x=0;if(player.x+player.w>600)player.x=600-player.w;var justPressed=keys["ArrowUp"]&&!player._lastUp;player._lastUp=!!keys["ArrowUp"];if(justPressed&&player.jumpsLeft>0){player.vy=jumpForce;player.jumpsLeft--;player.onGround=false}for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive){en.x+=en.vx;var onPlat=false;for(var j=0;j<tiles.length;j++){var t=tiles[j];if(en.x+en.w>t.x&&en.x<t.x+t.w&&en.y+en.h>=t.y&&en.y+en.h<=t.y+4){onPlat=true}}if(!onPlat||en.x<0||en.x+en.w>600)en.vx*=-1}}for(var i=0;i<coins.length;i++){var co=coins[i];if(!co.got&&player.x+player.w>co.x&&player.x<co.x+co.w&&player.y+player.h>co.y&&player.y<co.y+co.h){co.got=true;score++}}var now=Date.now();timer-=(now-lastTime)/1000;lastTime=now;if(timer<=0){timer=0;gameOver=true}try{for (var i = 0; i < enemies.length; i++) {
+  var en = enemies[i];
+  if (en.alive && player.x + player.w > en.x && player.x < en.x + en.w &&
+      player.y + player.h > en.y && player.y + player.h < en.y + 16 &&
+      player.vy > 0) {
+    en.alive = false;
+    player.vy = -8;
+  }
+}
+var now = Date.now();
+timer -= (now - lastTime) / 1000;
+lastTime = now;
+if (timer <= 0) { timer = 0; gameOver = true; }
+var allGot = true;
+for (var i = 0; i < coins.length; i++) {
+  if (!coins[i].got) allGot = false;
+}
+if (allGot && coins.length > 0) {
+  gameOver = true;
+  won = true;
+}}catch(e){}var allGot=true;for(var i=0;i<coins.length;i++){if(!coins[i].got)allGot=false}if(allGot&&coins.length>0){gameOver=true;won=true}}ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);ctx.fillStyle="#2d5016";for(var i=0;i<tiles.length;i++){var t=tiles[i];ctx.fillRect(t.x,t.y,t.w,t.h)}ctx.fillStyle="#ffd700";for(var i=0;i<coins.length;i++){var co=coins[i];if(!co.got){ctx.fillRect(co.x,co.y,co.w,co.h)}}ctx.fillStyle="#9b59b6";for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive){ctx.fillRect(en.x,en.y,en.w,en.h)}}ctx.fillStyle="#e63946";ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle="#fff";if(player.facing>0){ctx.fillRect(player.x+14,player.y+6,6,6)}else{ctx.fillRect(player.x+4,player.y+6,6,6)}ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Coins: "+score,10,24);ctx.textAlign="right";ctx.fillText("Time: "+Math.ceil(timer),590,24);if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,600,400);ctx.fillStyle="#fff";ctx.font="bold 32px sans-serif";ctx.textAlign="center";ctx.fillText(won?"You Win!":"Time Up!",300,180);ctx.font="18px sans-serif";ctx.fillText("Coins: "+score+" / "+coins.length,300,220)}requestAnimationFrame(loop)}requestAnimationFrame(loop);</script></body></html>
