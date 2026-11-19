@@ -69,7 +69,8 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-godot-canvas',
   downloadName: 'my-first-godot-game.html',
-  engineProject: { href: '/workshops/godot-lab/index.html?project=starter', label: 'Build this project in the Godot Lab' },
+  engineProject: { href: '/workshops/godot-lab/projects/starter.zip', label: 'Download the Godot starter project' },
+  labProject: '/workshops/godot-lab/index.html?project=starter',
   nextStep: { url: '/workshops/godot-platformer-canvas.html', label: 'Godot Platformer' },
 
   hints: [
@@ -211,6 +212,18 @@ window.CW_CONFIG = {
       title: 'The Basket',
       activity: '\uD83C\uDFD7\uFE0F Place it',
       goal: 'Place your basket at the bottom of the screen. This is the thing the player controls.',
+      engine: {
+        name: 'Godot 4',
+        file: 'main.tscn',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Set the basket position - replace the blanks.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: You should see a glowing blue rectangle near the bottom of the canvas.'
+        ],
+        check: 'You should see a glowing blue rectangle near the bottom of the canvas.'
+      },
       checkpoint: 'You should see a glowing blue rectangle near the bottom of the canvas.',
       points: [
         'The screen is 600 pixels wide and 400 pixels tall - a classic arcade size',
@@ -242,6 +255,18 @@ window.CW_CONFIG = {
       title: 'Left & Right Movement',
       activity: '\uD83D\uDD79\uFE0F Move it',
       goal: 'Make the basket slide left and right with the arrow keys. Keep it from flying off screen.',
+      engine: {
+        name: 'Godot 4',
+        file: 'player.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Write the movement - fill in the speed.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: Press the left and right arrow keys - the basket should slide and stop at the edges.'
+        ],
+        check: 'Press the left and right arrow keys - the basket should slide and stop at the edges.'
+      },
       checkpoint: 'Press the left and right arrow keys - the basket should slide and stop at the edges.',
       points: [
         'In Godot: <code>Input.is_action_pressed("ui_left")</code> checks if a key is held down',
@@ -273,6 +298,18 @@ window.CW_CONFIG = {
       title: 'A Falling Star',
       activity: '\u2B50 Drop it',
       goal: 'Spawn a glowing star at the top and make it fall. When it exits the screen, send it back.',
+      engine: {
+        name: 'Godot 4',
+        file: 'coin.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Make the star fall - fill in the two values.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: A golden star should fall from a random position. When it exits the bottom, a new one appears at the top.'
+        ],
+        check: 'A golden star should fall from a random position. When it exits the bottom, a new one appears at the top.'
+      },
       checkpoint: 'A golden star should fall from a random position. When it exits the bottom, a new one appears at the top.',
       points: [
         'The star starts above the screen (y = -20) so it slides in smoothly instead of popping',
@@ -304,6 +341,18 @@ window.CW_CONFIG = {
       title: 'Catching Stars',
       activity: '\uD83C\uDFAF Collide!',
       goal: 'Detect when the star touches the basket. Award a point and launch a new star.',
+      engine: {
+        name: 'Godot 4',
+        file: 'player.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Write the catch - fill in what happens when it lands.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: When the basket overlaps the falling star, the score should go up by 1 and the star should reset.'
+        ],
+        check: 'When the basket overlaps the falling star, the score should go up by 1 and the star should reset.'
+      },
       checkpoint: 'When the basket overlaps the falling star, the score should go up by 1 and the star should reset.',
       points: [
         'This is AABB collision - the same rectangle-overlap check used in almost every 2D game',
@@ -335,6 +384,18 @@ window.CW_CONFIG = {
       title: 'Speed Ramp',
       activity: '\uD83D\uDD25 Ramp up',
       goal: 'Make the game get harder as you score. Stars fall faster - but cap it so it stays fair.',
+      engine: {
+        name: 'Godot 4',
+        file: 'main.tscn',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Write the speed ramp - what number do we divide by, and what\'s the cap?.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: After catching a few stars the fall speed should increase. At high scores it should feel frantic but not impossible.'
+        ],
+        check: 'After catching a few stars the fall speed should increase. At high scores it should feel frantic but not impossible.'
+      },
       checkpoint: 'After catching a few stars the fall speed should increase. At high scores it should feel frantic but not impossible.',
       points: [
         'Formula: <code>fall_speed = 3 + score / 5</code> - every 5 catches the star drops 1 pixel faster',
@@ -366,6 +427,18 @@ window.CW_CONFIG = {
       title: 'Game Over & Restart',
       activity: '\uD83C\uDFAE State machine',
       goal: 'Add a game-over screen and let the player restart without reloading the page.',
+      engine: {
+        name: 'Godot 4',
+        file: 'main.tscn',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Write the restart - reset all three things.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: When the score condition triggers, a game-over overlay should appear. Pressing R should reset everything.'
+        ],
+        check: 'When the score condition triggers, a game-over overlay should appear. Pressing R should reset everything.'
+      },
       checkpoint: 'When the score condition triggers, a game-over overlay should appear. Pressing R should reset everything.',
       points: [
         'A state machine with two states - <code>"play"</code> and <code>"over"</code> - keeps the logic clean',
@@ -397,6 +470,18 @@ window.CW_CONFIG = {
       title: 'Take It Home',
       activity: '\uD83C\uDFE0 Mod card',
       goal: 'Fill in your Mod Card. At home, open Godot and use these choices to make the game yours.',
+      engine: {
+        name: 'Godot 4',
+        file: 'project.godot',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter in Godot 4.',
+          'Find the code that does: Fill in your Mod Card - change anything you want to make this game yours.',
+          'Add the same code to the scene or script in Godot.',
+          'Run the project and check: Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.'
+        ],
+        check: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.'
+      },
       checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.',
       points: [
         'Everything you built here runs as real GDScript logic - open Godot and it transfers directly',

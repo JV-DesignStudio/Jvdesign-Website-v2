@@ -83,6 +83,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-night-watch1-canvas',
   downloadName: 'my-night-watch-1.html',
+engineProject: { href: '/night-watch.zip', label: 'Download the Night Watch project' },
 
   hints: [
     'A dark building floor plan with a flashlight cone',
@@ -181,6 +182,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Building',
       goal: 'Set up a dark building with four rooms to patrol.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scenes/main.tscn',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Define the room layout.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: Set up a dark building with four rooms to patrol.'
+        ],
+        check: 'Set up a dark building with four rooms to patrol.'
+      },
       points: [
         'The building is a 400x400 dark space divided into four rooms',
         'Each room has a name, position, and a checked flag',
@@ -210,6 +223,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Guard Movement',
       goal: 'Move the security guard with WASD, staying inside the building.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scripts/main.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Write the guard movement.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: Move the security guard with WASD, staying inside the building.'
+        ],
+        check: 'Move the security guard with WASD, staying inside the building.'
+      },
       points: [
         'The guard moves at speed 2 - slow and deliberate for atmosphere',
         'Clamp to building bounds (inside the outer walls)',
@@ -239,6 +264,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Flashlight',
       goal: 'Add a flashlight cone that follows the mouse cursor.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scripts/main.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Set the flashlight parameters.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: Add a flashlight cone that follows the mouse cursor.'
+        ],
+        check: 'Add a flashlight cone that follows the mouse cursor.'
+      },
       points: [
         'The flashlight direction is calculated with <code>atan2(mouse_y - guard_y, mouse_x - guard_x)</code>',
         'A radial gradient creates a warm glow that fades to darkness',
@@ -268,6 +305,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Room Checking',
       goal: 'Mark rooms as checked when the guard enters their centre area.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scripts/main.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Write the room checking logic.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: Mark rooms as checked when the guard enters their centre area.'
+        ],
+        check: 'Mark rooms as checked when the guard enters their centre area.'
+      },
       points: [
         'Check if the guard is well inside the room (not just touching the door)',
         'Set the room\'s checked flag to true and increment the counter',
@@ -297,6 +346,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Spooky Events',
       goal: 'Trigger random atmospheric events to build tension.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scripts/main.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Write the event timer.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: Trigger random atmospheric events to build tension.'
+        ],
+        check: 'Trigger random atmospheric events to build tension.'
+      },
       points: [
         'Every 300 frames (5 seconds) a random event text appears',
         'Events are purely atmospheric: flickering lights, creaking doors, footsteps',
@@ -326,6 +387,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Patrol Complete',
       goal: 'End the shift when all four rooms are checked.',
+      engine: {
+        name: 'Godot 4',
+        file: 'NightWatch/scripts/main.gd',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the Night Watch project in Godot 4.',
+          'Find the code that does: Write the patrol completion check.',
+          'Add the same logic to the scene or script in Godot.',
+          'Run the project and check: End the shift when all four rooms are checked.'
+        ],
+        check: 'End the shift when all four rooms are checked.'
+      },
       points: [
         'When checked_count reaches 4, the patrol is complete',
         'Show a green overlay with "PATROL COMPLETE!" message',

@@ -10,21 +10,17 @@ function wbWrap(presetup, blobSrc, afterBlob) {
    syntax runs in the canvas iframe)
    =================================================== */
 function pyToJs(code) {
-  return code
+  var pre = String(code)
+    .replace(/\bdef\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'func $1($2):')
     .replace(/\bTrue\b/g, 'true')
     .replace(/\bFalse\b/g, 'false')
     .replace(/\bNone\b/g, 'null')
-    .replace(/\bprint\s*\(/g, 'console.log(')
-    .replace(/\belif\b/g, 'else if')
-    .replace(/\band\b/g, '&&')
-    .replace(/\bor\b/g, '||')
-    .replace(/\bnot\b/g, '!')
-    .replace(/\blen\s*\(/g, '(')
     .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\blen\s*\(([^)]*)\)/g, '($1).length')
     .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
-    .replace(/#.*$/gm, '');
+    .replace(/\bself\./g, 'this.');
+  return window.CWTranspileGDScript ? window.CWTranspileGDScript(pre) : pre;
 }
-
 /* ===================================================
    IFRAME BUILDING BLOCKS (My First Python Game)
    =================================================== */
@@ -84,6 +80,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-python-canvas',
   downloadName: 'my-first-python-game.html',
+engineProject: { href: '/downloads/python-catch-workshop-reference.zip', label: 'Download the reference project' },
   nextStep: { url: '/workshops/python-platformer-canvas.html', label: 'Python Platformer' },
 
   hints: [
@@ -114,8 +111,7 @@ window.CW_CONFIG = {
         SETUP + CATCHER_VARS + SPEED_VAR + KEYS,
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'cx=Math.max(0,Math.min(600-cw,cx));' +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -130,8 +126,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -146,8 +141,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -162,8 +156,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -177,8 +170,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE + DRAW_CONGRATS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -191,6 +183,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Catcher',
       goal: 'Draw a blue rectangle at the bottom of the screen. This is your catcher!',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Set the catcher position and size.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: Draw a blue rectangle at the bottom of the screen. This is your catcher!.'
+        ],
+        check: 'Draw a blue rectangle at the bottom of the screen. This is your catcher!.'
+      },
       points: [
         'The canvas is 600 pixels wide and 400 pixels tall with a dark sky background (<code>#1a1a2e</code>)',
         'The catcher is a blue rectangle: 80 wide, 20 tall, sitting near the bottom at y = 370',
@@ -220,6 +224,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Arrow Keys',
       goal: 'Move the catcher left and right with the arrow keys. Keep it on screen!',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the movement logic.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: Move the catcher left and right with the arrow keys. Keep it on screen!.'
+        ],
+        check: 'Move the catcher left and right with the arrow keys. Keep it on screen!.'
+      },
       points: [
         'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in Pygame you would use <code>pygame.key.get_pressed()</code>',
         'Move by <code>speed</code> (5) pixels each frame while a key is held',
@@ -249,6 +265,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'A Falling Star',
       goal: 'A yellow star falls from a random spot at the top. When it goes off screen, it resets.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the star falling and reset logic.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: A yellow star falls from a random spot at the top. When it goes off screen, it resets.'
+        ],
+        check: 'A yellow star falls from a random spot at the top. When it goes off screen, it resets.'
+      },
       points: [
         'The star starts above the screen at <code>sy = -10</code> so it slides in smoothly',
         'Each frame: <code>sy += starSpeed</code> moves it downward (3 pixels per frame)',
@@ -278,6 +306,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching!',
       goal: 'When the star touches the catcher, score a point and reset the star.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the catch check.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: When the star touches the catcher, score a point and reset the star.'
+        ],
+        check: 'When the star touches the catcher, score a point and reset the star.'
+      },
       points: [
         'The star is caught when it overlaps the catcher rectangle',
         'Check: star bottom reaches catcher top AND star is within the catcher width',
@@ -307,6 +347,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Score Display',
       goal: 'Show the score on screen. When the player reaches 10, show a congratulations!',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Write the score and congratulations display.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: Show the score on screen. When the player reaches 10, show a congratulations!.'
+        ],
+        check: 'Show the score on screen. When the player reaches 10, show a congratulations!.'
+      },
       points: [
         'Use <code>ctx.fillText</code> to draw text on the canvas - like <code>screen.blit(font.render(...))</code> in Pygame',
         'Draw the score in white at the top-left corner',
@@ -336,6 +388,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Make It Yours',
       goal: 'Customise your game! Change a colour, size, or speed to make it your own.',
+      engine: {
+        name: 'Python 3',
+        file: 'game.py',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open game.py in Python 3.',
+          'Find the code that does: Change at least one value to make it yours.',
+          'Type the same code from the canvas into game.py.',
+          'Run the project and check: Customise your game! Change a colour, size, or speed to make it your own.'
+        ],
+        check: 'Customise your game! Change a colour, size, or speed to make it your own.'
+      },
       points: [
         'Try changing the catcher colour from blue to your favourite colour',
         'Make the star bigger or smaller by changing <code>sr</code> (the radius)',

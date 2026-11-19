@@ -13,6 +13,9 @@ function p8ToJs(code) {
   return code
     .replace(/--.*$/gm, '')
     .replace(/\blocal\s+/g, 'let ')
+    .replace(/\belseif\s+(.+?)\s+then\b/g, '} else if ($1) {')
+    .replace(/\bif\s+(.+?)\s+then\b/g, 'if ($1) {')
+    .replace(/\bwhile\s+(.+?)\s+do\b/g, 'while ($1) {')
     .replace(/\bthen\b/g, '{')
     .replace(/\belseif\b/g, '} else if')
     .replace(/\belse\b(?!\s*if)/g, '} else {')
@@ -109,6 +112,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-pico8-canvas',
   downloadName: 'my-first-pico8-game.html',
+engineProject: { href: '/downloads/my-first-pico8-starter.p8', label: 'Download the PICO-8 starter cart' },
   nextStep: { url: '/workshops/pico8-platformer-canvas.html', label: 'Pico-8 Platformer' },
 
   hints: [
@@ -139,8 +143,7 @@ window.CW_CONFIG = {
         SETUP + CATCHER_VARS + KEYS,
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'cx=Math.max(0,Math.min(128-cw,cx));' +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -155,8 +158,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>130)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -171,8 +173,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(sy>130)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -187,8 +188,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         STAR_MISS +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -203,8 +203,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -217,6 +216,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Catcher',
       goal: 'Draw a blue catcher at the bottom of the PICO-8 screen.',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Set the catcher position and size.',
+          'Type the same code into the cart.',
+          'Run the project and check: Draw a blue catcher at the bottom of the PICO-8 screen.'
+        ],
+        check: 'Draw a blue catcher at the bottom of the PICO-8 screen.'
+      },
       points: [
         'PICO-8 has a tiny 128x128 pixel screen - we scale it 3x to 384x384 for the canvas',
         'The catcher is a blue rectangle: 16 wide, 6 tall, sitting at y=120 (near the bottom)',
@@ -246,6 +257,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Arrow Key Movement',
       goal: 'Move the catcher left and right with btn(0) and btn(1).',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Write the catcher movement.',
+          'Type the same code into the cart.',
+          'Run the project and check: Move the catcher left and right with btn(0) and btn(1).'
+        ],
+        check: 'Move the catcher left and right with btn(0) and btn(1).'
+      },
       points: [
         'PICO-8 uses <code>btn(0)</code> for left and <code>btn(1)</code> for right',
         'Move 2 pixels per frame while a button is held',
@@ -275,6 +298,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Falling Star',
       goal: 'Spawn a yellow star at a random position and make it fall.',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Write the star falling logic.',
+          'Type the same code into the cart.',
+          'Run the project and check: Spawn a yellow star at a random position and make it fall.'
+        ],
+        check: 'Spawn a yellow star at a random position and make it fall.'
+      },
       points: [
         'The star starts above the screen at <code>sy = -8</code> so it slides in',
         'Each frame: <code>sy += fallSpeed</code> moves it down',
@@ -304,6 +339,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching Stars',
       goal: 'Detect when the star overlaps the catcher and award a point.',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Write the catch check.',
+          'Type the same code into the cart.',
+          'Run the project and check: Detect when the star overlaps the catcher and award a point.'
+        ],
+        check: 'Detect when the star overlaps the catcher and award a point.'
+      },
       points: [
         'Two rectangles overlap when their edges cross on both axes',
         'Check: star bottom >= catcher top AND star top <= catcher bottom AND same for left/right',
@@ -333,6 +380,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Missed Stars Just Respawn',
       goal: 'When a star misses, just send it back to the top - no punishment.',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Write the miss reset.',
+          'Type the same code into the cart.',
+          'Run the project and check: When a star misses, just send it back to the top - no punishment.'
+        ],
+        check: 'When a star misses, just send it back to the top - no punishment.'
+      },
       points: [
         'If the star passes y = 130 without being caught, call <code>resetStar()</code>',
         'No lives system - this is a relaxed beginner game',
@@ -362,6 +421,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Ramp',
       goal: 'Make stars fall faster as the score grows.',
+      engine: {
+        name: 'PICO-8',
+        file: 'my-first-pico8-starter.p8',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the cart in PICO-8.',
+          'Find the code that does: Write the speed ramp.',
+          'Type the same code into the cart.',
+          'Run the project and check: Make stars fall faster as the score grows.'
+        ],
+        check: 'Make stars fall faster as the score grows.'
+      },
       points: [
         'Increase fallSpeed based on score: <code>fallSpeed = 1 + flr(score / 5)</code>',
         'Cap at 4 so the game stays playable: <code>if fallSpeed > 4 then fallSpeed = 4 end</code>',

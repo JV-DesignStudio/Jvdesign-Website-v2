@@ -6,7 +6,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 
 
 /* ===================================================
-   C++-to-JS transpiler (light transform so C++
+   C++-to-JS transpiler (light transform so C+
    syntax runs in the canvas iframe)
    =================================================== */
 function cppToJs(code) {
@@ -95,6 +95,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-cpp-canvas',
   downloadName: 'my-first-cpp-game.html',
+engineProject: { href: '/downloads/my-first-cpp-starter.cpp', label: 'Download the C++ starter file' },
   nextStep: { url: '/workshops/cpp-platformer-canvas.html', label: 'C++ Platformer' },
 
   hints: [
@@ -125,8 +126,7 @@ window.CW_CONFIG = {
         SETUP + CATCHER_VARS + KEYS,
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -139,8 +139,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -153,8 +152,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -169,8 +167,7 @@ window.CW_CONFIG = {
         'if(gameState==="play"){' +
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
         CATCH_CHECK +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
         GAME_OVER_DRAW +
@@ -189,8 +186,7 @@ window.CW_CONFIG = {
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
         CATCH_CHECK +
         'if(lives<=0){if(score>highScore)highScore=score;gameState="over"}' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES + DRAW_HIGH +
         GAME_OVER_DRAW +
@@ -205,6 +201,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Catcher',
       goal: 'Draw a blue catcher on a dark background with a ground line. The catcher sits near the bottom of the screen.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Set the catcher\'s starting position and size.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Draw a blue catcher on a dark background with a ground line. The catcher sits near the bottom of the screen.'
+        ],
+        check: 'Draw a blue catcher on a dark background with a ground line. The catcher sits near the bottom of the screen.'
+      },
       points: [
         'The canvas is 600x400 pixels with a dark-sky background (<code>#0b0e1a</code>) and a ground strip at the bottom',
         'The catcher is a blue rectangle: 60 wide, 16 tall, sitting just above the ground at y=364',
@@ -234,6 +242,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Keyboard Movement',
       goal: 'Move the catcher left and right with arrow keys or A/D. Clamp it so it stays on screen.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Write the movement and clamping logic.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Move the catcher left and right with arrow keys or A/D. Clamp it so it stays on screen.'
+        ],
+        check: 'Move the catcher left and right with arrow keys or A/D. Clamp it so it stays on screen.'
+      },
       points: [
         'The engine tracks <code>bool leftHeld, rightHeld</code> for arrow keys and A/D',
         'Each frame: if the key is held, move the catcher by <code>cSpeed</code> pixels (6)',
@@ -263,6 +283,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Falling Stars',
       goal: 'Spawn golden stars at random x positions and move them downward each frame.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Write the spawn timer and movement loop.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Spawn golden stars at random x positions and move them downward each frame.'
+        ],
+        check: 'Spawn golden stars at random x positions and move them downward each frame.'
+      },
       points: [
         'Stars are stored in an array. In real C++ you would use <code>std::vector&lt;Star&gt;</code>',
         'A timer counts frames. Every <code>starInterval</code> (40) frames, spawn a new star at a random x',
@@ -292,6 +324,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching & Missing',
       goal: 'Detect when a star hits the catcher (caught!) or falls past the ground (missed  -  lose a life).',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Write the catch and miss detection.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Detect when a star hits the catcher (caught!) or falls past the ground (missed - lose a life).'
+        ],
+        check: 'Detect when a star hits the catcher (caught!) or falls past the ground (missed - lose a life).'
+      },
       points: [
         'A star is caught if its y + radius reaches the catcher top (364) AND its x is between <code>cx</code> and <code>cx + cw</code>',
         'A caught star adds 1 to <code>score</code> and is removed from the array',
@@ -321,6 +365,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Score, Lives & Game Over',
       goal: 'Display the score and lives on screen. End the game when lives reach zero.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Write the game-over check and difficulty scaling.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Display the score and lives on screen. End the game when lives reach zero.'
+        ],
+        check: 'Display the score and lives on screen. End the game when lives reach zero.'
+      },
       points: [
         'Draw score in the top-left and lives in the top-right using <code>ctx.fillText</code>',
         'When <code>lives &lt;= 0</code>, set <code>gameState = "over"</code> to freeze the action',
@@ -350,6 +406,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Polish & Restart',
       goal: 'Add a high-score tracker, speed ramp, and a clean restart with the R key.',
+      engine: {
+        name: 'C++17 with SFML',
+        file: 'my-first-cpp-starter.cpp',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter file in your C++ editor.',
+          'Find the code that does: Write the high-score tracking and difficulty ramp.',
+          'Type the same code into the starter file.',
+          'Run the project and check: Add a high-score tracker, speed ramp, and a clean restart with the R key.'
+        ],
+        check: 'Add a high-score tracker, speed ramp, and a clean restart with the R key.'
+      },
       points: [
         'Press R when the game is over to reset score, lives, stars, and timer  -  then resume playing',
         'Track a high score that persists across rounds: <code>if (score > highScore) highScore = score</code>',

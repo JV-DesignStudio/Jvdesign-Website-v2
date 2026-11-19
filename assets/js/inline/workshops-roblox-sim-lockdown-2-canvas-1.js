@@ -89,6 +89,7 @@ var COMPLETE_BUILDCOURSE = [
 window.CW_CONFIG = {
   storageKey: 'jvds-sim-lockdown-2-canvas',
   downloadName: 'my-sim-map-generator.html',
+engineProject: { href: '/downloads/sim-lockdown-2-starter.lua', label: 'Download the map generator starter' },
 
   hints: [
     'Describe one theme: name, two sky colours, ground and obstacle colour',
@@ -103,7 +104,7 @@ window.CW_CONFIG = {
     1: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof getTheme==="function")theme=getTheme();' +
         'simLog(theme?("Theme ready: "+theme.name):"Define getTheme");' +
         'function loop(){drawCourse();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -112,7 +113,7 @@ window.CW_CONFIG = {
     2: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 + COMPLETE_GETTHEME + 'theme=getTheme();' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof makeNodes==="function")nodes=makeNodes(7,8);' +
         'simLog(nodes.length+" nodes scattered from seed 7");' +
         'function loop(){drawCourse();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -121,7 +122,7 @@ window.CW_CONFIG = {
     3: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 + COMPLETE_GETTHEME + 'theme=getTheme();' + COMPLETE_MAKENODES +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof applyArchetype==="function")nodes=applyArchetype(makeNodes(7,8),1);' +
         'simLog("Zigzag archetype shaped "+nodes.length+" nodes");' +
         'function loop(){drawCourse();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -130,7 +131,7 @@ window.CW_CONFIG = {
     4: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 + COMPLETE_GETTHEME + 'theme=getTheme();' + COMPLETE_MAKENODES + COMPLETE_ARCHETYPE +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'nodes=applyArchetype(makeNodes(7,8),1);' +
         'if(typeof scatterObstacles==="function")obstacles=scatterObstacles(nodes,theme);' +
         'simLog(obstacles.length+" obstacles on the course");' +
@@ -140,7 +141,7 @@ window.CW_CONFIG = {
     5: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 + COMPLETE_GETTHEME + COMPLETE_MAKENODES + COMPLETE_ARCHETYPE + COMPLETE_SCATTER +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'var autoSeed=7,lastBuild=0;' +
         'function loop(){if(typeof buildCourse==="function"){if(Date.now()-lastBuild>5000){lastBuild=Date.now();buildCourse(autoSeed);autoSeed++;}}drawCourse();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -148,7 +149,7 @@ window.CW_CONFIG = {
     6: function(u) {
       return wrap(CSS_SIM2, HTML_SIM2,
         SETUP_SIM2 + COMPLETE_GETTHEME + COMPLETE_MAKENODES + COMPLETE_ARCHETYPE + COMPLETE_SCATTER + COMPLETE_BUILDCOURSE +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof verifyVariety==="function")verifyVariety();' +
         'function loop(){drawCourse();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -160,6 +161,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Give Each Map a Theme',
       goal: 'Three themes, each with its own look and its own favourite obstacles.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the theme table for Neon Grid.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Three themes, each with its own look and its own favourite obstacles.'
+        ],
+        check: 'Three themes, each with its own look and its own favourite obstacles.'
+      },
       points: [
         'A theme names its sky, ground and obstacle colours',
         'The canvas paints the sky from the theme at once',
@@ -188,6 +201,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'A Path of Nodes',
       goal: 'Turn a random list of positions into a walkable course.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the node scatter from a seed.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Turn a random list of positions into a walkable course.'
+        ],
+        check: 'Turn a random list of positions into a walkable course.'
+      },
       points: [
         'A seeded random keeps the same seed giving the same nodes',
         'Each node becomes one platform on screen',
@@ -216,6 +241,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Layout Archetypes',
       goal: 'Make the course come out in completely different shapes, not just dots.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the shaper for all five archetypes.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Make the course come out in completely different shapes, not just dots.'
+        ],
+        check: 'Make the course come out in completely different shapes, not just dots.'
+      },
       points: [
         'Five shapes: line, zigzag, spiral, climb and rings',
         'The archetype number picks the shape, seed % 5 chooses it',
@@ -244,6 +281,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Mood and Obstacles',
       goal: 'Two maps of the same theme should still feel different, because obstacles land by weight.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the obstacle scatter.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Two maps of the same theme should still feel different, because obstacles land by weight.'
+        ],
+        check: 'Two maps of the same theme should still feel different, because obstacles land by weight.'
+      },
       points: [
         'An obstacle floats above every third node',
         'Its colour comes from the theme, so themes stay consistent',
@@ -272,6 +321,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'A Fresh Map Every Round',
       goal: 'Hook the generator into the match loop so every round gets a new course.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the full rebuild from a fresh seed.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Hook the generator into the match loop so every round gets a new course.'
+        ],
+        check: 'Hook the generator into the match loop so every round gets a new course.'
+      },
       points: [
         'Clear nodes and obstacles before rebuilding, or courses pile up',
         'Theme, nodes, shape and obstacles build in that order',
@@ -300,6 +361,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Play It Twice',
       goal: 'Run the game a few times and watch a different course appear each time.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-2-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the variety check across two seeds.',
+          'Add the same logic to the map generator script.',
+          'Run the project and check: Run the game a few times and watch a different course appear each time.'
+        ],
+        check: 'Run the game a few times and watch a different course appear each time.'
+      },
       points: [
         'Build from seed 7, snapshot the layout as text',
         'Build from seed 8 and compare the two snapshots',

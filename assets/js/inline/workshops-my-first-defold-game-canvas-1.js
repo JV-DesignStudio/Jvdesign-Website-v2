@@ -91,6 +91,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-defold-canvas',
   downloadName: 'my-first-defold-game.html',
+engineProject: { href: '/downloads/my-first-defold-starter.script', label: 'Download the Defold starter script' },
   nextStep: { url: '/workshops/defold-platformer-canvas.html', label: 'Defold Platformer' },
 
   hints: [
@@ -194,6 +195,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'The Catcher',
       goal: 'Draw a blue catcher at the bottom of the screen.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Set the catcher position and size.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Draw a blue catcher at the bottom of the screen.'
+        ],
+        check: 'Draw a blue catcher at the bottom of the screen.'
+      },
       points: [
         'The canvas is 400x400 pixels with a dark background',
         'The catcher is a blue rectangle: 80 wide, 20 tall, at y=365',
@@ -223,6 +236,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'Keyboard Movement',
       goal: 'Move the catcher left and right with the arrow keys.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the catcher movement logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Move the catcher left and right with the arrow keys.'
+        ],
+        check: 'Move the catcher left and right with the arrow keys.'
+      },
       points: [
         'In Defold you read input via <code>on_input(self, action_id, action)</code> in the script',
         'Move by <code>cspeed</code> (6) pixels each frame while a key is held',
@@ -252,6 +277,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Falling Star',
       goal: 'Spawn a yellow star at a random x position and let it fall.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the star falling logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Spawn a yellow star at a random x position and let it fall.'
+        ],
+        check: 'Spawn a yellow star at a random x position and let it fall.'
+      },
       points: [
         'The star starts above the screen at <code>sy = -20</code> so it slides in smoothly',
         'Each frame: <code>sy = sy + starSpeed</code> moves it downward',
@@ -281,6 +318,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Catching Stars',
       goal: 'Detect when the star overlaps the catcher and award a point.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the catch detection.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Detect when the star overlaps the catcher and award a point.'
+        ],
+        check: 'Detect when the star overlaps the catcher and award a point.'
+      },
       points: [
         'Two rectangles overlap when their edges cross on both axes',
         'In Defold you might use physics collision or manual distance checks',
@@ -310,6 +359,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'Missed Stars Respawn',
       goal: 'When a star falls off the bottom, respawn it with no penalty.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the miss respawn logic.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: When a star falls off the bottom, respawn it with no penalty.'
+        ],
+        check: 'When a star falls off the bottom, respawn it with no penalty.'
+      },
       points: [
         'This is a beginner-friendly game - no lives, no game over',
         'When <code>sy > 420</code> (past the bottom), call <code>resetStar()</code>',
@@ -339,6 +400,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Speed Ramp',
       goal: 'Make stars fall faster as the score grows to add challenge.',
+      engine: {
+        name: 'Defold',
+        file: 'player.script',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open player.script in Defold.',
+          'Find the code that does: Write the speed ramp.',
+          'Add the same logic to the script in Defold.',
+          'Run the project and check: Make stars fall faster as the score grows to add challenge.'
+        ],
+        check: 'Make stars fall faster as the score grows to add challenge.'
+      },
       points: [
         'Increase <code>starSpeed</code> based on score: <code>starSpeed = 3 + math.floor(score / 5)</code>',
         'Cap speed with a max so it stays playable: cap at 8',

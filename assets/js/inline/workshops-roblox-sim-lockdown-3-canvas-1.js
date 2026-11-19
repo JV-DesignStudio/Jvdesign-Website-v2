@@ -98,6 +98,7 @@ var COMPLETE_SHRINK = [
 window.CW_CONFIG = {
   storageKey: 'jvds-sim-lockdown-3-canvas',
   downloadName: 'my-sim-final-arena.html',
+engineProject: { href: '/downloads/sim-lockdown-3-starter.lua', label: 'Download the Glitch Gauntlet starter' },
 
   hints: [
     'Hand every player the Glitch Gauntlet and light it up',
@@ -112,7 +113,7 @@ window.CW_CONFIG = {
     1: function(u) {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof giveGauntlet==="function")giveGauntlet(players);' +
         'function loop(){driftPlayers();drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -120,7 +121,7 @@ window.CW_CONFIG = {
     2: function(u) {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' + COMPLETE_GAUNTLET + 'giveGauntlet(players);' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'var lastShove=0;' +
         'function loop(){driftPlayers();if(Date.now()-lastShove>2000){lastShove=Date.now();if(typeof shove==="function")shove(players[0],players);}drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -128,7 +129,7 @@ window.CW_CONFIG = {
     3: function(u) {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' + COMPLETE_GAUNTLET + 'giveGauntlet(players);' + COMPLETE_SHOVE +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'var lastRank=0,lastTick=0;' +
         'function loop(){driftPlayers();var now=Date.now();if(now-lastTick>1000){lastTick=now;for(var i=0;i<players.length;i++){if(!players[i].out)players[i].progress++;}}if(now-lastRank>4000){lastRank=now;if(typeof rankPlayers==="function")rankPlayers(players);}drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -136,7 +137,7 @@ window.CW_CONFIG = {
     4: function(u) {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' + COMPLETE_GAUNTLET + 'giveGauntlet(players);' + COMPLETE_SHOVE + COMPLETE_RANK +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof buildArena==="function")tiles=buildArena(3);' +
         'function loop(){driftPlayers();drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -145,7 +146,7 @@ window.CW_CONFIG = {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' + COMPLETE_GAUNTLET + 'giveGauntlet(players);' + COMPLETE_SHOVE + COMPLETE_RANK + COMPLETE_ARENA +
         'tiles=buildArena(3);' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'var lastShrink=0;' +
         'function loop(){driftPlayers();if(Date.now()-lastShrink>3000){lastShrink=Date.now();if(typeof shrinkArena==="function"&&tiles.length>1)tiles=shrinkArena(tiles);}drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -154,7 +155,7 @@ window.CW_CONFIG = {
       return wrap(CSS_SIM3, HTML_SIM3,
         SETUP_SIM3 + 'placePlayers();' + COMPLETE_GAUNTLET + 'giveGauntlet(players);' + COMPLETE_SHOVE + COMPLETE_RANK + COMPLETE_ARENA + COMPLETE_SHRINK +
         'tiles=buildArena(2);players[0].progress=5;players[1].progress=3;players[2].progress=1;' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'if(typeof crownChampion==="function")crownChampion(players);' +
         'function loop(){driftPlayers();drawArena();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -166,6 +167,18 @@ window.CW_CONFIG = {
       num: 1,
       title: 'Hand Out the Gauntlet',
       goal: 'A tool called the Glitch Gauntlet, given to every player when a round starts.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the handout for all four players.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: A tool called the Glitch Gauntlet, given to every player when a round starts.'
+        ],
+        check: 'A tool called the Glitch Gauntlet, given to every player when a round starts.'
+      },
       points: [
         'Every player holds the same glowing Tool',
         'The glow ring shows who is armed at a glance',
@@ -194,6 +207,18 @@ window.CW_CONFIG = {
       num: 2,
       title: 'The Shove',
       goal: 'Find nearby players in a cone in front of you and launch them away.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the cone check that launches rivals.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: Find nearby players in a cone in front of you and launch them away.'
+        ],
+        check: 'Find nearby players in a cone in front of you and launch them away.'
+      },
       points: [
         'Only players in front count: ahead, close, and nearly level',
         'A launch sets horizontal velocity, friction does the rest',
@@ -222,6 +247,18 @@ window.CW_CONFIG = {
       num: 3,
       title: 'Rank and Eliminate',
       goal: 'At the end of a round, put the players in order and cut the last one.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the ranking that cuts the last player.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: At the end of a round, put the players in order and cut the last one.'
+        ],
+        check: 'At the end of a round, put the players in order and cut the last one.'
+      },
       points: [
         'Sorting by progress puts the fastest first',
         'The last player spectates instead of playing on',
@@ -250,6 +287,18 @@ window.CW_CONFIG = {
       num: 4,
       title: 'Build the Final Arena',
       goal: 'A circular-looking platform built from square tiles, each tagged with its ring.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the arena grid with ring tags.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: A circular-looking platform built from square tiles, each tagged with its ring.'
+        ],
+        check: 'A circular-looking platform built from square tiles, each tagged with its ring.'
+      },
       points: [
         'A grid from -rings+1 to rings-1 in both directions',
         'Each tile tags its ring: the max of |x| and |z|',
@@ -278,6 +327,18 @@ window.CW_CONFIG = {
       num: 5,
       title: 'The Arena Shrinks',
       goal: 'Delete the outermost ring on a timer and crown the last player standing.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the shrink that eats the outer ring.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: Delete the outermost ring on a timer and crown the last player standing.'
+        ],
+        check: 'Delete the outermost ring on a timer and crown the last player standing.'
+      },
       points: [
         'Find the top ring number across all tiles',
         'Keep every tile below it, drop the rest',
@@ -306,6 +367,18 @@ window.CW_CONFIG = {
       num: 6,
       title: 'Champion and Publish',
       goal: 'Celebrate the winner and put your game online.',
+      engine: {
+        name: 'Roblox Studio',
+        file: 'sim-lockdown-3-starter.lua',
+        intro: 'The starter is already set up. Open the file and work through the step.',
+        do: [
+          'Open the starter script in Roblox Studio and paste it into ServerScriptService.',
+          'Find the code that does: Write the crowning of the champion.',
+          'Add the same logic to the Glitch Gauntlet script.',
+          'Run the project and check: Celebrate the winner and put your game online.'
+        ],
+        check: 'Celebrate the winner and put your game online.'
+      },
       points: [
         'Scan the players still in the game for top progress',
         'Crown exactly one champion by name',
