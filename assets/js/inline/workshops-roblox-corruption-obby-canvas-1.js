@@ -180,42 +180,42 @@ engineProject: { href: '/downloads/roblox-corruption-obby-workshop-reference.zip
     1: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + KEYS_GLITCH + MOVE_GLITCH +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();if(typeof drawZones==="function")drawZones();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();if(typeof collectShards==="function")collectShards();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();if(typeof crumblePlatforms==="function")crumblePlatforms();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();if(typeof moveCorruption==="function")moveCorruption();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + BLADES_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE + COMPLETE_CORRUPTION +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();moveCorruption();if(typeof spinBlades==="function")spinBlades();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + BLADES_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE + COMPLETE_CORRUPTION + COMPLETE_SPIN +
-        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '\n}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();moveCorruption();spinBlades();if(typeof drawTimer==="function")drawTimer();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     }

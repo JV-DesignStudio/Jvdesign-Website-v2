@@ -267,7 +267,7 @@ engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', lab
       return wrap(CSS_SIM, CANVAS_SIM,
         SETUP_SIM + SPAWN_ORBS + KEYS_SIM +
         'function draw(){' + DRAW_BG_SIM + DRAW_ORBS + DRAW_PLAYER_SIM + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof movePlayer==="function")movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -275,7 +275,7 @@ engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', lab
       return wrap(CSS_SIM, CANVAS_SIM,
         SETUP_SIM + SPAWN_ORBS + KEYS_SIM + MOVE_PLAYER_SIM +
         'function draw(){' + DRAW_BG_SIM + DRAW_ORBS + DRAW_PLAYER_SIM + DRAW_HUD_SIM + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         CLICK_COLLECT +
         'function loop(){movePlayer();if(typeof collectOrbs==="function")collectOrbs();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -285,7 +285,7 @@ engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', lab
         SETUP_SIM + SPAWN_ORBS + KEYS_SIM + MOVE_PLAYER_SIM + COLLECT_ORBS + CLICK_COLLECT +
         SELL_ZONE +
         'function draw(){' + DRAW_BG_SIM + DRAW_SELL_ZONE + DRAW_ORBS + DRAW_PLAYER_SIM + DRAW_BP_BAR + DRAW_HUD_SIM + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();collectOrbs();if(typeof checkSell==="function")checkSell();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -294,7 +294,7 @@ engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', lab
         SETUP_SIM + SPAWN_ORBS + KEYS_SIM + MOVE_PLAYER_SIM + COLLECT_ORBS + CLICK_COLLECT +
         SELL_ZONE +
         'function draw(){' + DRAW_BG_SIM + DRAW_SELL_ZONE + DRAW_ORBS + DRAW_PLAYER_SIM + DRAW_BP_BAR + DRAW_HUD_SIM + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();collectOrbs();checkSell();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -303,7 +303,7 @@ engineProject: { href: '/downloads/roblox-simulator-workshop-reference.zip', lab
         SETUP_SIM + SPAWN_ORBS + KEYS_SIM + MOVE_PLAYER_SIM + COLLECT_ORBS + CLICK_COLLECT +
         SELL_ZONE + SHOP_SYSTEM +
         'function draw(){' + DRAW_BG_SIM + DRAW_SELL_ZONE + DRAW_ORBS + DRAW_PLAYER_SIM + DRAW_BP_BAR + DRAW_HUD_SIM + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();collectOrbs();if(typeof doAutoCollect==="function")doAutoCollect();checkSell();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },

@@ -292,7 +292,7 @@ engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label:
       return wrap(CSS_BATTLE, CANVAS_BATTLE,
         SETUP_BATTLE + ARENA_WALLS + KEYS_BATTLE +
         'function draw(){' + DRAW_BG_BATTLE + DRAW_ARENA + DRAW_PLAYER_BATTLE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof movePlayer==="function")movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -301,7 +301,7 @@ engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label:
         SETUP_BATTLE + ARENA_WALLS + KEYS_BATTLE +
         MOVE_PLAYER_BATTLE +
         'function draw(){' + DRAW_BG_BATTLE + DRAW_ARENA + DRAW_ENEMIES + DRAW_PLAYER_BATTLE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof moveEnemies==="function")moveEnemies();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -310,7 +310,7 @@ engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label:
         SETUP_BATTLE + ARENA_WALLS + KEYS_BATTLE +
         MOVE_PLAYER_BATTLE + SPAWN_ENEMIES + ENEMY_AI +
         'function draw(){' + DRAW_BG_BATTLE + DRAW_ARENA + DRAW_ENEMIES + DRAW_PLAYER_BATTLE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();moveEnemies();if(typeof processAttack==="function")processAttack();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -319,7 +319,7 @@ engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label:
         SETUP_BATTLE + ARENA_WALLS + KEYS_BATTLE +
         MOVE_PLAYER_BATTLE + SPAWN_ENEMIES + ENEMY_AI + ATTACK_CLICK + ATTACK_SYSTEM +
         'function draw(){' + DRAW_BG_BATTLE + DRAW_ARENA + DRAW_ENEMIES + DRAW_PLAYER_BATTLE + DRAW_HUD_BATTLE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();moveEnemies();processAttack();if(typeof enemyAttack==="function")enemyAttack();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -328,7 +328,7 @@ engineProject: { href: '/downloads/roblox-battle-workshop-reference.zip', label:
         SETUP_BATTLE + ARENA_WALLS + KEYS_BATTLE +
         MOVE_PLAYER_BATTLE + SPAWN_ENEMIES + ENEMY_AI + ATTACK_CLICK + ATTACK_SYSTEM + ENEMY_DAMAGE +
         'function draw(){' + DRAW_BG_BATTLE + DRAW_ARENA + DRAW_ENEMIES + DRAW_HEALTH_BARS + DRAW_PLAYER_BATTLE + DRAW_HUD_BATTLE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();moveEnemies();processAttack();enemyAttack();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },

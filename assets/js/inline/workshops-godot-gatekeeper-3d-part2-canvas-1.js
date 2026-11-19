@@ -50,6 +50,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper2-canvas',
   downloadName: 'my-godot-gatekeeper-2.html',
   engineProject: { href: '/workshops/godot-lab/projects/gatekeeper-2.zip', label: 'Download the Gatekeeper Part 2 starter' },
+  labProject: '/workshops/godot-lab/index.html?project=gatekeeper-2',
   nextStep: { url: '/workshops/godot-gdscript-essentials-canvas.html', label: 'GDScript Essentials' },
 
   hints: [
@@ -170,30 +171,6 @@ window.CW_CONFIG = {
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    7: function(u) {
-      var lines = u.split('\n');
-      var fields = {};
-      lines.forEach(function(l) {
-        var m = l.match(/^([^:]+):\s*(.*)$/);
-        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
-      });
-      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
-        'h2{color:#f43f5e;margin:0 0 12px}' +
-        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
-        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
-        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
-        '.val{color:#f1f5f9;font-weight:bold}' +
-        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #f43f5e;font-size:.82rem;color:#94a3b8}' +
-        '</style>' +
-        '<div class="card"><h2>\uD83C\uDFE0 My Multi-Guard Mod Card</h2>';
-      var order = ['Game name','Player colour','Number of guards','Distraction item','Map theme','Guard speed','One thing to add at home'];
-      order.forEach(function(k) {
-        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
-      });
-      html += '<div class="tip">\uD83D\uDCA1 At home: in Godot, use multiple NavigationAgent2D nodes - one per guard. Add an Area2D around the distraction landing spot and connect its body_entered signal to a function that makes nearby guards investigate.</div></div>';
-      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
-      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
-    }
   },
 
   steps: [
@@ -451,40 +428,6 @@ window.CW_CONFIG = {
           'AnimationPlayer keyframes'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '\uD83C\uDFE0 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and build your multi-guard stealth level.',
-      engine: {
-        name: 'Godot 4',
-        file: 'res://project.godot',
-        intro: 'The whole project is ready to change.',
-        do: [
-          'Download the starter and open project.godot.',
-          'Read your Mod Card choices.',
-          'Change the guard count, speed or vision range.',
-          'Press F5 and show someone.'
-        ],
-        check: 'Your own multi-guard level runs and one thing is different.'
-      },
-      checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
-      points: [
-        'At home: duplicate your Part 1 Godot project and add a second guard node',
-        'Use NavigationAgent2D on each guard for path-following',
-        'Add an Area2D for the distraction zone - connect body_entered to an investigate function',
-        'Export your distraction radius and vision angle as @export variables for easy tuning'
-      ],
-      challenge: '\u270F\uFE0F Fill in your Mod Card:',
-      starter: '# My Multi-Guard Mod Card\nGame name: ___\nPlayer colour: ___\nNumber of guards: ___\nDistraction item: ___\nMap theme: ___\nGuard speed: ___\nOne thing to add at home: ___',
-      solution: '# My Multi-Guard Mod Card\nGame name: Night Shift\nPlayer colour: purple\nNumber of guards: 3\nDistraction item: coin\nMap theme: office building\nGuard speed: 1.5\nOne thing to add at home: alert state where guard calls backup',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'At home I will make ___ guards. My distraction item will be a ___.',
-        answers: ['3', 'coin']
       }
     }
   ]

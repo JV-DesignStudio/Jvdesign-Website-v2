@@ -266,7 +266,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
       return wrap(CSS_PIRATE, CANVAS_PIRATE,
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_SHIP + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -274,7 +274,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
       return wrap(CSS_PIRATE, CANVAS_PIRATE,
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_SHIP + DRAW_HUD_PIRATE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof moveShip==="function")moveShip();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -283,7 +283,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE +
         MOVE_SHIP +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_BALLS + DRAW_SHIP + DRAW_HUD_PIRATE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){moveShip();if(typeof fireCannon==="function")fireCannon();if(typeof updateBalls==="function")updateBalls();if(typeof updateCooldown==="function")updateCooldown();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -292,7 +292,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE + ENEMIES_VARS +
         MOVE_SHIP + FIRE_CANNON +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_BALLS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD_PIRATE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){moveShip();fireCannon();updateBalls();updateCooldown();if(typeof moveEnemies==="function")moveEnemies();if(typeof checkBallHits==="function")checkBallHits();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -301,7 +301,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE + ENEMIES_VARS + TREASURE_VARS +
         MOVE_SHIP + FIRE_CANNON + ENEMY_AI +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_TREASURES + DRAW_BALLS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD_PIRATE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){moveShip();fireCannon();updateBalls();updateCooldown();moveEnemies();checkBallHits();if(typeof checkTreasure==="function")checkTreasure();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -310,7 +310,7 @@ engineProject: { href: '/downloads/roblox-pirate-workshop-reference.zip', label:
         SETUP_PIRATE + OCEAN_BASE + KEYS_PIRATE + ENEMIES_VARS + TREASURE_VARS +
         MOVE_SHIP + FIRE_CANNON + ENEMY_AI + TREASURE_CHECK + TOUCH_PIRATE +
         'function draw(){' + DRAW_BG_PIRATE + DRAW_TREASURES + DRAW_BALLS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD_PIRATE + DRAW_WIN + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(!won){moveShip();fireCannon();updateBalls();updateCooldown();moveEnemies();checkBallHits();checkTreasure();if(typeof checkWin==="function")checkWin();}draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     }

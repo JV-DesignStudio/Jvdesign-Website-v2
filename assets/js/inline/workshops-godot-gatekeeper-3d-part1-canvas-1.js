@@ -46,6 +46,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper1-canvas',
   downloadName: 'my-godot-gatekeeper-1.html',
   engineProject: { href: '/workshops/godot-lab/projects/gatekeeper-1.zip', label: 'Download the Gatekeeper Part 1 starter' },
+  labProject: '/workshops/godot-lab/index.html?project=gatekeeper-1',
   nextStep: { url: '/workshops/godot-gatekeeper-3d-part2-canvas.html', label: 'Gatekeeper Part 2' },
 
   hints: [
@@ -164,30 +165,6 @@ window.CW_CONFIG = {
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    7: function(u) {
-      var lines = u.split('\n');
-      var fields = {};
-      lines.forEach(function(l) {
-        var m = l.match(/^([^:]+):\s*(.*)$/);
-        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
-      });
-      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
-        'h2{color:#60a5fa;margin:0 0 12px}' +
-        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
-        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
-        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
-        '.val{color:#f1f5f9;font-weight:bold}' +
-        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #60a5fa;font-size:.82rem;color:#94a3b8}' +
-        '</style>' +
-        '<div class="card"><h2>\uD83C\uDFE0 My Stealth Mod Card</h2>';
-      var order = ['Game name','Player colour','Guard colour','Number of guards','Vision range','Map theme','One thing to add at home'];
-      order.forEach(function(k) {
-        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
-      });
-      html += '<div class="tip">\uD83D\uDCA1 At home: open Godot, create a CharacterBody2D for your player and a NavigationAgent2D for the guard. Use Area2D with collision shapes to detect the vision cone!</div></div>';
-      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
-      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
-    }
   },
 
   steps: [
@@ -446,40 +423,6 @@ window.CW_CONFIG = {
           'More colours on screen'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '\uD83C\uDFE0 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own stealth game.',
-      engine: {
-        name: 'Godot 4',
-        file: 'res://project.godot',
-        intro: 'The whole project is ready to change.',
-        do: [
-          'Download the starter and open project.godot.',
-          'Read your Mod Card choices.',
-          'Change the guard speed, vision range or map colours.',
-          'Press F5 and show someone.'
-        ],
-        check: 'Your own stealth level runs and one thing is different.'
-      },
-      checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
-      points: [
-        'At home: open Godot and create a new 2D project',
-        'Add a CharacterBody2D for your player with a ColorRect child',
-        'Add a second CharacterBody2D for your guard with a NavigationAgent2D',
-        'Use Area2D nodes with collision shapes to detect the vision cone overlap'
-      ],
-      challenge: '\u270F\uFE0F Fill in your Mod Card:',
-      starter: '# My Stealth Mod Card\nGame name: ___\nPlayer colour: ___\nGuard colour: ___\nNumber of guards: ___\nVision range: ___\nMap theme: ___\nOne thing to add at home: ___',
-      solution: '# My Stealth Mod Card\nGame name: Shadow Run\nPlayer colour: green\nGuard colour: orange\nNumber of guards: 2\nVision range: 80\nMap theme: abandoned warehouse\nOne thing to add at home: noise mechanic when running',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'At home I will open ___ and my map theme will be ___.',
-        answers: ['Godot', 'abandoned warehouse']
       }
     }
   ]

@@ -51,6 +51,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-racing2-canvas',
   downloadName: 'my-godot-racing-2.html',
   engineProject: { href: '/workshops/godot-lab/projects/zoom-zoom.zip', label: 'Download the Zoom Zoom starter' },
+  labProject: '/workshops/godot-lab/index.html?project=zoom-zoom',
   nextStep: { url: '/workshops/godot-puzzle-canvas.html', label: 'Godot Puzzle' },
 
   hints: [
@@ -157,30 +158,6 @@ window.CW_CONFIG = {
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    7: function(u) {
-      var lines = u.split('\n');
-      var fields = {};
-      lines.forEach(function(l) {
-        var m = l.match(/^([^:]+):\s*(.*)$/);
-        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
-      });
-      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
-        'h2{color:#f59e0b;margin:0 0 12px}' +
-        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
-        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
-        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
-        '.val{color:#f1f5f9;font-weight:bold}' +
-        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #f59e0b;font-size:.82rem;color:#94a3b8}' +
-        '</style>' +
-        '<div class="card"><h2>🏠 My Racing 2 Mod Card</h2>';
-      var order = ['Game name','Car colour','Number of laps','Number of AI cars','Power-up type','Track shape','One thing to add at home'];
-      order.forEach(function(k) {
-        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
-      });
-      html += '<div class="tip">💡 At home: open Godot, create a Path2D for your track shape and attach a PathFollow2D for each AI car. Use a RigidBody2D for the player car so drifting uses real physics forces!</div></div>';
-      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
-      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
-    }
   },
 
   steps: [
@@ -437,40 +414,6 @@ window.CW_CONFIG = {
           'Waypoints are required by Godot'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '🏠 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and build your advanced racing game.',
-      engine: {
-        name: 'Godot 4',
-        file: 'res://project.godot',
-        intro: 'The whole project is ready to change.',
-        do: [
-          'Download the starter and open project.godot.',
-          'Read your Mod Card choices.',
-          'Change the lap count, AI count or track colour.',
-          'Press F5 and show someone.'
-        ],
-        check: 'Your own advanced racer runs and one thing is different.'
-      },
-      checkpoint: 'Fill in as many fields as you want, then hit Apply to see your card.',
-      points: [
-        'At home: open Godot and create a Path2D node, then draw your track shape',
-        'Add a PathFollow2D with a RigidBody2D child for each AI car',
-        'Use a separate RigidBody2D for the player with apply_central_force for acceleration',
-        'Add an Area2D with a CollisionShape2D as child for each power-up pickup'
-      ],
-      challenge: '✏️ Fill in your Mod Card:',
-      starter: '# My Racing 2 Mod Card\nGame name: ___\nCar colour: ___\nNumber of laps: ___\nNumber of AI cars: ___\nPower-up type: ___\nTrack shape: ___\nOne thing to add at home: ___',
-      solution: '# My Racing 2 Mod Card\nGame name: Turbo Grid\nCar colour: green\nNumber of laps: 5\nNumber of AI cars: 3\nPower-up type: speed boost\nTrack shape: figure-8\nOne thing to add at home: weather effect that changes grip',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'At home I want ___ laps and my track will be a ___.',
-        answers: ['5', 'figure-8']
       }
     }
   ]

@@ -17,6 +17,9 @@ function gdToJs(code) {
     .replace(/Condition:\s*KeyPressed\("Down"\)/g, 'if(downHeld)')
     .replace(/Action:\s*(\w+)\.SetX\(([^)]+)\)/g, '$1x=$2;')
     .replace(/Action:\s*(\w+)\.SetY\(([^)]+)\)/g, '$1y=$2;')
+    .replace(/Action:\s*SetVariable\(starx,\s*Random\(360\)\s*\+\s*20\)/g, 'starx=Math.random()*360+20;')
+    .replace(/Condition:\s*StarCollidesWith\(Basket\)/g, 'if(starx+starw>=basketx&&starx<=basketx+basketw&&stary+starh>=baskety&&stary<=baskety+basketh)')
+    .replace(/Action:\s*ResetStar\(\)/g, 'resetStar();')
     .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
     .replace(/Condition:\s*(\w+)\.X\(\)\s*([<>!=]+)\s*(\S+)/g, 'if($1x$2$3)')
     .replace(/Condition:\s*(\w+)\.Y\(\)\s*([<>!=]+)\s*(\S+)/g, 'if($1y$2$3)')
@@ -119,8 +122,7 @@ window.CW_CONFIG = {
         SETUP + BASKET_VARS + KEYS,
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'basketx=Math.max(0,Math.min(400-basketw,basketx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -135,8 +137,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(stary>420)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -151,8 +152,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + STAR_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(stary>420)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -167,8 +167,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + STAR_FALL + STAR_CATCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -184,8 +183,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + STAR_FALL + STAR_CATCH + STAR_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

@@ -87,6 +87,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-tutorial-canvas',
   downloadName: 'my-godot-tutorial.html',
   engineProject: { href: '/workshops/godot-lab/projects/godot-tutorial.zip', label: 'Download the Star Collector starter' },
+  labProject: '/workshops/godot-lab/index.html?project=godot-tutorial',
   previewSolutionWhenBlank: true,
   nextStep: { url: '/workshops/godot-world-workshop.html', label: 'Godot World' },
 

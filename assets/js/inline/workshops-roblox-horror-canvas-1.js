@@ -306,7 +306,7 @@ engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label:
         DRAW_DARKNESS + DRAW_WALLS + DRAW_PLAYER +
         'function draw(){drawDarkness();' +
         'ctx.save();ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,W,H);CWArt.grid(ctx,W,H,40);drawWalls();drawPlayer();ctx.restore();}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -317,7 +317,7 @@ engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label:
         DRAW_ITEMS + DRAW_DOOR + DRAW_PLAYER +
         KEYS_ITEMS + DOOR_OBJ +
         'function draw(){drawDarkness();drawFlashlight();}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof movePlayer==="function")movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -328,7 +328,7 @@ engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label:
         DRAW_ITEMS + DRAW_DOOR + DRAW_PLAYER +
         MOVE_PLAYER_HORROR +
         'function draw(){drawDarkness();drawFlashlight();}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof collectKeys==="function")collectKeys();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -340,7 +340,7 @@ engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label:
         MOVE_PLAYER_HORROR + COLLECT_KEYS +
         'function draw(){drawDarkness();drawFlashlight();drawHud();}' +
         DRAW_HUD_HORROR +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();collectKeys();if(typeof checkDoor==="function")checkDoor();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -352,7 +352,7 @@ engineProject: { href: '/downloads/roblox-horror-workshop-reference.zip', label:
         MOVE_PLAYER_HORROR + COLLECT_KEYS + CHECK_DOOR +
         DRAW_HUD_HORROR +
         'function draw(){drawDarkness();drawFlashlight();drawHud();}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();collectKeys();checkDoor();if(typeof moveGhost==="function")moveGhost();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },

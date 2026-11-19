@@ -46,6 +46,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-puzzle-canvas',
   downloadName: 'my-godot-puzzle.html',
   engineProject: { href: '/workshops/godot-lab/projects/puzzle.zip', label: 'Download the Memory Match starter' },
+  labProject: '/workshops/godot-lab/index.html?project=pixel-quest',
   nextStep: { url: '/workshops/godot-gatekeeper-3d-part1-canvas.html', label: 'Gatekeeper Stealth' },
 
   hints: [
@@ -103,30 +104,6 @@ window.CW_CONFIG = {
         CLICK_HANDLER + 'function loop(){if(typeof cwStep==="function")cwStep();drawGrid();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    7: function(u) {
-      var lines = u.split('\n');
-      var fields = {};
-      lines.forEach(function(l) {
-        var m = l.match(/^([^:]+):\s*(.*)$/);
-        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
-      });
-      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
-        'h2{color:#a78bfa;margin:0 0 12px}' +
-        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
-        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
-        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
-        '.val{color:#f1f5f9;font-weight:bold}' +
-        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #a78bfa;font-size:.82rem;color:#94a3b8}' +
-        '</style>' +
-        '<div class="card"><h2>🏠 My Puzzle Mod Card</h2>';
-      var order = ['Game name','Card theme','Grid size','Pairs to match','Card back colour','Background colour','One thing to add at home'];
-      order.forEach(function(k) {
-        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
-      });
-      html += '<div class="tip">💡 At home: open Godot, create a GridContainer node and add 16 Button children. Use a script to shuffle an array of image pairs and assign them to buttons. Connect each button\'s pressed signal to your flip logic!</div></div>';
-      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
-      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
-    }
   },
 
   steps: [

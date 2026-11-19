@@ -1659,20 +1659,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/godot-racing-2-canvas.html"
     },
     {
-      "id": "godot-mod-studio",
-      "title": "Godot Studio",
-      "desc": "A free browser workshop that opens the real Godot 4 editor. Write GDScript, press play and run your game, then download the starter project and keep it. No install and no account needed to start.",
-      "engine": "Godot",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#478cbf",
-      "cover": "/og/godot-mod-studio.png",
-      "url": "/workshops/godot-mod-studio.html"
-    },
-    {
       "id": "godot-world-workshop",
       "title": "Godot World Workshop",
       "desc": "A free Godot series for beginners: build a platformer, a racing game and a 3D co-op level. Design your scene in the browser, then open it in the free Godot engine and finish it. Ages 10+.",
@@ -5674,8 +5660,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-19T15:37:30.000Z",
-    "workshops": 285,
+    "generated": "2026-11-19T16:04:17.000Z",
+    "workshops": 284,
     "games": 16,
     "tools": 50,
     "books": 5,
@@ -5686,7 +5672,7 @@ window.JVDS_CONTENT = {
       "GDevelop": 7,
       "General": 52,
       "GML/GameMaker": 6,
-      "Godot": 19,
+      "Godot": 18,
       "Java": 8,
       "JavaScript": 6,
       "Minecraft": 18,

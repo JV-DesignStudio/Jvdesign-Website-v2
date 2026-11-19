@@ -740,14 +740,17 @@ function ensurePreviewKeyboardExit() {
 }
 
 function ensureEngineProjectLink() {
-  if (!CFG.engineProject || !CFG.engineProject.href) return;
+  var project = CFG.labProject
+    ? { href: CFG.labProject, label: 'Build this project in the Godot Lab', lab: true }
+    : CFG.engineProject;
+  if (!project || !project.href) return;
   var panel = document.getElementById('canvasPanel');
   if (!panel || panel.querySelector('.cw-engine-project')) return;
   var a = document.createElement('a');
   a.className = 'cw-engine-project';
-  a.href = CFG.engineProject.href;
-  a.setAttribute('download', '');
-  a.textContent = CFG.engineProject.label || 'Download the engine starter project';
+  a.href = project.href;
+  if (!project.lab) a.setAttribute('download', '');
+  a.textContent = project.label || (project.lab ? 'Build this project in the Godot Lab' : 'Download the engine starter project');
   var dl = panel.querySelector('.cw-btn-dl');
   if (dl && dl.parentNode === panel) panel.insertBefore(a, dl);
   else panel.appendChild(a);

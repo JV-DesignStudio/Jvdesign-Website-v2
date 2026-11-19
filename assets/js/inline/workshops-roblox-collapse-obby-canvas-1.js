@@ -208,7 +208,7 @@ engineProject: { href: '/downloads/roblox-collapse-scripts.zip', label: 'Downloa
       return wrap(CSS_COLLAPSE, CANVAS_COLLAPSE,
         SETUP_COLLAPSE + PLATFORMS_COLLAPSE + KEYS_COLLAPSE + RESPAWN_COLLAPSE +
         'function draw(){' + DRAW_BG_COLLAPSE + DRAW_PLATFORMS_COLLAPSE + DRAW_PLAYER_COLLAPSE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -217,7 +217,7 @@ engineProject: { href: '/downloads/roblox-collapse-scripts.zip', label: 'Downloa
         SETUP_COLLAPSE + PLATFORMS_COLLAPSE + LAVA_FLOOR_COLLAPSE + KEYS_COLLAPSE + RESPAWN_COLLAPSE +
         MOVE_PLAYER_COLLAPSE +
         'function draw(){' + DRAW_BG_COLLAPSE + DRAW_LAVA_COLLAPSE + DRAW_PLATFORMS_COLLAPSE + DRAW_PLAYER_COLLAPSE + DRAW_HUD_COLLAPSE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof checkLava==="function")checkLava();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -226,7 +226,7 @@ engineProject: { href: '/downloads/roblox-collapse-scripts.zip', label: 'Downloa
         SETUP_COLLAPSE + PLATFORMS_COLLAPSE + LAVA_FLOOR_COLLAPSE + KEYS_COLLAPSE + RESPAWN_COLLAPSE +
         MOVE_PLAYER_COLLAPSE + LAVA_CHECK_COLLAPSE +
         'function draw(){' + DRAW_BG_COLLAPSE + DRAW_LAVA_COLLAPSE + DRAW_PLATFORMS_COLLAPSE + DRAW_CRUMBLE_WARNING + DRAW_PLAYER_COLLAPSE + DRAW_HUD_COLLAPSE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof updateCrumble==="function")updateCrumble();checkLava();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -235,7 +235,7 @@ engineProject: { href: '/downloads/roblox-collapse-scripts.zip', label: 'Downloa
         SETUP_COLLAPSE + PLATFORMS_COLLAPSE + LAVA_FLOOR_COLLAPSE + KEYS_COLLAPSE + RESPAWN_COLLAPSE +
         MOVE_PLAYER_COLLAPSE + LAVA_CHECK_COLLAPSE + CRUMBLE_UPDATE +
         'function draw(){' + DRAW_BG_COLLAPSE + DRAW_LAVA_COLLAPSE + DRAW_PLATFORMS_COLLAPSE + DRAW_CRUMBLE_WARNING + DRAW_PLAYER_COLLAPSE + DRAW_HUD_COLLAPSE + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();updateCrumble();checkLava();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },

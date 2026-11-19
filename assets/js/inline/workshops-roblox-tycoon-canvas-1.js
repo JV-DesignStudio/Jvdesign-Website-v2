@@ -196,7 +196,7 @@ engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label:
       return wrap(CSS_TYCOON, CANVAS_TYCOON,
         SETUP_TYCOON + DROPPER_LOGIC +
         'function draw(){ctx.clearRect(0,0,W,H);' + DRAW_BG_TYCOON + DRAW_DROPPER + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){let now=Date.now();if(now-lastDrop>=dropInterval){lastDrop=now;if(typeof spawnBrick==="function")spawnBrick()}draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -204,7 +204,7 @@ engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label:
       return wrap(CSS_TYCOON, CANVAS_TYCOON,
         SETUP_TYCOON + DROPPER_LOGIC + BRICK_PHYSICS +
         'function draw(){ctx.clearRect(0,0,W,H);' + DRAW_BG_TYCOON + DRAW_PIPE + DRAW_DROPPER + DRAW_COLLECTOR + DRAW_BRICKS + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){let now=Date.now();if(now-lastDrop>=dropInterval){lastDrop=now;spawnBrick()}updateBricks();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -212,7 +212,7 @@ engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label:
       return wrap(CSS_TYCOON, CANVAS_TYCOON,
         SETUP_TYCOON + DROPPER_LOGIC + BRICK_PHYSICS + COLLECT_FUNC +
         'function draw(){ctx.clearRect(0,0,W,H);' + DRAW_BG_TYCOON + DRAW_PIPE + DRAW_DROPPER + DRAW_COLLECTOR + DRAW_BRICKS + DRAW_CASH_HUD + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){let now=Date.now();if(now-lastDrop>=dropInterval){lastDrop=now;spawnBrick()}updateBricks();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -221,7 +221,7 @@ engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label:
         SETUP_TYCOON + DROPPER_LOGIC + BRICK_PHYSICS + COLLECT_FUNC +
         UPGRADE_DEFS + UPGRADE_BTNS +
         'function draw(){ctx.clearRect(0,0,W,H);' + DRAW_BG_TYCOON + DRAW_PIPE + DRAW_DROPPER + DRAW_COLLECTOR + DRAW_BRICKS + DRAW_CASH_HUD + DRAW_UPGRADE_PADS + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'renderUpgradeButtons();' +
         'function loop(){let now=Date.now();let interval=dropInterval;if(now-lastDrop>=interval){lastDrop=now;spawnBrick();if(dropper.double)spawnBrick()}updateBricks();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
@@ -231,7 +231,7 @@ engineProject: { href: '/downloads/roblox-tycoon-workshop-reference.zip', label:
         SETUP_TYCOON + DROPPER_LOGIC + BRICK_PHYSICS + COLLECT_FUNC +
         UPGRADE_DEFS + UPGRADE_BTNS +
         'function draw(){ctx.clearRect(0,0,W,H);' + DRAW_BG_TYCOON + DRAW_PIPE + DRAW_GLOW_EFFECTS + DRAW_DROPPER + DRAW_COLLECTOR + DRAW_BRICKS + DRAW_CASH_HUD + DRAW_UPGRADE_PADS + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'renderUpgradeButtons();' +
         'function loop(){let now=Date.now();if(now-lastDrop>=dropInterval){lastDrop=now;spawnBrick();if(dropper.double)spawnBrick()}updateBricks();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );

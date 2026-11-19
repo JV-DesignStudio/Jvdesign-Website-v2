@@ -173,37 +173,6 @@ window.CW_CONFIG = {
       );
     },
     /* Step 7: Take It Home - shows the learner's mod card in the canvas panel */
-    7: function(u) {
-      var lines = (u || '').split('\n')
-        .map(function(l) { return l.trim(); })
-        .filter(function(l) { return l && l.indexOf('#') !== 0; });
-      var rows = lines.map(function(l) {
-        var parts = l.split(':');
-        var label = parts[0] ? parts[0].trim() : l;
-        var val = parts.slice(1).join(':').trim();
-        return '<tr><td style="color:#ffd166;padding:4px 12px 4px 0;white-space:nowrap">' + label + '</td>' +
-          '<td style="color:#e8eaf2;padding:4px 0">' + (val || '<span style="color:#666">not filled in yet</span>') + '</td></tr>';
-      }).join('');
-      return '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-        '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +
-        'background:linear-gradient(160deg,#16203c 0%,#0f1424 100%);font-family:Fredoka,system-ui,sans-serif;padding:20px}' +
-        '.card{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.28);border-radius:18px;padding:28px 28px 22px;max-width:500px;width:100%}' +
-        'h2{color:#4ade80;margin:0 0 4px;font-size:1.5rem;font-weight:700}' +
-        '.sub{color:#93c5fd;font-size:.88rem;margin:0 0 18px}' +
-        'table{width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:16px}' +
-        '.tip{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:10px;padding:12px 14px;' +
-        'font-size:.82rem;color:#c0c8e0;line-height:1.55}' +
-        '.tip strong{color:#60a5fa;display:block;margin-bottom:4px}' +
-        '</style></head><body>' +
-        '<div class="card">' +
-        '<h2>\uD83C\uDFAE Mod Card - Ready!</h2>' +
-        '<p class="sub">Save or screenshot this. At home, open Godot and make it yours.</p>' +
-        '<table>' + (rows || '<tr><td style="color:#666;font-size:.85rem">Fill in your mod choices in the editor</td></tr>') + '</table>' +
-        '<div class="tip"><strong>At home: open Godot</strong>' +
-        'File - New Project - Add a Node2D scene. Create a script and paste your code from each step. ' +
-        'Then swap in your colours, your theme, your ideas from this card.</div>' +
-        '</div></body></html>';
-    }
   },
 
   steps: [
@@ -463,40 +432,6 @@ window.CW_CONFIG = {
           'GDScript cannot reload pages'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '\uD83C\uDFE0 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and use these choices to make the game yours.',
-      engine: {
-        name: 'Godot 4',
-        file: 'project.godot',
-        intro: 'The starter is already set up. Open the file and work through the step.',
-        do: [
-          'Open the starter in Godot 4.',
-          'Find the code that does: Fill in your Mod Card - change anything you want to make this game yours.',
-          'Add the same code to the scene or script in Godot.',
-          'Run the project and check: Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.'
-        ],
-        check: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.'
-      },
-      checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down.',
-      points: [
-        'Everything you built here runs as real GDScript logic - open Godot and it transfers directly',
-        'In Godot: <strong>File - New Project</strong>, add a <code>Node2D</code> scene, attach a script',
-        'Copy your code from each step into the script - the variable names are the same',
-        'Use the choices on your Mod Card to personalise colours, theme and rules before you build'
-      ],
-      challenge: '\u270F\uFE0F Fill in your Mod Card - change anything you want to make this game yours:',
-      starter: '# My Mod Card\nGame name: ___\nBasket colour: ___\nWhat falls (instead of stars): ___\nTarget score to win: ___\nBackground theme: ___\nOne thing I want to add at home: ___',
-      solution: '# My Mod Card\nGame name: Star Catcher\nBasket colour: purple\nWhat falls (instead of stars): gems\nTarget score to win: 20\nBackground theme: deep space\nOne thing I want to add at home: sound when you catch',
-      checks: [],
-      height: 160,
-      fills: {
-        text: 'At home I will open ___ and paste my code from step ___.',
-        answers: ['Godot', '1']
       }
     }
   ]

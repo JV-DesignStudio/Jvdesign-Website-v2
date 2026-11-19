@@ -16,6 +16,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-gdscript-essentials-canvas',
   downloadName: 'my-godot-gdscript-essentials.html',
   engineProject: { href: '/workshops/godot-lab/projects/gdscript-essentials.zip', label: 'Download the GDScript Essentials starter' },
+  labProject: '/workshops/godot-lab/index.html?project=gdscript-essentials',
   nextStep: { url: '/workshops/godot-tutorial-canvas.html', label: 'Godot Tutorial' },
 
   hints: [

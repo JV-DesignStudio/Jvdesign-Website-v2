@@ -20,8 +20,12 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': mime[path.extname(f)] || 'application/octet-stream' });
   fs.createReadStream(f).pipe(res);
 });
+function isRedirect(file) {
+  const html = fs.readFileSync(path.join(root, 'workshops', file), 'utf8');
+  return /http-equiv="refresh"/.test(html) && /location\.replace/.test(html);
+}
 function committedModStudios() {
-  const all = fs.readdirSync(path.join(root, 'workshops')).filter(f => /-mod-studio\.html$/.test(f)).sort();
+  const all = fs.readdirSync(path.join(root, 'workshops')).filter(f => /-mod-studio\.html$/.test(f)).filter(f => !isRedirect(f)).sort();
   try {
     const tracked = new Set(execSync('git ls-files workshops', { cwd: root }).toString().split(/\r?\n/).filter(Boolean).map(l => l.split('/').pop()));
     const only = all.filter(f => tracked.has(f));

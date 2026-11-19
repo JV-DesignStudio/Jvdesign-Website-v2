@@ -309,7 +309,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
       return wrap(CSS_ADV, CANVAS_ADV,
         SETUP_ADV + ROOMS_BASE + KEYS_ADV +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_PLAYER_ADV + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){if(typeof movePlayer==="function")movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -318,7 +318,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
         SETUP_ADV + ROOMS_BASE + KEYS_ADV +
         MOVE_PLAYER_ADV +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_DOORS + DRAW_PLAYER_ADV + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -327,7 +327,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
         SETUP_ADV + ROOMS_BASE + KEYS_ADV +
         MOVE_PLAYER_ADV +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_DOORS + DRAW_PLAYER_ADV + DRAW_HUD_ADV + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();if(typeof checkDoors==="function")checkDoors();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -336,7 +336,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
         SETUP_ADV + ROOMS_BASE + KEYS_ADV +
         MOVE_PLAYER_ADV + DOOR_CHECK +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_DOORS + DRAW_ITEMS + DRAW_PLAYER_ADV + DRAW_HUD_ADV + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();checkDoors();if(typeof checkItems==="function")checkItems();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -346,7 +346,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
         MOVE_PLAYER_ADV + DOOR_CHECK + ITEM_CHECK +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_DOORS + DRAW_ITEMS + DRAW_NPCS + DRAW_PLAYER_ADV + DRAW_HUD_ADV + '}' +
         NPC_DIALOGUE +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();checkDoors();checkItems();if(typeof checkNPCs==="function")checkNPCs();updateDialogue();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
@@ -355,7 +355,7 @@ engineProject: { href: '/downloads/roblox-adventure-workshop-reference.zip', lab
         SETUP_ADV + ROOMS_BASE + KEYS_ADV +
         MOVE_PLAYER_ADV + DOOR_CHECK + ITEM_CHECK + NPC_DIALOGUE + TOUCH_ADV +
         'function draw(){' + DRAW_BG_ADV + DRAW_WALLS + DRAW_DOORS + DRAW_ITEMS + DRAW_NPCS + DRAW_BOSS + DRAW_PLAYER_ADV + DRAW_HUD_ADV + '}' +
-        'try{' + u + '}catch(e){}' +
+        'try{' + u + '\n}catch(e){}' +
         'function loop(){movePlayer();checkDoors();checkItems();checkNPCs();updateDialogue();if(typeof checkWin==="function")checkWin();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     }

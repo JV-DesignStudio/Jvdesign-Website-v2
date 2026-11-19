@@ -51,6 +51,7 @@ window.CW_CONFIG = {
   storageKey: 'jvds-godot-platformer-canvas',
   downloadName: 'my-godot-platformer.html',
   engineProject: { href: '/workshops/godot-lab/projects/platformer.zip', label: 'Download the 2D Platformer starter' },
+  labProject: '/workshops/godot-lab/index.html?project=platformer',
   nextStep: { url: '/workshops/godot-racing-canvas.html', label: 'Godot Racing' },
 
   hints: [
@@ -158,32 +159,6 @@ window.CW_CONFIG = {
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    7: function(u) {
-      var lines = u.split('\n');
-      var fields = {};
-      lines.forEach(function(l) {
-        var m = l.match(/^([^:]+):\s*(.*)$/);
-        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
-      });
-      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
-        'h2{color:#60a5fa;margin:0 0 12px}' +
-        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
-        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
-        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
-        '.val{color:#f1f5f9;font-weight:bold}' +
-        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #60a5fa;font-size:.82rem;color:#94a3b8}' +
-        '</style>' +
-        '<div class="card"><h2>\uD83C\uDFE0 My Platformer Mod Card</h2>';
-      var order = ['Game name','Player colour','Enemy colour','Number of platforms','Coins to collect','Special move','One thing to add at home'];
-      order.forEach(function(k) {
-        if (fields[k]) {
-          html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
-        }
-      });
-      html += '<div class="tip">\uD83D\uDCA1 At home: open Godot, create a new 2D project, add a CharacterBody2D with a ColorRect child. Paste your movement code from Step 2 and start building!</div></div>';
-      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
-      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div id="out"></div>', '', blob, '');
-    }
   },
 
   steps: [
@@ -333,6 +308,15 @@ window.CW_CONFIG = {
         check: 'The coin disappears and the score goes up by 1.'
       },
       checkpoint: 'Jump up to a coin - it should disappear and the counter in the top-left should go up.',
+      parsons: {
+        prompt: 'Drag the four lines into the order a coin check needs.',
+        lines: [
+          'for i in range(4):',
+          '    if not coins[i].got:',
+          '        coins[i].got = true',
+          '        collected += 1'
+        ]
+      },
       points: [
         'Four coins float above different platforms',
         'Circle-rectangle collision uses distance between centres',
@@ -376,6 +360,14 @@ window.CW_CONFIG = {
         check: 'The enemy walks between its edges and turns around.'
       },
       checkpoint: 'Two red rectangles should be moving back and forth on platforms. Touch one to see game over.',
+      parsons: {
+        prompt: 'Drag the three lines into the order an enemy patrol needs.',
+        lines: [
+          'enemy.x += enemy.dx',
+          'if enemy.x <= enemy.min_x or enemy.x + enemy.w >= enemy.max_x:',
+          '    enemy.dx *= -1'
+        ]
+      },
       points: [
         'Each enemy has a min/max x range and reverses at the edges',
         'Movement: <code>enemy.x += enemy.dx</code> each frame',
@@ -442,40 +434,6 @@ window.CW_CONFIG = {
           'It runs faster with three states'
         ],
         correct: 1
-      }
-    },
-    {
-      num: 7,
-      title: 'Take It Home',
-      activity: '\uD83C\uDFE0 Mod card',
-      goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own platformer.',
-      engine: {
-        name: 'Godot 4',
-        file: 'res://project.godot',
-        intro: 'The whole project is ready to change.',
-        do: [
-          'Download the starter and open project.godot in Godot 4.',
-          'Read the Mod Card choices you saved.',
-          'Change one colour, speed or platform count.',
-          'Press F5 and show someone.'
-        ],
-        check: 'Your own version runs and one thing is different from the guide.'
-      },
-      checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
-      points: [
-        'At home: open Godot and create a new 2D project',
-        'Add a CharacterBody2D node with a ColorRect child for your player',
-        'Paste your movement code from Step 2 into the _physics_process function',
-        'Use your mod card choices to change colours, speed, and add your own twist'
-      ],
-      challenge: '\u270F\uFE0F Fill in your Mod Card - change anything you want to make this game yours:',
-      starter: '# My Platformer Mod Card\nGame name: ___\nPlayer colour: ___\nEnemy colour: ___\nNumber of platforms: ___\nCoins to collect: ___\nSpecial move: ___\nOne thing to add at home: ___',
-      solution: '# My Platformer Mod Card\nGame name: Jump Quest\nPlayer colour: purple\nEnemy colour: orange\nNumber of platforms: 6\nCoins to collect: 5\nSpecial move: double jump\nOne thing to add at home: moving platforms',
-      checks: [],
-      height: 180,
-      fills: {
-        text: 'At home I will open ___ and add my special move: ___.',
-        answers: ['Godot', 'double jump']
       }
     }
   ]
