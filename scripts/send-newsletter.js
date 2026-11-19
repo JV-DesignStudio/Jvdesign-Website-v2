@@ -11,7 +11,7 @@ const vm=require('vm');
 const ROOT=path.resolve(__dirname,'..');
 const DEVLOG=path.join(ROOT,'devlog-data.js');
 const OUT_DIR=path.join(ROOT,'social-posts','queue');
-const MIN_POSTS=3;
+const MIN_POSTS=2;
 const { SITE, siteUrl, primaryHref } = require('./lib/devlog-links');
 
 function parsePosts(src){
@@ -232,12 +232,20 @@ if(isCheck){
 }
 require('fs').mkdirSync(OUT_DIR,{recursive:true});
 const existed=require('fs').existsSync(outPath);
+if(existed && !isForce){
+  console.log(`[newsletter] ${path.relative(ROOT,outPath)} already drafted for ${targetKey} - leaving it alone (use --force to refresh the local file)`);
+  process.exit(0);
+}
 require('fs').writeFileSync(outPath, html);
-console.log(`${existed?'updated':'draft'}: ${path.relative(ROOT,outPath)} for ${targetKey} (${targetPosts.length} posts: ${targetPosts.map(p=>`#${p.id}`).join(', ')})`);
+console.log(`${existed?'refreshed':'draft'}: ${path.relative(ROOT,outPath)} for ${targetKey} (${targetPosts.length} posts: ${targetPosts.map(p=>`#${p.id}`).join(', ')})`);
 const subject=`Studio log: ${targetPosts[0]?.title||'Weekly digest'} (${weekLabel(targetKey)})`;
 (async()=>{
-  const draftId=await createBeehiivDraft(subject, html);
-  if(draftId) console.log(`[beehiiv] broadcast draft created: ${draftId} - review and publish at app.beehiiv.com`);
-  else console.log('[beehiiv] no draft created - open app.beehiiv.com and paste the HTML from '+path.relative(ROOT,outPath));
-  if(!existed) ensureBoardTask(targetPosts, targetKey, `social-posts/queue/${fname}`);
+  if(existed){
+    console.log('[beehiiv] local file refreshed only - the Beehiiv draft was not duplicated. Update or recreate it at app.beehiiv.com if needed.');
+  } else {
+    const draftId=await createBeehiivDraft(subject, html);
+    if(draftId) console.log(`[beehiiv] broadcast draft created: ${draftId} - review and publish at app.beehiiv.com`);
+    else console.log('[beehiiv] no draft created - open app.beehiiv.com and paste the HTML from '+path.relative(ROOT,outPath));
+    ensureBoardTask(targetPosts, targetKey, `social-posts/queue/${fname}`);
+  }
 })();

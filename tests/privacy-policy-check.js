@@ -67,6 +67,8 @@ const HOST_TERMS = {
   'unpkg.com': 'unpkg',
   'cdnjs.cloudflare.com': 'cdnjs',
   'api.open-meteo.com': 'open-meteo',
+  'subscribe-forms.beehiiv.com': 'beehiiv',
+  'api.beehiiv.com': 'beehiiv',
 };
 const SKIP_DIRS = new Set(['node_modules', '.git', '.worktrees', '.claude', 'tmp', 'reports', 'generated-images', 'downloads', 'social-posts', 'quest-board-deploy']);
 const hostFiles = new Map();

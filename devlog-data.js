@@ -6,6 +6,20 @@
 
 const POSTS = [
     {
+        id: 536,
+        date: '19 November 2026',
+        tag: 'site',
+        emoji: '🎨',
+        title: 'The whole crew is on the homepage',
+        excerpt: 'New group artwork puts all five studio characters together at the top of the page, with Echo, Lumo, Pip, Ember and Stardust ready to guide you.',
+        image: '/assets/devlog/536-home-new-crew-art.webp',
+        links: [
+            { label: 'Visit the homepage', href: '/' }
+        ],
+        content: 'The studio homepage has a new piece of artwork at the top. All five characters are together: Echo the pink axolotl, Lumo the purple fox, Pip the green turtle, Ember the pink tiger holding a star wand, and Stardust the golden dream spirit floating above the group. It is the same crew that guides you through every workshop and tool, now standing together so you can see everyone before you start.\n\nThe homepage is a little calmer too, with a clearer space for the crew and one easy first step. Pick a workshop, make your first character, or say hello to the crew at the top of the page.'
+    },
+
+    {
         id: 535,
         date: '12 November 2026',
         tag: 'tools',
@@ -125,6 +139,7 @@ const POSTS = [
         emoji: '🚀',
         title: 'Eleven 3D build projects, now in one friendly home',
         excerpt: 'The 3D builders live in one place, load faster, work better on a phone, and share their models as a ready-to-open bundle.',
+        image: '/assets/devlog/521-workshops-3d-builder.webp',
         links: [
             { label: 'Start building', href: '/workshops/3d-builder.html' },
             { label: 'Try the Voxel Studio', href: '/workshops/voxel-studio.html' }
@@ -139,6 +154,7 @@ const POSTS = [
         emoji: '🧭',
         title: 'A home for every engine, and workshops that cheer you on',
         excerpt: 'New engine hubs gather every workshop for Godot, Scratch, Roblox and more, plus hints, sound, streaks and a new Cyber Defender workshop.',
+        image: '/assets/devlog/520-workshops-engine-godot.webp',
         links: [
             { label: 'See the Godot hub', href: '/workshops/engine-godot.html' },
             { label: 'Play Cyber Defender', href: '/workshops/cyber-security.html' }
@@ -174,6 +190,7 @@ const POSTS = [
         emoji: '🔎',
         title: 'Press Ctrl and K to jump anywhere in the studio',
         excerpt: 'A quick-switcher hops straight to any tool, game or workshop, and the Story Player can now be dropped into other pages and games.',
+        image: '/assets/devlog/445-tools-story-editor.webp',
         links: [
             { label: 'Try the Story Player', href: '/tools/story-player.html' },
             { label: 'Write a story first', href: '/tools/story-editor.html' }
@@ -188,6 +205,7 @@ const POSTS = [
         emoji: '🐍',
         title: 'Stardust Snake arrives, and the arcade gets a polish pass',
         excerpt: 'A classic snake game rebuilt for Stardust, plus smoother first runs and richer scenery across Highway Dodge, Crossy Crew and Nova Siege.',
+        image: '/assets/devlog/444-games-stardust-snake.webp',
         links: [
             { label: 'Play Stardust Snake', href: '/games/stardust-snake.html' },
             { label: 'Browse the arcade', href: '/arcade.html' }
@@ -202,6 +220,7 @@ const POSTS = [
         emoji: '🧰',
         title: 'Save it once, open it anywhere: the tools start talking to each other',
         excerpt: 'A shared save format and a new Minecraft Skin Editor, so your work can move between the Pixel Studio, Sprite Animator, Arcade Game Maker and more.',
+        image: '/assets/devlog/446-tools-pixel-studio.webp',
         links: [
             { label: 'Open the Minecraft Skin Editor', href: '/tools/minecraft-skin-editor.html' },
             { label: 'Open the Pixel Studio', href: '/tools/pixel-studio.html' }
