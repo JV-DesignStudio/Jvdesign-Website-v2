@@ -51,6 +51,10 @@ const known = new Set(workshops.map((w) => w.id));
             overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
             h1: q('h1'), crumbs: q('.hub-crumbs'), lumo: q('.hub-say--lumo'), pip: q('.hub-say--pip'),
             sections: q('[data-hub-section]'), cards: q('.course-card'), installPills: q('.hub-install'),
+            pathSections: q('.hub-path'), primaryCta: q('.hub-cta-primary'),
+            pathSteps: q('.hub-path-card'), nextLinks: q('.hub-path-next-link'),
+            checkpoint: q('[data-engine-check]'),
+            nextHrefs: [...document.querySelectorAll('.hub-path-next-link')].map((a) => a.getAttribute('href')),
             kind: (document.querySelector('meta[name="jvds-kind"]') || {}).content || '',
             canonical: (document.querySelector('link[rel="canonical"]') || {}).getAttribute ? (document.querySelector('link[rel="canonical"]') || {}).href : '',
             hrefs: [...document.querySelectorAll('.course-card')].map((a) => a.getAttribute('href')),
@@ -68,6 +72,15 @@ const known = new Set(workshops.map((w) => w.id));
         assert.equal(info.kind, 'engine-hub', where + ' jvds-kind meta');
         assert.ok(typeof info.canonical === 'string' && info.canonical.includes('/workshops/' + file), where + ' canonical');
         assert.ok(info.jsonldCount >= 2 && info.jsonldBad === 0, where + ' JSON-LD');
+        assert.equal(info.pathSections, 1, where + ' one path section');
+        assert.equal(info.primaryCta, 1, where + ' one primary CTA');
+        assert.equal(info.pathSteps, 3, where + ' three coached steps');
+        assert.equal(info.nextLinks, 2, where + ' two recommended next workshops');
+        assert.equal(info.checkpoint, 1, where + ' progress checkpoint');
+        for (const href of info.nextHrefs) {
+          assert.ok(href && !href.startsWith('#'), where + ' next link is a real page: ' + href);
+          assert.ok(known.has(decodeURIComponent(href).replace(/\.html$/, '')), where + ' next id known: ' + href);
+        }
         for (const href of info.hrefs) {
           assert.ok(href && !href.startsWith('../workshops/') && !href.startsWith('workshops/'), where + ' card does not link back to a workshop: ' + href);
           assert.ok(known.has(decodeURIComponent(href).replace(/\.html$/, '')), where + ' card id known: ' + href);

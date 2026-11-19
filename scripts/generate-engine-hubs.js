@@ -163,6 +163,7 @@ function renderHeroCta(engine) {
 function renderSpotlight(engine) {
   const s = engine.spotlight;
   if (!s || !Array.isArray(s.steps) || !s.steps.length) return '';
+  const pathId = engine.id + '-path';
   const steps = s.steps.map((step, i) => {
     return '      <li class="hub-path-card">\n'
       + '        <span class="hub-path-num" aria-hidden="true">' + esc(step.num || (i + 1)) + '</span>\n'
@@ -175,13 +176,25 @@ function renderSpotlight(engine) {
       + '        </div>\n'
       + '      </li>';
   }).join('\n');
-  return '  <section class="hub-path" id="godot-path" aria-labelledby="s-path">\n'
+  const next = Array.isArray(s.next) && s.next.length
+    ? '    <div class="hub-path-next">\n'
+      + '      <h3>' + esc(s.nextTitle || 'Two good next builds') + '</h3>\n'
+      + '      <div class="hub-path-next-grid">\n'
+      + s.next.slice(0, 2).map((n) => '        <a class="hub-path-next-link" href="' + esc(n.href) + '">\n'
+        + '          <span class="hub-path-next-label">' + esc(n.label) + '</span>\n'
+        + (n.text ? '          <span class="hub-path-next-text">' + esc(n.text) + '</span>\n' : '')
+        + '        </a>').join('\n')
+      + '\n      </div>\n'
+      + '    </div>\n'
+    : '';
+  return '  <section class="hub-path" id="' + esc(pathId) + '" aria-labelledby="s-path">\n'
     + '    <div class="hub-path-head">\n'
     + '      <p class="hub-path-kicker">' + esc(s.kicker || 'Your path') + '</p>\n'
     + '      <h2 id="s-path">' + esc(s.title) + '</h2>\n'
     + '      <p class="hub-path-sub">' + esc(s.blurb) + '</p>\n'
     + '    </div>\n'
     + '    <ol class="hub-path-grid">\n' + steps + '\n    </ol>\n'
+    + next
     + (s.note ? '    <p class="hub-path-note">' + esc(s.note) + '</p>\n' : '')
     + '  </section>';
 }
@@ -402,6 +415,13 @@ function renderPage(engine, byId) {
 .hub-path-body p{margin:6px 0 10px;font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
 .hub-path-cta{display:inline-flex;align-items:center;gap:4px;font-size:.86rem;font-weight:800;color:var(--teal-dk);text-decoration:none}
 .hub-path-cta:hover,.hub-path-cta:focus-visible{text-decoration:underline}
+.hub-path-next{max-width:960px;margin:18px auto 0;padding:16px 18px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:14px}
+.hub-path-next h3{margin:0 0 10px;font-family:Fredoka,'Baloo 2',cursive;font-size:1.05rem;color:var(--text-primary)}
+.hub-path-next-grid{display:grid;gap:10px}
+.hub-path-next-link{display:block;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border-lt);background:var(--card);text-decoration:none}
+.hub-path-next-link:hover,.hub-path-next-link:focus-visible{border-color:var(--teal)}
+.hub-path-next-label{display:block;font-size:.9rem;font-weight:800;color:var(--teal-dk)}
+.hub-path-next-text{display:block;margin-top:3px;font-size:.82rem;line-height:1.45;color:var(--text-secondary)}
 .hub-path-note{max-width:760px;margin:12px auto 0;text-align:center;font-size:.82rem;line-height:1.5;color:var(--text-secondary)}
 .hub-library-head{max-width:1100px;margin:32px auto 0;padding:0 20px;text-align:center}
 .hub-library-head h2{margin:0 0 4px;font-family:Fredoka,'Baloo 2',cursive;font-size:clamp(1.3rem,3vw,1.6rem);color:var(--text-primary)}
@@ -533,7 +553,7 @@ ${legacyCss ? legacyCss + '\n' : ''}.hub-checkpoint{max-width:820px;margin:18px 
 .hp-skill input{flex:0 0 auto;width:18px;height:18px;margin-top:2px;accent-color:var(--teal-dk)}
 .hp-next{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--border-lt);font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
 .hp-next a{font-weight:800;color:var(--teal-dk)}
-${readinessCss ? readinessCss + '\n' : ''}${spotlightCss ? '@media(min-width:820px){.hub-path-grid{grid-template-columns:repeat(3,1fr)}}\n' : ''}@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}${spotlightCss ? '.hub-cta-primary,.hub-cta-secondary{width:100%}.hub-path-card{padding:14px}.hub-path-num{flex-basis:34px;width:34px;height:34px;font-size:1rem}' : ''}}
+${readinessCss ? readinessCss + '\n' : ''}${spotlightCss ? '@media(min-width:820px){.hub-path-grid{grid-template-columns:repeat(3,1fr)}.hub-path-next-grid{grid-template-columns:1fr 1fr}}\n' : ''}@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}${spotlightCss ? '.hub-cta-primary,.hub-cta-secondary{width:100%}.hub-path-card{padding:14px}.hub-path-num{flex-basis:34px;width:34px;height:34px;font-size:1rem}' : ''}}
 </style>
 ${jsonld}
 </head>
@@ -559,7 +579,7 @@ ${heroCta}    ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote
   </section>
 
 ${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
-${spotlight ? '\n' + spotlight + '\n' : ''}${spotlight && godotLab ? godotLab + '\n\n' : ''}${spotlight ? say('pip', engine) + '\n\n' : ''}
+${spotlight ? '\n' + spotlight + '\n' : ''}${spotlight && checkpoint ? checkpoint + '\n' : ''}${spotlight && godotLab ? godotLab + '\n\n' : ''}${spotlight ? say('pip', engine) + '\n\n' : ''}
 ${ladder}
 
 ${spotlight ? '' : checkpoint}
@@ -569,7 +589,7 @@ ${readiness ? readiness + '\n\n' : ''}${renderLibraryHead(engine)}${filterBar}
   <div class="hub-body">
 ${renderSections(engine, byId, mixedInstall)}
   </div>
-${spotlight ? '\n' + checkpoint + '\n' : ''}${!spotlight && godotLab ? '\n' + godotLab + '\n' : ''}
+${!spotlight && godotLab ? '\n' + godotLab + '\n' : ''}
   <p class="hub-foot">Everything else, plus every other engine, lives in the <a href="/workshop">full workshop hub</a>. ${esc(engine.install)}</p>
 </main>
 
