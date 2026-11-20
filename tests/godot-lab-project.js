@@ -41,6 +41,7 @@ const server = http.createServer((req, res) => {
       { label: '?project=godot-tutorial', query: '?project=godot-tutorial', phone: true, zip: 'projects/godot-tutorial.zip', download: 'star-collector-godot.zip', title: 'Star Collector' },
       { label: '?project=platformer', query: '?project=platformer', phone: true, zip: 'projects/platformer.zip', download: '2d-platformer.zip', title: '2D Platformer' },
       { label: '?project=gatekeeper-1', query: '?project=gatekeeper-1', phone: true, zip: 'projects/gatekeeper-1.zip', download: 'who-goes-there-part1.zip', title: 'Who Goes There? Part 1' },
+      { label: '?project=traffic-dash', query: '?project=traffic-dash', phone: true, zip: 'projects/traffic-dash.zip', download: 'traffic-dash.zip', title: 'Traffic Dash' },
       { label: 'narrow desktop', query: '?project=platformer', phone: false, width: 760, zip: 'projects/platformer.zip', download: '2d-platformer.zip', title: '2D Platformer' }
     ];
     for (const c of cases) {

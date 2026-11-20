@@ -54,7 +54,7 @@ function check(name, ok, detail = '') {
   check('starters group', groups.has('starters'));
   check('templates group', groups.has('templates'));
   check('workshops group', groups.has('workshops'));
-  for (const title of ['2D Platformer', 'Asteroids', 'Space Invaders', 'Tower Defence', 'Zoom Zoom Racing', 'Jump Jump Platformer', 'Bang Bang Shooter', 'Fairy Survivors', 'Barrel Blast', 'Pixel Quest', 'GDScript Essentials', 'Low-Poly Rally', 'Night Watch', 'Who Goes There? Part 1']) {
+  for (const title of ['2D Platformer', 'Asteroids', 'Space Invaders', 'Tower Defence', 'Zoom Zoom Racing', 'Traffic Dash', 'Jump Jump Platformer', 'Bang Bang Shooter', 'Fairy Survivors', 'Barrel Blast', 'Pixel Quest', 'GDScript Essentials', 'Low-Poly Rally', 'Night Watch', 'Who Goes There? Part 1']) {
     check('library has ' + title, titles.has(title));
   }
 
