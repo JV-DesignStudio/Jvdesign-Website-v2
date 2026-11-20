@@ -63,6 +63,15 @@ const server = http.createServer((req, res) => {
     const cards = await page.$$eval('.ws-kit-remix .ws-kit-card', (els) => els.map((e) => e.textContent.trim()));
     check('make-it-yours shows three prompts', cards.length === 3, cards.join(' | '));
 
+    check('finish card offers the remix entry', await page.$('#finishBanner .ws-kit-finish-remix, .ws-finish .ws-kit-finish-remix') !== null);
+    await page.evaluate(() => document.querySelector('.ws-kit-finish-remix').click());
+    const finishRemix = await page.evaluate(() => {
+      const panel = document.querySelector('.ws-kit-remix');
+      const tab = document.querySelector('.ws-kit-tab[data-track="remix"]');
+      return { panel: !!panel && getComputedStyle(panel).display !== 'none', selected: tab && tab.getAttribute('aria-selected') === 'true' };
+    });
+    check('finish remix opens the three changes', finishRemix.panel && finishRemix.selected, JSON.stringify(finishRemix));
+
     await clickTab('browser');
     const frame = await page.$eval('.ws-kit-frame iframe', (f) => f.getAttribute('src')).catch(() => '');
     check('browser track mounts the studio', /blender-mod-studio\.html/.test(frame) && /kit=embed/.test(frame), frame);
@@ -79,6 +88,32 @@ const server = http.createServer((req, res) => {
     }
     check('no page errors on the engine workshop', errors.length === 0, errors.slice(0, 3).join(' | '));
 
+    check('guide mode button sits in the kit bar', await page.$('.ws-kit-bar .ws-kit-guide') !== null);
+    await page.evaluate(() => document.querySelector('.ws-kit-guide').click());
+    check('guide mode toggles on', await page.evaluate(() => document.body.classList.contains('ws-guide-mode')));
+    const chromeHidden = await page.evaluate(() => {
+      const hidden = (sel) => {
+        const node = document.querySelector(sel);
+        return !node || getComputedStyle(node).display === 'none';
+      };
+      return hidden('.site-header') && hidden('.site-footer') && hidden('.hero');
+    });
+    check('guide mode hides the header, hero and footer', chromeHidden);
+    const stepsVisible = await page.evaluate(() => {
+      const step = document.querySelector('.step-card');
+      return !!step && getComputedStyle(step).display !== 'none';
+    });
+    check('guide mode keeps the steps visible', stepsVisible);
+    const guideWidth = await page.evaluate(() => document.querySelector('main').getBoundingClientRect().width);
+    check('guide mode keeps a readable column', guideWidth > 320 && guideWidth <= 1121, 'width ' + Math.round(guideWidth));
+    check('guide mode is saved per device', (await page.evaluate(() => localStorage.getItem('jvds_guide_mode'))) === '1');
+
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('.ws-kit', { timeout: 8000 }).catch(() => {});
+    check('guide mode persists after reload', await page.evaluate(() => document.body.classList.contains('ws-guide-mode')));
+    await page.evaluate(() => document.querySelector('.ws-kit-guide').click());
+    check('guide mode can be turned off', !(await page.evaluate(() => document.body.classList.contains('ws-guide-mode'))));
+
     await page.setViewport({ width: 1280, height: 900 });
     await page.goto(base + '/workshops/js-snake-workshop.html', { waitUntil: 'load' });
     await page.waitForSelector('.ws-kit', { timeout: 8000 }).catch(() => {});
@@ -91,6 +126,19 @@ const server = http.createServer((req, res) => {
     await clickTab('remix');
     const snakeCards = await page.$$eval('.ws-kit-remix .ws-kit-card', (els) => els.length);
     check('browser workshop still gets three remix prompts', snakeCards === 3, 'got ' + snakeCards);
+
+    await page.evaluate(() => document.querySelector('.ws-kit-remix .ws-kit-card button').click());
+    await new Promise((r) => setTimeout(r, 900));
+    const remixStep = await page.evaluate(() => {
+      const opened = document.querySelector('.cw-step.cw-open');
+      const active = document.activeElement;
+      return {
+        openCount: document.querySelectorAll('.cw-step.cw-open').length,
+        focused: !!(opened && active && opened.contains(active))
+      };
+    });
+    check('remix prompt jumps to a step', remixStep.openCount >= 1, 'open steps ' + remixStep.openCount);
+    check('remix prompt focuses the step editor', remixStep.focused);
   } finally {
     await browser.close();
     server.close();

@@ -20,8 +20,10 @@
   if (!slug || HUB_SLUGS[slug]) return;
 
   var STORE = 'jvds_kit_track:' + slug;
+  var GUIDE_STORE = 'jvds_guide_mode';
   var current = null;
   var bar = null;
+  var guideBtn = null;
   var panels = {};
   var hidden = [];
   var lastRemix = -1;
@@ -62,6 +64,18 @@
     '.ws-kit-card p{margin:0 0 10px;font-size:.84rem;line-height:1.5;color:var(--charcoal-lt,#5a5449)}',
     '[data-theme="dark"] .ws-kit-card p{color:rgba(240,234,214,.65)}',
     '.ws-kit-card button{border:0;border-radius:8px;padding:9px 12px;font:inherit;font-size:.78rem;font-weight:800;background:var(--teal-dk,#4e7d80);color:#fff;cursor:pointer;min-height:40px}',
+    '.ws-kit-tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1 1 auto}',
+    '.ws-kit-guide{margin-left:auto;min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1.5px solid rgba(64,59,51,.18);background:transparent;color:var(--charcoal,#1a1208);font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;white-space:nowrap}',
+    '[data-theme="dark"] .ws-kit-guide{color:#f5efe0;border-color:rgba(240,234,214,.2)}',
+    '.ws-kit-guide:hover{border-color:rgba(112,163,167,.55)}',
+    '.ws-kit-guide[aria-pressed="true"]{background:var(--teal-dk,#4e7d80);border-color:var(--teal-dk,#4e7d80);color:#fff}',
+    '.ws-kit-finish-remix{margin:12px 0 0;border:1.5px solid rgba(112,163,167,.4);border-radius:10px;padding:10px 14px;font:inherit;font-size:.85rem;font-weight:800;background:rgba(112,163,167,.1);color:var(--charcoal,#1a1208);cursor:pointer;min-height:44px}',
+    '[data-theme="dark"] .ws-kit-finish-remix{color:#f5efe0}',
+    '.ws-kit-finish-remix:hover{border-color:rgba(112,163,167,.75)}',
+    'body.ws-guide-mode .site-header,body.ws-guide-mode .site-footer,body.ws-guide-mode .breadcrumb,body.ws-guide-mode .series-strip,body.ws-guide-mode #workshop-offline-badge,body.ws-guide-mode .hero,body.ws-guide-mode .ws-outcome,body.ws-guide-mode .ws-path,body.ws-guide-mode .ws-stuck,body.ws-guide-mode .ws-firstwin,body.ws-guide-mode .ws-cta,body.ws-guide-mode .stats-bar,body.ws-guide-mode .needs-strip,body.ws-guide-mode .next-route,body.ws-guide-mode .js-series-nav,body.ws-guide-mode .tool-callout,body.ws-guide-mode .ws-kit-cover{display:none!important}',
+    'body.ws-guide-mode main,body.ws-guide-mode .workshop{max-width:1120px;margin-left:auto;margin-right:auto}',
+    'body.ws-guide-mode .workshop,body.ws-guide-mode .ws-progress{padding-left:20px;padding-right:20px}',
+    'body.ws-guide-mode .ws-kit{margin-top:14px}',
     'body.ws-kit-hide-engine .ws-kit-hide{display:none!important}',
     '@media(max-width:520px){.ws-kit-tab{flex:1 1 auto;justify-content:center}.ws-kit-frame iframe{height:65vh}}'
   ].join('');
@@ -80,6 +94,23 @@
 
   function readTrack() {
     try { return localStorage.getItem(STORE) || 'engine'; } catch (e) { return 'engine'; }
+  }
+
+  function isGuide() {
+    try { return localStorage.getItem(GUIDE_STORE) === '1'; } catch (e) { return false; }
+  }
+
+  function applyGuide(on, fromUser) {
+    document.body.classList.toggle('ws-guide-mode', !!on);
+    if (guideBtn) {
+      guideBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      guideBtn.textContent = on ? 'Exit guide mode' : 'Guide mode';
+      guideBtn.title = on ? 'Show the full page again' : 'Hide the page around the steps for a second screen';
+    }
+    try { localStorage.setItem(GUIDE_STORE, on ? '1' : '0'); } catch (e) {}
+    if (on && fromUser) {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+    }
   }
 
   function collectEngineContent(anchor) {
@@ -223,6 +254,105 @@
     inner.insertBefore(fig, inner.firstChild);
   }
 
+  var REMIX_KEYS = {
+    speed: ['speed', 'gravity', 'jump', 'velocity', 'force', 'move'],
+    slow: ['speed', 'gravity', 'jump', 'velocity', 'force', 'move'],
+    fast: ['speed', 'gravity', 'jump', 'velocity', 'force', 'move'],
+    look: ['colour', 'color', 'draw', 'style', 'sprite', 'texture', 'background'],
+    colour: ['colour', 'color', 'material', 'texture', 'paint'],
+    shape: ['shape', 'mesh', 'part', 'extrude', 'block'],
+    rule: ['rule', 'value', 'number', 'score', 'timer', 'lives', 'if'],
+    item: ['item', 'block', 'recipe', 'enemy', 'level', 'sound'],
+    yours: ['share', 'export', 'save', 'finish', 'done']
+  };
+
+  function remixKeys(r) {
+    if (r && r.keys && r.keys.length) return r.keys;
+    var text = ((r && r.title) || '') + ' ' + ((r && r.body) || '');
+    text = text.toLowerCase();
+    var out = [];
+    Object.keys(REMIX_KEYS).forEach(function (word) {
+      if (text.indexOf(word) >= 0) out = out.concat(REMIX_KEYS[word]);
+    });
+    return out.length ? out : REMIX_KEYS.yours;
+  }
+
+  function stepNodes() {
+    var list = [].slice.call(document.querySelectorAll('#stepsPanel .cw-step, .cw-step, .step-card, [data-step]'));
+    var seen = [];
+    return list.filter(function (n) {
+      if (seen.indexOf(n) >= 0) return false;
+      seen.push(n);
+      return true;
+    });
+  }
+
+  function findRemixStep(r) {
+    var keys = remixKeys(r);
+    var best = null;
+    var bestScore = 0;
+    stepNodes().forEach(function (node) {
+      var text = (node.textContent || '').toLowerCase();
+      var score = keys.reduce(function (sum, key) {
+        return sum + (text.indexOf(key) >= 0 ? 1 : 0);
+      }, 0);
+      if (!score) return;
+      if (node.classList.contains('active') || node.classList.contains('cw-open') || node.classList.contains('open')) score += 0.5;
+      if (node.classList.contains('locked')) score -= 0.25;
+      if (score > bestScore) { bestScore = score; best = node; }
+    });
+    return best;
+  }
+
+  function focusStepEditor(step) {
+    var field = step.querySelector(
+      '.cw-editor:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), input[type="text"]:not([disabled]), [contenteditable="true"]'
+    );
+    if (!field) field = step.querySelector('.cw-editor, textarea, input[type="text"], button');
+    if (!field) return;
+    setTimeout(function () {
+      try { field.focus({ preventScroll: true }); } catch (e) { try { field.focus(); } catch (e2) {} }
+    }, 350);
+  }
+
+  function revealRemixStep(step) {
+    if (!step) return false;
+    document.body.classList.remove('ws-kit-hide-engine');
+    if (step.classList.contains('cw-step')) {
+      if (!step.classList.contains('cw-open')) {
+        var toggle = step.querySelector('.cw-step-toggle');
+        if (toggle) toggle.click();
+        else step.classList.add('cw-open');
+      }
+    } else {
+      if (!step.classList.contains('open')) {
+        var head = step.querySelector('.step-header');
+        if (head) head.click();
+        step.classList.remove('closed');
+        step.classList.add('open');
+      }
+    }
+    step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    step.classList.add('ws-kit-flash');
+    setTimeout(function () { step.classList.remove('ws-kit-flash'); }, 2600);
+    focusStepEditor(step);
+    return true;
+  }
+
+  function addFinishRemixButton(kit) {
+    var target = document.querySelector('.ws-finish, #finishBanner');
+    if (!target || target.querySelector('.ws-kit-finish-remix')) return;
+    var btn = el('button', 'ws-kit-finish-remix', 'Make it yours: three changes');
+    btn.type = 'button';
+    btn.title = 'Open three changes that make the project your own';
+    btn.addEventListener('click', function () {
+      setState('remix');
+      var barNode = document.querySelector('.ws-kit');
+      if (barNode) barNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    target.appendChild(btn);
+  }
+
   function buildRemixPanel(kit) {
     var wrap = el('div', 'ws-kit-panel');
     var grid = el('div', 'ws-kit-remix');
@@ -239,16 +369,18 @@
         lastRemix = i;
         note.textContent = r.title + ': ' + r.body;
         note.hidden = false;
+        var step = findRemixStep(r);
+        if (step && revealRemixStep(step)) return;
         if (kit.browser && !kit.browser.self) {
           if (panels.browser && panels.browser.note) {
             panels.browser.note.textContent = 'Your change: ' + r.title + '. ' + r.body;
             panels.browser.note.hidden = false;
           }
           setState('browser');
-        } else {
-          var target = document.querySelector('canvas, #app, #bsHost, .studio, .builder, .cw-canvas-panel');
-          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
         }
+        var target = document.querySelector('canvas, #app, #bsHost, .studio, .builder, .cw-canvas-panel');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
       card.appendChild(btn);
       grid.appendChild(card);
@@ -291,9 +423,10 @@
   function buildBar(kit) {
     var wrap = el('div', 'ws-kit');
     var barEl = el('div', 'ws-kit-bar');
-    barEl.setAttribute('role', 'tablist');
-    barEl.setAttribute('aria-label', 'How to make this');
-    barEl.appendChild(el('span', 'ws-kit-label', 'Make it'));
+    var tabsEl = el('div', 'ws-kit-tabs');
+    tabsEl.setAttribute('role', 'tablist');
+    tabsEl.setAttribute('aria-label', 'How to make this');
+    tabsEl.appendChild(el('span', 'ws-kit-label', 'Make it'));
 
     function tab(track, text, title) {
       var b = el('button', 'ws-kit-tab', text);
@@ -303,7 +436,7 @@
       b.setAttribute('aria-selected', 'false');
       if (title) b.title = title;
       b.addEventListener('click', function () { setState(track); });
-      barEl.appendChild(b);
+      tabsEl.appendChild(b);
       return b;
     }
 
@@ -318,6 +451,16 @@
     }
     tab('remix', 'Make it yours', 'Three changes that make it your own');
 
+    guideBtn = el('button', 'ws-kit-guide', 'Guide mode');
+    guideBtn.type = 'button';
+    guideBtn.setAttribute('aria-pressed', 'false');
+    guideBtn.title = 'Hide the page around the steps for a second screen';
+    guideBtn.addEventListener('click', function () {
+      applyGuide(!document.body.classList.contains('ws-guide-mode'), true);
+    });
+
+    barEl.appendChild(tabsEl);
+    barEl.appendChild(guideBtn);
     wrap.appendChild(barEl);
     panels.wrap = el('div');
     wrap.appendChild(panels.wrap);
@@ -351,6 +494,8 @@
     if (track === 'see' && !panels.see) track = 'engine';
     if (track === 'remix' && !panels.remix) track = 'engine';
     setState(track);
+    applyGuide(isGuide(), false);
+    addFinishRemixButton(kit);
   }
 
   fetch('/content/workshop-kits.json', { cache: 'no-store' })
