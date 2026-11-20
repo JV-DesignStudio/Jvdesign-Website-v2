@@ -262,6 +262,7 @@ var CANVAS_STUDIO_MAP = {
 (function() {
 
 var CFG = window.CW_CONFIG;
+var stepImageMap = null;
 if (!CFG) return;
 
 var STEPS = CFG.steps;
@@ -1456,6 +1457,7 @@ function renderSteps() {
       // focus as it does everywhere else on the page. Indentation uses spaces.
     }
   });
+  if (stepImageMap) injectStepImages(stepImageMap);
 }
 
 var BLANK_PLACEHOLDER = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
@@ -2609,6 +2611,50 @@ function mountVersionNotice() {
   panel.insertBefore(note, panel.firstChild);
 }
 
+/* A3103: expected-result images captured by scripts/capture-workshop-steps.js.
+   The engine fetches the manifest once and drops the picture beside the step
+   description, so a learner can compare their own screen without leaving. */
+function cwPageSlug() {
+  return (location.pathname.split('/').pop() || '').replace(/\.html?$/i, '');
+}
+
+function injectStepImages(map) {
+  Object.keys(map).forEach(function (num) {
+    var card = document.getElementById('card-' + num);
+    if (!card || card.querySelector('.cw-expect-img')) return;
+    var fig = document.createElement('figure');
+    fig.className = 'cw-expect-img';
+    var img = document.createElement('img');
+    img.src = map[num];
+    img.alt = 'What your game should look like after step ' + num;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.width = 480;
+    img.height = 320;
+    var cap = document.createElement('figcaption');
+    cap.textContent = 'What your game should look like after step ' + num;
+    fig.appendChild(img);
+    fig.appendChild(cap);
+    var anchor = card.querySelector('.cw-expect');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(fig, anchor.nextSibling);
+    else card.appendChild(fig);
+  });
+}
+
+function loadStepImages() {
+  if (typeof fetch !== 'function') return;
+  var slug = cwPageSlug();
+  fetch('/content/workshop-step-images.json', { cache: 'force-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) {
+      var map = data && data.series && data.series[slug];
+      if (!map) return;
+      stepImageMap = map;
+      injectStepImages(map);
+    })
+    .catch(function () {});
+}
+
 /* Init */
 ensureLiveStyle();
 loadState();
@@ -2616,6 +2662,7 @@ courseStartedAt = Date.now();
 ensureProgressStrip();
 ensureStageTools();
 renderSteps();
+loadStepImages();
 mountVersionNotice();
 updateCanvas();
 var cwFrame = document.getElementById('gameFrame');
