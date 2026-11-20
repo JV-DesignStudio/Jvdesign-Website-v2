@@ -97,9 +97,9 @@ function renderSetup(){
     <span class="fbg" style="bottom:18%;left:14%;--size:1.8rem;--dur:8s;--delay:2s;--ty:-12px;--rot:8deg">⭐</span>
     <span class="fbg" style="bottom:22%;right:12%;--size:2rem;--dur:6s;--delay:.5s;--ty:-18px;--rot:-14deg">⭐</span>
     <div style="position:relative;z-index:1">
-      <p class="hero-eyebrow">Teacher Tool</p>
+      <p class="hero-eyebrow">Family Quiz</p>
       <h2 class="hero-title"><span class="accent2">Quiz</span> <span class="accent">Quest</span></h2>
-      <p class="hero-sub">Build a classroom quiz, share it with students, and review printed results  all in one place.</p>
+      <p class="hero-sub">Build a quiz for your family, share it with your child, and review the results all in one place.</p>
     </div>
   </div>
   <div class="page-wrap">
@@ -119,7 +119,7 @@ function renderSetup(){
       <span class="section-tag">⭐ Custom Quiz Builder</span>
       <div style="margin-bottom:18px">
         <label class="field-label">Quiz Title</label>
-        <input class="form-input" id="quizTitle" value="${esc(title)}" placeholder="e.g. Year 6 Science Review" style="font-size:16px">
+        <input class="form-input" id="quizTitle" value="${esc(title)}" placeholder="e.g. Space and Planets Quiz" style="font-size:16px">
       </div>
       <label class="field-label">Number of Questions: <span style="color:var(--rose);font-family:'Fredoka',cursive;font-size:20px">${numQ}</span></label>
       <input type="range" id="numQSlider" min="5" max="25" value="${numQ}" style="width:100%;accent-color:var(--rose);margin:8px 0 4px">
@@ -143,18 +143,18 @@ function renderSetup(){
         <div class="ans-field wrong"><label class="field-label red" style="font-size:.65rem;margin-bottom:4px">✗ Wrong Answer 3</label><input data-qi="${i}" data-field="wrong3" value="${esc(q.wrong3)}" placeholder="Wrong 3..."></div>
       </div>
       <label class="field-label blue" style="font-size:.65rem;margin-bottom:4px">💡 Learning Fact (shown when wrong optional)</label>
-      <textarea class="form-textarea" data-qi="${i}" data-field="fact" rows="2" placeholder="Share a fun fact to help students learn from the mistake...">${esc(q.fact)}</textarea>
+      <textarea class="form-textarea" data-qi="${i}" data-field="fact" rows="2" placeholder="Share a fun fact to help young makers learn from the mistake...">${esc(q.fact)}</textarea>
     </div>`).join("")}
     <div id="setupError"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn-teal" id="previewBtn" style="flex:1;min-width:140px;font-size:1rem">👁️ Preview Quiz</button>
-      <button class="btn-primary" id="linkBtn" style="flex:2;min-width:200px;font-size:1rem">🔗 Get Student Link</button>
+      <button class="btn-primary" id="linkBtn" style="flex:2;min-width:200px;font-size:1rem">🔗 Get Play Link</button>
     </div>
     <div id="linkPanel" style="display:none;margin-top:16px;background:var(--teal-lt);border:2px solid var(--teal-dk);border-radius:14px;padding:20px 22px">
-      <p style="font-family:'Fredoka',cursive;font-size:16px;color:var(--teal-dk);margin-bottom:10px">✅ Quiz ready! Share this link with your students:</p>
+      <p style="font-family:'Fredoka',cursive;font-size:16px;color:var(--teal-dk);margin-bottom:10px">✅ Quiz ready! Share this link with your child:</p>
       <input id="studentUrl" readonly style="width:100%;background:white;border:1.5px solid var(--teal-dk);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'Inter',sans-serif;color:var(--charcoal);margin-bottom:10px">
       <button class="btn-teal btn-block" id="copyLinkBtn">📋 Copy Link</button>
-      <p id="linkCopyConfirm" style="display:none;text-align:center;margin-top:8px;font-size:13px;font-weight:600;color:var(--teal-dk)">✓ Copied! Send that link to your students.</p>
+      <p id="linkCopyConfirm" style="display:none;text-align:center;margin-top:8px;font-size:13px;font-weight:600;color:var(--teal-dk)">✓ Copied! Send that link to your child.</p>
     </div>
   </div>`;
 }
@@ -421,13 +421,13 @@ function launchQuiz(preview){
   const studentUrl=window.location.href.split('?')[0]+'?q='+encoded;
 
   if(preview){
-    // Teacher wants to play through it themselves
+    // Grown-up wants to play through it themselves
     history.replaceState(null,'',window.location.pathname+'?q='+encoded);
     state.quizData=quizData;
     state.view="name";
     render();
   } else {
-    // Just show the link, teacher stays on setup
+    // Just show the link, grown-up stays on setup
     const panel=document.getElementById("linkPanel");
     const input=document.getElementById("studentUrl");
     if(panel&&input){

@@ -235,7 +235,7 @@ window.JVDS_GAMES = [
   {
     "id": "critter-whack",
     "thumb": "assets/game-thumbs/critter-whack.webp",
-    "cat": "Classroom Activity",
+    "cat": "Family Activity",
     "classroom": true,
     "file": "critter-whack.html",
     "title": "Critter Whack: Ranger Sort",

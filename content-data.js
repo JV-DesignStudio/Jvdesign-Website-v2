@@ -1510,7 +1510,7 @@ window.JVDS_CONTENT = {
     {
       "id": "godot-racing-workshop",
       "title": "Build a Racing Game in Godot: Free Beginner Tutorial",
-      "desc": "Build a top-down racing game in Godot from scratch. Free step-by-step beginner tutorial for home and classroom. No experience needed.",
+      "desc": "Build a top-down racing game in Godot from scratch. Free step-by-step beginner tutorial for home and family. No experience needed.",
       "engine": "Godot",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -4495,7 +4495,7 @@ window.JVDS_CONTENT = {
       "title": "Critter Whack: Ranger Sort",
       "tag": "Reaction · Sorting",
       "emoji": "🐹",
-      "category": "Classroom Activity",
+      "category": "Family Activity",
       "cover": "CritterWhackCover.webp",
       "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
       "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
@@ -5739,7 +5739,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-20T10:24:18.000Z",
+    "generated": "2026-11-20T11:45:38.000Z",
     "workshops": 286,
     "games": 16,
     "tools": 50,
