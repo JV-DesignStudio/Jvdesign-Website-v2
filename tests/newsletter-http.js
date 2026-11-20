@@ -28,6 +28,9 @@ check('CSP allows the Beehiiv form frame', /frame-src[^;]*subscribe-forms\.beehi
 check('page embeds the Beehiiv form', /subscribe-forms\.beehiiv\.com\/v3\/loader\.js/.test(newsletterHtml) && /data-beehiiv-form=/.test(newsletterHtml));
 check('embed is widened past the Beehiiv gutter', /#beehiiv-embed iframe\{[^}]*calc\(100% \+ 160px\)/.test(newsletterHtml));
 check('no Formspree signup form on the newsletter page', !/id="nlForm"/.test(newsletterHtml));
+check('page ships a fallback for a blocked embed', /id="nlFallback"/.test(newsletterHtml) && /id="nlFallbackEmail"/.test(newsletterHtml));
+check('fallback offers the direct Beehiiv form', /nlFallback[\s\S]*?subscribe-forms\.beehiiv\.com\/v3\/forms\//.test(newsletterHtml));
+check('fallback email form posts to Formspree', /id="nlFallbackForm"[^>]*action="https:\/\/formspree\.io\//.test(newsletterHtml));
 
 (async()=>{
   const server = http.createServer((req,res)=>{
@@ -89,9 +92,44 @@ check('no Formspree signup form on the newsletter page', !/id="nlForm"/.test(new
       } catch (e) {}
     }
     check('Beehiiv email field usable at 390', inputWidth === 0 || inputWidth > 150, String(inputWidth));
+    await new Promise(r=>setTimeout(r,300));
+    const fallbackHidden = await page.evaluate(()=>{
+      const f = document.getElementById('nlFallback');
+      return !f || getComputedStyle(f).display === 'none';
+    });
+    check('fallback hides once the embed loads', fallbackHidden);
   } else {
     console.log('SKIP Beehiiv iframe checks (offline or blocked)');
   }
+
+  // A3157: block the third-party embed the way an ad-blocker or school filter
+  // would, then prove the signup is still possible.
+  const blocked = await browser.newPage();
+  await blocked.setRequestInterception(true);
+  blocked.on('request', req => req.url().includes('subscribe-forms.beehiiv.com') ? req.abort() : req.continue());
+  await blocked.setViewport({width:390,height:844,isMobile:true});
+  await blocked.goto(BASE+'newsletter.html#signup', {waitUntil:'domcontentloaded', timeout:30000});
+  await new Promise(r=>setTimeout(r,900));
+  const fallback = await blocked.evaluate(()=>{
+    const box = document.getElementById('nlFallback');
+    const email = document.getElementById('nlFallbackEmail');
+    const link = document.querySelector('#nlFallback a[href*="subscribe-forms.beehiiv.com"]');
+    const iframe = document.querySelector('#beehiiv-embed iframe');
+    if (!box) return null;
+    const style = getComputedStyle(box);
+    return {
+      visible: style.display !== 'none' && style.visibility !== 'hidden' && box.getBoundingClientRect().height > 20,
+      email: !!email && Math.round(email.getBoundingClientRect().width) > 100,
+      link: !!link,
+      iframe: !!iframe,
+      sw: document.documentElement.scrollWidth,
+      cw: document.documentElement.clientWidth
+    };
+  });
+  check('blocked embed shows the fallback form', !!fallback && fallback.visible && fallback.email, JSON.stringify(fallback));
+  check('blocked embed fallback links to Beehiiv', !!fallback && fallback.link && !fallback.iframe);
+  check('blocked embed fallback has no overflow at 390', !!fallback && fallback.sw <= fallback.cw + 2, fallback ? fallback.sw+'/'+fallback.cw : 'missing');
+  await blocked.close();
 
   await page.setViewport({width:1440,height:900});
   await new Promise(r=>setTimeout(r,150));
