@@ -60,7 +60,7 @@
 // v63 - A3061: precache the remaining learner makers (Minecraft Skin Editor, Game
 // Planner, Launch Studio, Game Logo Maker, Screenshot Mode) so the toolbox opens
 // offline on a school network after one online visit.
-const CACHE='jvds-v64';
+const CACHE='jvds-v65';
 const CORE=[
   '/',
   '/offline.html',

@@ -1,4 +1,7 @@
-// nav-loop-links.js - A259: verify Imagine and Improve links appear in nav
+// nav-loop-links.js - A259/A2194: verify the core loop is reachable.
+// The main site nav carries Learn, Create, Play and Read plus the crew; the
+// immersive-game nav strip carries Imagine and Improve. The old test looked for
+// Imagine/Improve in the main nav after they moved into the strip.
 const puppeteer = require('puppeteer');
 const http = require('http');
 const fs = require('fs');
@@ -25,6 +28,13 @@ const CHECK_PAGES = [
   '/pages/echo.html',
   '/pages/stardust.html',
 ];
+const LOOP = [
+  { label: 'Learn', href: '/workshop' },
+  { label: 'Create', href: '/create' },
+  { label: 'Play', href: '/arcade.html' },
+  { label: 'Read', href: '/books' }
+];
+const STRIP_PAGE = '/games/arcane_citadel.html';
 
 (async () => {
   await new Promise(r => server.listen(8127, r));
@@ -40,16 +50,18 @@ const CHECK_PAGES = [
 
   for (const pg of CHECK_PAGES) {
     await page.goto('http://127.0.0.1:8127' + pg, { waitUntil: 'networkidle2', timeout: 20000 });
-    const links = await page.evaluate(() => {
-      const all = Array.from(document.querySelectorAll('a'));
-      return {
-        imagineHref: (all.find(a => a.textContent.includes('Imagine')) || {}).href || '',
-        improveHref: (all.find(a => a.textContent.includes('Improve')) || {}).href || '',
-      };
-    });
-    ok(pg + ': Imagine link present', links.imagineHref.includes('stardust'));
-    ok(pg + ': Improve link present', links.improveHref.includes('echo'));
+    const links = await page.evaluate(() => Array.from(document.querySelectorAll('a')).map((a) => ({ text: a.textContent.trim(), href: a.getAttribute('href') || '' })));
+    for (const item of LOOP) {
+      ok(pg + ': nav has ' + item.label, links.some((a) => a.text.includes(item.label) && a.href.includes(item.href)));
+    }
+    ok(pg + ': nav links to the crew', links.some((a) => a.href.includes('meet-the-crew')));
   }
+
+  // The immersive-game nav strip is the one that carries Imagine and Improve.
+  await page.goto('http://127.0.0.1:8127' + STRIP_PAGE, { waitUntil: 'networkidle2', timeout: 20000 });
+  const strip = await page.evaluate(() => Array.from(document.querySelectorAll('.jvds-nav-strip a, .nav-strip a, a')).map((a) => a.getAttribute('href') || ''));
+  ok('immersive strip has Imagine', strip.some((h) => h.includes('stardust')));
+  ok('immersive strip has Improve', strip.some((h) => h.includes('echo')));
 
   // stardust.html and echo.html themselves render (200, h1 visible)
   for (const [pg, h1] of [['/pages/stardust.html','Stardust'],['/pages/echo.html','Echo']]) {

@@ -187,16 +187,16 @@ var CANVAS_STUDIO_MAP = {
   "cpp-tower-part1-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
   "cpp-tower-part2-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
   "my-first-cpp-game-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
-  "godot-autoclicker-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-gatekeeper-3d-part1-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-gatekeeper-3d-part2-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-gdscript-essentials-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-platformer-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-puzzle-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-racing-2-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-racing-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "godot-tutorial-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
-  "night-watch-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-autoclicker-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-gatekeeper-3d-part1-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-gatekeeper-3d-part2-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-gdscript-essentials-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-platformer-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-puzzle-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-racing-2-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-racing-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "godot-tutorial-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
+  "night-watch-canvas.html": { "href": "godot-lab/", "label": "Godot Lab" },
   "python-breakout-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
   "python-breakout-part2-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
   "python-catch-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
@@ -3238,4 +3238,18 @@ maybeShowResume();
     window.CW.shareCardDataUrl = shareCardDataUrl;
     window.CW.openShare = openSheet;
   } catch (e) {}
+})();
+
+/* A2194: canvas pages do not load tool-kit.js, so load the shared workshop path block here too. */
+(function () {
+  if (!/^\/workshops\/[^/]+\.html$/.test(location.pathname)) return;
+  if (document.querySelector('script[src*="workshop-path"]')) return;
+  function add(src) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+  add('/assets/js/workshop-path-data.js');
+  add('/assets/js/workshop-path.js');
 })();

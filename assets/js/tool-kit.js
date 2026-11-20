@@ -119,8 +119,7 @@
 
   function decorateHubCards() {
     if (!/(dev-tools|^\/create)/.test(location.pathname)) return;
-    fetch('/content/tool-weights.json', { cache: 'force-cache' })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    fetchWeights()
       .then(function (weights) {
         if (!weights) return;
         document.querySelectorAll('.tool-card[data-tool-card]').forEach(function (card) {
@@ -140,6 +139,38 @@
       .catch(function () {});
   }
 
+  var weightsPromise = null;
+  function fetchWeights() {
+    if (!weightsPromise) {
+      weightsPromise = fetch('/content/tool-weights.json', { cache: 'force-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    return weightsPromise;
+  }
+
+  // A1995: say plainly whether this tool works without a connection. The data
+  // comes from content/tool-weights.json, the same source as the hub cards.
+  function injectToolOfflineBadge() {
+    if (!/^\/tools\/[^/]+\.html$/.test(location.pathname)) return;
+    if (document.getElementById('tool-offline-badge')) return;
+    var id = toolId();
+    if (!id) return;
+    id = id.replace(/-landing$/, '');
+    fetchWeights().then(function (weights) {
+      var info = weights && weights[id];
+      if (!info) return;
+      var badge = document.createElement('p');
+      badge.id = 'tool-offline-badge';
+      badge.className = 'workshop-offline-badge';
+      badge.innerHTML = info.offline
+        ? '<strong>Available offline after one visit.</strong> Open this tool once on the school network, then it keeps working when the connection drops.'
+        : '<strong>Needs a connection for the first visit.</strong> This tool is not in the offline pack, so open it while you have internet.';
+      var host = document.querySelector('main') || document.body;
+      host.insertBefore(badge, host.firstChild);
+    });
+  }
+
   function injectOfflineBadge() {
     if (FLAGSHIP.indexOf(location.pathname) < 0) return;
     if (document.getElementById('workshop-offline-badge')) return;
@@ -149,6 +180,25 @@
     badge.className = 'workshop-offline-badge';
     badge.innerHTML = '<strong>Available offline after one visit.</strong> Open this page once on the school network, then it keeps working when the connection drops.';
     host.insertBefore(badge, host.firstChild);
+  }
+
+  // A2194: one shared before/during/after/next block on every project page.
+  // The marker page already ships the scripts; every other workshop page gets
+  // them here so there is no per-page copy of the block.
+  function loadScript(src) {
+    if (document.querySelector('script[src="' + src + '"]')) return;
+    var s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
+  function injectWorkshopPath() {
+    if (!/^\/workshops\/[^/]+\.html$/.test(location.pathname)) return;
+    if (/^\/(?:workshop|my-first-series|my-progress|learning-lab|tiny-learners|learn)\.html$/.test(location.pathname)) return;
+    if (document.querySelector('script[src*="workshop-path"]')) return;
+    loadScript('/assets/js/workshop-path-data.js');
+    loadScript('/assets/js/workshop-path.js');
   }
 
   function injectMouseRecommended() {
@@ -178,6 +228,8 @@
     renderBadges();
     decorateHubCards();
     injectOfflineBadge();
+    injectToolOfflineBadge();
+    injectWorkshopPath();
     injectMouseRecommended();
     hookAnalytics();
     document.addEventListener('jvds:first-creation', renderBadges);
