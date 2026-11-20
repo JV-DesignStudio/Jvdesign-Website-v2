@@ -193,18 +193,196 @@ function getActiveStep() {
   return TOTAL;
 }
 
+/* ── FLOW LAYER (A3127) ──
+   The engine drives every step workshop, so the learner flow lives here,
+   not in each lesson: a progress spine that says what kind of work each step
+   is, a resume prompt for returning learners, step-kind colour bars and a
+   small win as each step is finished. */
+var WS_KINDS = {
+  read:  { label: 'Read',  icon: '📖', who: 'Lumo',  line: 'Read the step, then try it.' },
+  learn: { label: 'Learn', icon: '🧠', who: 'Lumo',  line: 'Fill the blanks to check you got it.' },
+  make:  { label: 'Build', icon: '🛠️', who: 'Ember', line: 'Build it, then check it works.' },
+  test:  { label: 'Test',  icon: '🎮', who: 'Pip',   line: 'Test it. A wrong answer is a clue.' }
+};
+var WS_PHASES = [
+  { id: 'learn', emoji: '🟣', label: 'Lumo · Learn' },
+  { id: 'make',  emoji: '🟠', label: 'Ember · Create' },
+  { id: 'test',  emoji: '🟢', label: 'Pip · Play' },
+  { id: 'improve', emoji: '🔵', label: 'Echo · Improve' }
+];
+
+function injectFlowStyles() {
+  try {
+    if (document.getElementById('ws-flow-css')) return;
+    var l = document.createElement('link');
+    l.id = 'ws-flow-css';
+    l.rel = 'stylesheet';
+    var base = (document.currentScript && document.currentScript.src) || location.href;
+    l.href = new URL('workshop-engine-flow.css?v=1', base).href;
+    (document.head || document.documentElement).appendChild(l);
+  } catch (e) {}
+}
+
+function stepKind(card) {
+  if (!card) return 'read';
+  // Pick the first interactive the learner meets, not any check later in the
+  // step, so a read-then-quiz step is not labelled as a test.
+  var body = card.querySelector('.step-body') || card;
+  var order = [
+    ['.code-challenge, .cc-blank, .cw-editor, .live-playground', 'make'],
+    ['.concept-fill, .cf-blank', 'learn'],
+    ['.quiz-gate, .true-false, .tf-wrap', 'test']
+  ];
+  var best = null, bestPos = Infinity;
+  order.forEach(function (pair) {
+    var el = body.querySelector(pair[0]);
+    if (!el) return;
+    var pos = 0, node = el;
+    while (node && node !== body) { pos++; node = node.previousElementSibling || node.parentElement; }
+    if (pos < bestPos) { bestPos = pos; best = pair[1]; }
+  });
+  return best || 'read';
+}
+
+function annotateStepKinds() {
+  document.querySelectorAll('.step-card').forEach(function (card) {
+    card.setAttribute('data-ws-kind', stepKind(card));
+  });
+  var cs = getComputedStyle(document.documentElement);
+  var accent = (cs.getPropertyValue('--accent') || cs.getPropertyValue('--mf-accent') || '#ff7700').trim();
+  var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(accent);
+  if (m) {
+    document.documentElement.style.setProperty('--ws-accent-rgb',
+      parseInt(m[1], 16) + ',' + parseInt(m[2], 16) + ',' + parseInt(m[3], 16));
+  }
+}
+
+function currentPhaseId(active) {
+  if (completed.size >= TOTAL) return 'improve';
+  var card = document.getElementById('step-' + active);
+  var kind = card ? card.getAttribute('data-ws-kind') : 'read';
+  if (kind === 'test') return 'test';
+  if (kind === 'make') return 'make';
+  return 'learn';
+}
+
+function ensureSpineHead(c, active) {
+  var wrap = c.closest ? c.closest('.progress-wrap') : null;
+  if (!wrap) return;
+  var head = wrap.querySelector('.ws-phase-head');
+  if (!head) {
+    head = document.createElement('div');
+    head.className = 'ws-phase-head';
+    wrap.insertBefore(head, c);
+  }
+  var phaseId = currentPhaseId(active);
+  var card = document.getElementById('step-' + active);
+  var kind = card ? (card.getAttribute('data-ws-kind') || 'read') : 'read';
+  var info = WS_KINDS[kind] || WS_KINDS.read;
+  var chips = WS_PHASES.map(function (p) {
+    return '<span class="ws-phase-chip" data-on="' + (p.id === phaseId ? '1' : '0') + '">' +
+      '<span class="ws-chip-emoji" aria-hidden="true">' + p.emoji + '</span>' + p.label + '</span>';
+  }).join('');
+  var now = completed.size >= TOTAL
+    ? '<strong>Echo</strong> · All steps done. Pick one thing to improve.'
+    : '<strong>' + info.who + '</strong> · Step ' + active + ' of ' + TOTAL + ': ' + info.line;
+  head.innerHTML = '<div class="ws-phase-chips">' + chips + '</div><div class="ws-now">' + now + '</div>';
+}
+
 function buildDots() {
   var c = document.getElementById('stepDots');
   if (!c) return;
+  var active = getActiveStep();
+  c.classList.add('ws-spine');
+  ensureSpineHead(c, active);
   c.innerHTML = '';
   for (var i = 1; i <= TOTAL; i++) {
+    var card = document.getElementById('step-' + i);
+    var kind = card ? (card.getAttribute('data-ws-kind') || 'read') : 'read';
+    var info = WS_KINDS[kind] || WS_KINDS.read;
+    var done = completed.has(i);
+    var isActive = (i === active) && !done;
+    var node = document.createElement('div');
+    node.className = 'ws-node' + (done ? ' is-done' : '') + (isActive ? ' is-active' : '');
     var d = document.createElement('div');
-    d.className = 'step-dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' active' : ''));
-    d.textContent = i;
-    (function(idx){
-      d.onclick = function() { var el = document.getElementById('step-' + idx); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
-    })(i);
-    c.appendChild(d);
+    d.className = 'step-dot' + (done ? ' done' : '') + (isActive ? ' active' : '');
+    d.setAttribute('data-kind', kind);
+    d.textContent = done ? '✓' : i;
+    d.title = 'Step ' + i + ' · ' + info.label;
+    d.setAttribute('role', 'button');
+    d.setAttribute('tabindex', '0');
+    d.setAttribute('aria-label', 'Step ' + i + ', ' + info.label + (done ? ', done' : ''));
+    (function (idx, dot) {
+      dot.onclick = function () {
+        var el = document.getElementById('step-' + idx);
+        if (el && !el.classList.contains('locked')) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      dot.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dot.click(); }
+      });
+    })(i, d);
+    node.appendChild(d);
+    var lab = document.createElement('span');
+    lab.className = 'ws-node-label';
+    lab.innerHTML = '<span class="ws-node-icon" aria-hidden="true">' + info.icon + '</span>' +
+      '<span class="ws-node-word">' + info.label + '</span>';
+    node.appendChild(lab);
+    c.appendChild(node);
+  }
+}
+
+function showResumePrompt() {
+  if (!completed.size || completed.size >= TOTAL || versionNotice) return;
+  var wrap = document.querySelector('.progress-wrap');
+  if (!wrap || wrap.querySelector('.ws-resume')) return;
+  var active = getActiveStep();
+  var box = document.createElement('div');
+  box.className = 'ws-resume';
+  box.setAttribute('role', 'status');
+  box.innerHTML = '<div class="ws-resume-copy"><strong>Welcome back.</strong> You finished ' +
+    completed.size + ' of ' + TOTAL + ' steps. Carry on from step ' + active + '.</div>' +
+    '<div class="ws-resume-actions">' +
+    '<button type="button" class="ws-resume-btn primary">Carry on</button>' +
+    '<button type="button" class="ws-resume-btn ghost">Start over</button></div>';
+  wrap.appendChild(box);
+  box.querySelector('.primary').addEventListener('click', function () {
+    box.remove();
+    var el = document.getElementById('step-' + active);
+    if (el) {
+      el.classList.remove('locked');
+      el.classList.add('open', 'active-step');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+  box.querySelector('.ghost').addEventListener('click', function () {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    location.reload();
+  });
+}
+
+function microWin(n) {
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch (e) {}
+  var card = document.getElementById('step-' + n);
+  if (!card) return;
+  var anchor = card.querySelector('.step-status') || card.querySelector('.step-header');
+  if (!anchor) return;
+  var r = anchor.getBoundingClientRect();
+  var colors = ['#ff7700', '#06d6a0', '#ffd166', '#a78bfa', '#4dd9e0'];
+  for (var i = 0; i < 12; i++) {
+    var p = document.createElement('span');
+    p.className = 'ws-micro';
+    p.setAttribute('aria-hidden', 'true');
+    p.style.left = (r.left + r.width / 2) + 'px';
+    p.style.top = (r.top + r.height / 2) + 'px';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--mx', (Math.random() * 120 - 60).toFixed(0) + 'px');
+    p.style.setProperty('--my', (-40 - Math.random() * 70).toFixed(0) + 'px');
+    p.style.setProperty('--mr', (Math.random() * 360 - 180).toFixed(0) + 'deg');
+    p.style.animationDelay = (i * 18) + 'ms';
+    document.body.appendChild(p);
+    (function (el) { setTimeout(function () { el.remove(); }, 950); })(p);
   }
 }
 
@@ -690,6 +868,7 @@ function completeStep(n) {
   card.querySelector('.step-status').className = 'step-status ss-done';
   card.querySelector('.step-status').textContent = '✓ Done';
   card.querySelector('.step-body').style.display = 'none';
+  microWin(n);
   var next = document.getElementById('step-' + (n + 1));
   if (next) {
     next.classList.remove('locked');
@@ -1171,11 +1350,14 @@ function mountVersionNotice() {
   host.parentNode.insertBefore(note, host);
 }
 
+injectFlowStyles();
+annotateStepKinds();
 shuffleQuizOptions();
 initKeyboardAccess();
 loadProgress();
 mountVersionNotice();
 updateProgress();
+showResumePrompt();
 updateXpDisplay();
 buildSfxToggle();
 buildTimerToggle();
