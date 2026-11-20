@@ -19,6 +19,7 @@ const OUTCOMES = path.join(ROOT, 'content', 'workshop-outcomes.json');
 const COURSES = path.join(ROOT, 'content', 'courses.json');
 const ENGINE_HUBS = path.join(ROOT, 'content', 'engine-hubs.json');
 const NEEDS = path.join(ROOT, 'content', 'workshop-needs.json');
+const CANVAS_ENGINE = path.join(ROOT, 'workshop-canvas-engine.js');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
 const START = '<!-- CATALOGUE:START -->';
 const END = '<!-- CATALOGUE:END -->';
@@ -203,10 +204,10 @@ function prereqRow(e, courses) {
   return '        <div class="course-prereq">' + where + '</div>\n';
 }
 
-function card(e, outcomes, courses) {
+function card(e, outcomes, courses, buildAlong) {
   const href = '../' + String(e.url).replace(/^\//, '');
   const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
-  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
+  const badge = (buildAlong ? 'Build-along · ' : '') + (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
   const desc = e.desc || ('Interactive build-along for ' + e.title + '.');
   const outcome = outcomes.get(e.id);
   const outcomeLine = outcome
@@ -222,7 +223,9 @@ function card(e, outcomes, courses) {
     + ' data-needs="' + needsFor(e, isStudio) + '"'
     + ' data-minutes="' + minutesFor(e) + '"'
     + (isStudio ? ' data-studio="true"' : '')
-    + ' data-cat="tutorial">\n'
+    + ' data-cat="tutorial"'
+    + (buildAlong ? ' data-buildalong="true"' : '')
+    + '>\n'
     + thumb
     + '      <div class="course-body">\n'
     + '        <div class="course-tag">' + esc(badge) + '</div>\n'
@@ -253,6 +256,37 @@ function section(entries, outcomes, courses) {
     + entries.map((e) => card(e, outcomes, courses)).join('\n')
     + '\n  </div>\n'
     + '</section>';
+}
+
+function loadCanvasTwins(entries) {
+  const ids = new Set(entries.map((e) => e.id));
+  const guideMap = {};
+  try {
+    const src = fs.readFileSync(CANVAS_ENGINE, 'utf8');
+    const m = src.match(/CANVAS_GUIDE_MAP\s*=\s*\{([\s\S]*?)\}/);
+    for (const mm of (m ? m[1] : '').matchAll(/"([^"]+)"\s*:\s*"([^"]+)"/g)) {
+      guideMap[mm[1]] = mm[2];
+    }
+  } catch { /* no map, treat every canvas as its own card */ }
+  const twins = new Set();
+  for (const e of entries) {
+    if (!/-canvas$/.test(e.id)) continue;
+    const file = String(e.url).split('/').pop();
+    const guide = guideMap[file];
+    if (guide && ids.has(guide.replace(/\.html$/, ''))) twins.add(e.id);
+  }
+  return twins;
+}
+
+function buildAlongSection(entries, outcomes, courses) {
+  if (!entries.length) return '';
+  return '<details class="ws-buildalong">\n'
+    + '  <summary>Build it in the browser: ' + entries.length + ' in-page build-alongs</summary>\n'
+    + '  <p class="ws-buildalong-sub">The same projects as the guides above, kept as in-page build canvases for school computers. Every link still works.</p>\n'
+    + '  <div class="courses-grid">\n'
+    + entries.map((e) => card(e, outcomes, courses, true)).join('\n')
+    + '\n  </div>\n'
+    + '</details>';
 }
 
 function engineHubs() {
@@ -345,9 +379,13 @@ function generate({ checkOnly = false } = {}) {
   }
   if (needsChanged && !checkOnly) fs.writeFileSync(NEEDS, needsJson);
 
+  const twinIds = loadCanvasTwins(entries);
+  const mainEntries = entries.filter((e) => !twinIds.has(e.id));
+  const buildAlongEntries = entries.filter((e) => twinIds.has(e.id));
+
   const blocks = [
     [BROWSE_START, BROWSE_END, BROWSE_START + '\n' + browse(entries) + '\n' + BROWSE_END],
-    [START, END, START + '\n' + section(entries, outcomes, courses) + '\n' + END]
+    [START, END, START + '\n' + section(mainEntries, outcomes, courses) + '\n' + buildAlongSection(buildAlongEntries, outcomes, courses) + '\n' + END]
   ];
 
   for (const [s, e, want] of blocks) {
