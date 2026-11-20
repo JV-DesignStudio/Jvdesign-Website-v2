@@ -20,7 +20,7 @@ the part that cannot be cached separately.
 
 - Pages checked: 387
 - Over budget: 0
-- Heaviest raw: pages/workshop.html at 632,038 bytes (617 KB)
+- Heaviest raw: pages/workshop.html at 632,031 bytes (617 KB)
 - Heaviest gzip: pages/workshop.html at 50 KB
 
 ## All pages
@@ -89,8 +89,8 @@ the part that cannot be cached separately.
 | workshops/minecraft-custom-block-mod.html | 69 | 15 | 2 | 9 | 1,145 | ok |
 | workshops/engine-general.html | 67 | 12 | 8 | 49 | 569 | ok |
 | workshops/nuclear-throne-guide.html | 67 | 19 | 33 | 8 | 472 | ok |
-| workshops/java-space-workshop.html | 66 | 16 | 2 | 8 | 838 | ok |
 | workshops/sci-fi-runner-builder.html | 66 | 19 | 34 | 9 | 643 | ok |
+| workshops/java-space-workshop.html | 66 | 16 | 2 | 8 | 838 | ok |
 | workshops/java-breakout-workshop.html | 65 | 15 | 2 | 8 | 844 | ok |
 | workshops/roblox-sim-lockdown-2-workshop.html | 65 | 15 | 1 | 9 | 1,170 | ok |
 | workshops/roblox-sim-lockdown-3-workshop.html | 61 | 14 | 1 | 9 | 1,077 | ok |

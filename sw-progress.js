@@ -1,11 +1,12 @@
 /* Service Worker - caches workshop progress pages and engine JS for offline use.
    Registered from workshop pages via workshop-engine.js.
    Strategy: network-first for HTML, cache-first for static assets. */
-var CACHE = 'jvds-ws-v1';
+var CACHE = 'jvds-ws-v2';
 var PRECACHE = [
   '/assets/fonts/fonts.css',
   '/style-workshop-bundle.css',
   '/workshops/workshop-engine.js',
+  '/workshops/workshop-engine-flow.css',
   '/workshops/my-progress.html',
   '/workshops/my-achievements.html'
 ];
