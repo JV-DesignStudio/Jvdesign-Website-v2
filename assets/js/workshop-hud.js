@@ -12,7 +12,7 @@
     .jvhud-btn {
       position: fixed; bottom: 20px; right: 20px; z-index: 9000;
       background: var(--jv-lumo, #7C6CF0);
-      color: #fff; border: none; border-radius: 50px;
+      color: #150F2E; border: none; border-radius: 50px;
       padding: 10px 16px 10px 12px;
       font-family: var(--jv-font-display, 'Fredoka', 'Inter', sans-serif);
       font-size: .88rem; font-weight: 700; cursor: pointer;
@@ -51,7 +51,7 @@
       font-size: .95rem; font-weight: 700;
       color: var(--jv-beige, #F0EAD6);
     }
-    .jvhud-player-sub { font-size: .68rem; color: rgba(240,234,214,.5); margin-top: 1px; }
+    .jvhud-player-sub { font-size: .68rem; color: rgba(240,234,214,.72); margin-top: 1px; }
 
     .jvhud-xp-row {
       display: flex; justify-content: space-between; align-items: center;
@@ -59,9 +59,9 @@
     }
     .jvhud-xp-tag {
       font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
-      color: rgba(240,234,214,.45); font-weight: 700;
+      color: rgba(240,234,214,.72); font-weight: 700;
     }
-    .jvhud-xp-val { font-size: .72rem; color: var(--jv-teal, #70A3A7); font-weight: 700; }
+    .jvhud-xp-val { font-size: .72rem; color: #9FE3E0; font-weight: 700; }
     .jvhud-bar {
       height: 9px; background: rgba(255,255,255,.1);
       border-radius: 99px; overflow: hidden; margin-bottom: 14px;
@@ -86,7 +86,7 @@
     }
     .jvhud-stat-lbl {
       font-size: .6rem; text-transform: uppercase; letter-spacing: .07em;
-      color: rgba(240,234,214,.4); display: block; margin-top: 3px;
+      color: rgba(240,234,214,.72); display: block; margin-top: 3px;
     }
     .jvhud-progress-link {
       display: block; text-align: center; font-size: .76rem; font-weight: 700;
@@ -98,7 +98,7 @@
     /* Toast */
     .jvhud-toast {
       position: fixed; bottom: 92px; right: 20px; z-index: 9002;
-      background: var(--jv-charcoal, #403B33);
+      background: var(--jv-night-2, #1E1C18);
       border: 1px solid rgba(112,163,167,.3); border-radius: 14px;
       padding: 12px 16px; max-width: 280px; min-width: 220px;
       box-shadow: 0 6px 30px rgba(0,0,0,.4);
@@ -113,7 +113,7 @@
       font-size: .88rem; font-weight: 700;
       color: var(--jv-beige, #F0EAD6); line-height: 1.25;
     }
-    .jvhud-toast-sub { font-size: .72rem; color: var(--jv-teal, #70A3A7); margin-top: 2px; }
+    .jvhud-toast-sub { font-size: .72rem; color: #9FE3E0; margin-top: 2px; }
 
     /* Particles */
     .jvhud-particle {
@@ -134,10 +134,11 @@
     .jvhud-mark-hint {
       font-size: .78rem; color: rgba(64,59,51,.5); margin-bottom: 10px;
     }
-    [data-theme="dark"] .jvhud-mark-hint { color: rgba(240,234,214,.4); }
+    [data-theme="dark"] .jvhud-mark-hint,
+    [data-surface="dark"] .jvhud-mark-hint { color: rgba(240,234,214,.72); }
     .jvhud-mark-btn {
       display: inline-flex; align-items: center; gap: 8px;
-      background: var(--jv-teal, #70A3A7);
+      background: #3D6B6E;
       color: #fff; border: none; border-radius: 10px;
       padding: 11px 22px;
       font-family: var(--jv-font-display, 'Fredoka', 'Inter', sans-serif);

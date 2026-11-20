@@ -85,11 +85,11 @@
     wrap.id = 'jvds-needs-banner';
     wrap.setAttribute('role', 'note');
     wrap.setAttribute('aria-label', 'What this workshop needs');
-    wrap.style.cssText = 'margin:0 auto 14px;max-width:860px;padding:12px 14px;border-radius:12px;border:1px solid var(--gold,#c98a2e);background:var(--gold-lt,#faf1e0);color:var(--charcoal,#1a1208);display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-family:Inter,system-ui,sans-serif;line-height:1.45;';
+    wrap.style.cssText = 'margin:0 auto 14px;max-width:860px;padding:12px 14px;border-radius:12px;border:1px solid #C98A2E;background:#FAF1E0;color:#1A1208;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-family:Inter,system-ui,sans-serif;line-height:1.45;';
 
     var label = document.createElement('span');
     label.textContent = 'Heads up';
-    label.style.cssText = 'flex-shrink:0;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--gold,#c98a2e);color:#fff;';
+    label.style.cssText = 'flex-shrink:0;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:#8A5D17;color:#fff;';
 
     var body = document.createElement('div');
     body.style.cssText = 'flex:1;min-width:200px;';
@@ -98,7 +98,7 @@
     var engine = entry.engine || 'a desktop tool';
     title.textContent = 'This workshop needs ' + engine + ' installed.';
     var text = document.createElement('span');
-    text.style.cssText = 'display:block;font-size:.82rem;color:var(--charcoal-lt,#3d3224);margin-top:2px;';
+    text.style.cssText = 'display:block;font-size:.82rem;color:#3D3224;margin-top:2px;';
     var alt = entry.alternative;
     text.textContent = alt
       ? 'You can start right now in ' + alt.title + ', which runs in your browser with nothing to install.'
@@ -109,7 +109,7 @@
     var cta = document.createElement('a');
     cta.href = alt ? alt.url : '/pages/workshop.html?works-here=1';
     cta.textContent = alt ? 'Start in the browser' : 'Show browser-only workshops';
-    cta.style.cssText = 'flex-shrink:0;display:inline-block;padding:9px 16px;border-radius:999px;background:var(--teal-dk,#4e7d80);color:#fff;text-decoration:none;font-weight:800;font-size:.8rem;white-space:nowrap;';
+    cta.style.cssText = 'flex-shrink:0;display:inline-block;padding:9px 16px;border-radius:999px;background:#3D6B6E;color:#fff;text-decoration:none;font-weight:800;font-size:.8rem;white-space:nowrap;';
 
     wrap.appendChild(label);
     wrap.appendChild(body);

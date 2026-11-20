@@ -32,7 +32,7 @@
   style.id = 'ws-kit-styles';
   style.textContent = [
     '.ws-kit{max-width:980px;margin:18px auto 8px;padding:0 16px}',
-    '.ws-kit-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1.5px solid rgba(112,163,167,.28);border-radius:14px;background:var(--card,#fff);box-shadow:0 4px 18px rgba(64,59,51,.06)}',
+    '.ws-kit-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1.5px solid rgba(112,163,167,.28);border-radius:14px;background:var(--jv-surface,#fff);box-shadow:0 4px 18px rgba(64,59,51,.06)}',
     '[data-theme="dark"] .ws-kit-bar{background:rgba(40,36,30,.92);border-color:rgba(112,163,167,.22)}',
     '.ws-kit-label{font-size:.66rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--charcoal-lt,#5a5449);margin-right:4px;padding-left:4px}',
     '[data-theme="dark"] .ws-kit-label{color:rgba(240,234,214,.55)}',

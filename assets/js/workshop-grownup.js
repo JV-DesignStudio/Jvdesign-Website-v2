@@ -12,8 +12,8 @@
       var style = document.createElement('style');
       style.id = 'ws-grownup-style';
       style.textContent =
-        '.ws-grownup{max-width:820px;margin:14px auto;padding:10px 14px;border:1.5px solid var(--border-lt,#e5e7eb);border-radius:12px;background:var(--bg-secondary,#f5f1e8);color:var(--text-primary,#1a1208);font-size:.88rem;line-height:1.55}' +
-        '.ws-grownup summary{cursor:pointer;font-weight:800;color:var(--teal-dk,#4e7d80)}' +
+        '.ws-grownup{max-width:820px;margin:14px auto;padding:10px 14px;border:1.5px solid var(--border-lt,#e5e7eb);border-radius:12px;background:#f5f1e8;color:#1a1208;font-size:.88rem;line-height:1.55}' +
+        '.ws-grownup summary{cursor:pointer;font-weight:800;color:#3d6b6e}' +
         '.ws-grownup p{margin:8px 0 0}';
       document.head.appendChild(style);
     }

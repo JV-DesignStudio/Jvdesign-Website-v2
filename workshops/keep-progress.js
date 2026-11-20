@@ -163,12 +163,12 @@
     style.textContent =
       '.kp-block{max-width:820px;margin:16px auto;padding:0 16px;box-sizing:border-box}' +
       '.kp-block--end{margin-top:8px;margin-bottom:40px}' +
-      '.kp-inner{background:var(--card,#fff);border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:14px;padding:14px 16px;color:var(--charcoal,#1a1208);box-shadow:0 2px 8px rgba(0,0,0,.05)}' +
+      '.kp-inner{background:var(--jv-surface,#fff);border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:14px;padding:14px 16px;color:var(--charcoal,#1a1208);box-shadow:0 2px 8px rgba(0,0,0,.05)}' +
       '.kp-kicker{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--teal-dk,#4e7d80)}' +
       '.kp-title{font-family:Fredoka,Inter,sans-serif;font-size:1.05rem;margin:0 0 4px}' +
       '.kp-text{margin:0 0 10px;font-size:.86rem;line-height:1.5;color:var(--charcoal-lt,#3d3224)}' +
       '.kp-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
-      '.kp-btn{font:inherit;font-weight:800;font-size:.82rem;border-radius:999px;padding:8px 14px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid var(--border,rgba(64,59,51,.2));background:var(--beige,#F0EAD6);color:var(--charcoal,#1a1208)}' +
+      '.kp-btn{font:inherit;font-weight:800;font-size:.82rem;border-radius:999px;padding:8px 14px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid var(--border,rgba(64,59,51,.2));background:var(--bg,#fbf8f2);color:var(--charcoal,#1a1208)}' +
       '.kp-btn--primary{background:var(--teal-dk,#4e7d80);border-color:var(--teal-dk,#4e7d80);color:#fff}' +
       '.kp-btn--quiet{background:transparent;border-color:transparent;text-decoration:underline;padding-left:6px;padding-right:6px}' +
       '.kp-btn:focus-visible{outline:3px solid var(--gold,#c98a2e);outline-offset:2px}' +

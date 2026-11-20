@@ -587,13 +587,13 @@ var LIVE_CSS = '<style id="cw-live-style">' +
   '.cw-node-tree-label{font-family:Fredoka,cursive;font-size:.85rem;font-weight:700;color:#90cdf4;margin-bottom:8px;letter-spacing:.03em}' +
   '.cw-node-tree{font-family:monospace;font-size:.82rem;line-height:1.75}' +
   '.cw-nt-row{display:flex;align-items:baseline;gap:4px;white-space:pre}' +
-  '.cw-nt-connector{color:rgba(144,205,244,.4);flex-shrink:0}' +
+  '.cw-nt-connector{color:rgba(144,205,244,.7);flex-shrink:0}' +
   '.cw-nt-icon{flex-shrink:0}' +
   '.cw-nt-type{color:#90cdf4;font-weight:700}' +
   '.cw-nt-name{color:rgba(240,234,214,.55);font-weight:400}' +
   '.cw-nt-name::before{content:" ("}' +
   '.cw-nt-name::after{content:")"}' +
-  '.cw-nt-note{font-size:.75rem;color:rgba(240,234,214,.4);margin-left:6px;font-style:italic;white-space:normal}' +
+  '.cw-nt-note{font-size:.75rem;color:rgba(240,234,214,.72);margin-left:6px;font-style:italic;white-space:normal}' +
   '.cw-report{margin-top:12px;font-size:.8rem}' +
   '.cw-report summary{cursor:pointer;color:rgba(232,234,242,.5);font-weight:600}' +
   '.cw-report summary:hover{color:#9ccfd2}' +

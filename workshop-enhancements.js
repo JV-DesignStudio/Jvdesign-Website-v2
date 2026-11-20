@@ -201,7 +201,7 @@
       gap: 6px;
       background: rgba(248,113,113,.06);
       border: 1px solid rgba(248,113,113,.2);
-      color: rgba(248,113,113,.75);
+      color: #FCA5A5;
       font-size: .78rem;
       font-weight: 700;
       padding: 7px 13px;
@@ -314,7 +314,7 @@
     .fast-track-btn {
       background: rgba(56,189,248,.07);
       border: 1px solid rgba(56,189,248,.2);
-      color: rgba(56,189,248,.7);
+      color: #7DD3FC;
       font-size: .73rem;
       font-weight: 700;
       padding: 5px 11px;

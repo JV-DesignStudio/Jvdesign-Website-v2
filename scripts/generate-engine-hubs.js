@@ -511,6 +511,7 @@ ${marker('head-icons', readPartial('head-icons'))}
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="../style-workshop-hub.css?v=3">
 ${labCss}<style>
+:root{--bg-primary:var(--jv-bg,#FBF8F2);--bg-secondary:var(--jv-surface-2,#F5F0E8);--bg-tertiary:var(--jv-surface-2,#EFE9DC);--text-primary:var(--jv-text,#1A1208);--text-secondary:var(--jv-text-muted,#5A5449);--border-lt:var(--jv-line,rgba(64,59,51,.14));--card:var(--jv-surface,#FFFFFF);--card-bg:var(--jv-surface,#FFFFFF);--border:var(--jv-line,rgba(64,59,51,.14))}
 .hub-crumbs{max-width:1100px;margin:0 auto;padding:14px 20px 0;font-size:.85rem;color:var(--text-secondary)}
 .hub-crumbs a{color:var(--teal-dk);font-weight:700}
 .hub-crumbs a:hover{text-decoration:underline}
