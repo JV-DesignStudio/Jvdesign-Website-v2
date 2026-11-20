@@ -4775,6 +4775,15 @@ window.JVDS_CONTENT = {
       "url": "/tools/keyboard-shortcuts.html"
     },
     {
+      "id": "lap-pad",
+      "title": "Lap Pad: Colour a Picture Together",
+      "desc": "A big-button colouring pad for ages 5-6. Pick a colour, tap the squares, save or print. No reading, no account, nothing to install.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/lap-pad.html"
+    },
+    {
       "id": "level-designer",
       "title": "World Builder: Free 2D Level Designer for Games",
       "desc": "Design a 2D game level on a grid: place tiles, platforms and hazards, then export it. Free browser level designer.",
@@ -5739,10 +5748,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-20T11:45:38.000Z",
+    "generated": "2026-11-20T12:31:29.000Z",
     "workshops": 286,
     "games": 16,
-    "tools": 50,
+    "tools": 51,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -5768,7 +5777,7 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 5,
+      "General": 6,
       "Build & Ship": 3,
       "Make Art": 5,
       "Reference": 19,

@@ -18,13 +18,16 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
 let failures = 0;
 function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }
 
-// The Beehiiv form is an external script plus an iframe. If either host drops
-// out of the page CSP the form silently disappears, so guard it here.
+// The signup is the Beehiiv embed. If any host drops from the CSP the form
+// silently disappears, and the 80px-gutter clip is what keeps it usable on
+// narrow screens.
 const newsletterHtml = fs.readFileSync(path.join(ROOT, 'newsletter.html'), 'utf8');
 const csp = (newsletterHtml.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/i) || [])[1] || '';
 check('CSP allows the Beehiiv loader', /script-src[^;]*subscribe-forms\.beehiiv\.com/.test(csp));
 check('CSP allows the Beehiiv form frame', /frame-src[^;]*subscribe-forms\.beehiiv\.com/.test(csp));
 check('page embeds the Beehiiv form', /subscribe-forms\.beehiiv\.com\/v3\/loader\.js/.test(newsletterHtml) && /data-beehiiv-form=/.test(newsletterHtml));
+check('embed is widened past the Beehiiv gutter', /#beehiiv-embed iframe\{[^}]*calc\(100% \+ 160px\)/.test(newsletterHtml));
+check('no Formspree signup form on the newsletter page', !/id="nlForm"/.test(newsletterHtml));
 
 (async()=>{
   const server = http.createServer((req,res)=>{
@@ -64,6 +67,31 @@ check('page embeds the Beehiiv form', /subscribe-forms\.beehiiv\.com\/v3\/loader
   check('preview cards show a screenshot', grid.thumbs >= 1, String(grid.thumbs));
   check('preview cards link to #post-<id>', grid.hrefs.every(h=>/^\/devlog#post-\d+$/.test(h||'')), grid.hrefs.join(','));
   check('no horizontal overflow at 390', grid.sw<=grid.cw+2, grid.sw+'/'+grid.cw);
+
+  await page.waitForSelector('#beehiiv-embed iframe', {timeout:8000}).catch(()=>{});
+  const frameInfo = await page.evaluate(()=>{
+    const f = document.querySelector('#beehiiv-embed iframe');
+    if (!f) return null;
+    const r = f.getBoundingClientRect();
+    const wrapper = document.getElementById('beehiiv-embed');
+    return { w: Math.round(r.width), h: Math.round(r.height), wrapper: wrapper ? wrapper.clientWidth : 0 };
+  });
+  if (frameInfo && frameInfo.wrapper) {
+    check('Beehiiv iframe fills the card', frameInfo.w >= frameInfo.wrapper - 2, frameInfo.w + '/' + frameInfo.wrapper);
+    const frame = page.frames().find(f=>/subscribe-forms\.beehiiv\.com\/v3\/forms/.test(f.url()));
+    let inputWidth = 0;
+    if (frame) {
+      try {
+        inputWidth = await frame.evaluate(()=>{
+          const i = document.querySelector('input[type=email]');
+          return i ? Math.round(i.getBoundingClientRect().width) : 0;
+        });
+      } catch (e) {}
+    }
+    check('Beehiiv email field usable at 390', inputWidth === 0 || inputWidth > 150, String(inputWidth));
+  } else {
+    console.log('SKIP Beehiiv iframe checks (offline or blocked)');
+  }
 
   await page.setViewport({width:1440,height:900});
   await new Promise(r=>setTimeout(r,150));

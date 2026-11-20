@@ -27,9 +27,16 @@ function check(name, ok, detail = '') {
 }
 
 const files = fs.readdirSync(WORKSHOPS).filter((f) => /\.html$/.test(f));
+// Redirect stubs (noindex shims that bounce to the merged page) are not
+// workshop pages: they carry no shared classes and should not load the
+// engines stylesheet. Keep them out of the per-genre gates.
+const isStub = (f) => {
+  const html = fs.readFileSync(path.join(WORKSHOPS, f), 'utf8');
+  return /http-equiv="refresh"/i.test(html) && /Redirecting/i.test(html);
+};
 let grand = 0;
 for (const [genre, cfg] of Object.entries(GENRES)) {
-  const pages = files.filter((f) => f.startsWith(genre + '-'));
+  const pages = files.filter((f) => f.startsWith(genre + '-') && !isStub(f));
   let total = 0;
   for (const f of pages) {
     const html = fs.readFileSync(path.join(WORKSHOPS, f), 'utf8');

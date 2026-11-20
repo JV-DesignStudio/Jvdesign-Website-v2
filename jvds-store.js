@@ -77,7 +77,8 @@
     /^ga4_/, /^_ga/,                       // analytics ids
     /^jvds-cookie-consent$/,               // consent is asked per device
     /^jvds-keys-migrated/,                 // one-off migration flags
-    /^teacher_mode$/                       // a teacher's device setting
+    /^teacher_mode$/,                      // a teacher's device setting
+    /^jvds_maker_profiles$/                // family maker profiles on this device
   ];
   var MAX_BYTES = 8 * 1024 * 1024;
 
