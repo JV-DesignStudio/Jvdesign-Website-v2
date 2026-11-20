@@ -124,12 +124,17 @@ function demoIds() {
 }
 
 function siblingDemo(e) {
-  if (!/-workshop$/.test(e.id || '')) return null;
-  const base = e.id.replace(/-workshop$/, '');
   const ids = demoIds();
-  for (const cand of [base + '-canvas', base + '-game', base]) {
-    if (ids.includes(cand)) {
-      return { url: '/workshops/demos/' + cand + '.html', label: 'Play the finished build', kind: 'demo' };
+  const id = e.id || '';
+  let bases = [];
+  if (/-workshop$/.test(id)) bases.push(id.replace(/-workshop$/, ''));
+  else if (/^my-first-(?:cpp|defold|gdevelop|godot|pico8|python|scratch)-game$/.test(id)) bases.push(id);
+  if (!bases.length) return null;
+  for (const base of bases) {
+    for (const cand of [base + '-canvas', base + '-game', base]) {
+      if (ids.includes(cand)) {
+        return { url: '/workshops/demos/' + cand + '.html', label: 'Play the finished build', kind: 'demo' };
+      }
     }
   }
   return null;
