@@ -48,7 +48,6 @@ const CASES = [
   { page: 'workshops/defold-mod-studio.html', next: 'engine-defold.html' },
   { page: 'workshops/gdevelop-mod-studio.html', next: 'engine-gdevelop.html' },
   { page: 'workshops/gml-mod-studio.html', next: 'engine-gml-gamemaker.html' },
-  { page: 'workshops/godot-mod-studio.html', next: 'engine-godot.html' },
   { page: 'workshops/java-mod-studio.html', next: 'engine-java.html' },
   { page: 'workshops/minecraft-mod-studio.html', next: 'engine-minecraft.html' },
   { page: 'workshops/mugen-mod-studio.html', next: 'engine-mugen.html' },

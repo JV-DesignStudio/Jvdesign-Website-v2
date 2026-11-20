@@ -205,7 +205,7 @@ window.CW_CONFIG = {
   downloadName: 'my-biscuit-tycoon.html',
   version: 1,
   engineProject: ENGINE_PROJECT,
-  nextStep: { url: '/workshops/godot-mod-studio.html', label: 'Godot Mod Studio' },
+  nextStep: { url: '/workshops/godot-lab/', label: 'Godot Lab' },
 
   hints: [
     'A big biscuit tin in the middle and a biscuit counter at the top',
@@ -506,7 +506,7 @@ window.CW_CONFIG = {
         'In Godot, add a Button node and connect its pressed signal to on_tap',
         'Use a Timer node for the auto tapper, or call auto_tick from _process(delta)',
         'Save biscuits with <code>FileAccess.open("user://bakery.save", FileAccess.WRITE)</code>',
-        'Open the Godot Mod Studio to lay out the same scene in the browser'
+        'Open the Godot Lab to edit the same scene in the browser'
       ],
       challenge: '🏠 Fill in your mod card:',
       starter: '# My Biscuit Tycoon card\nGame name: ___\nBiscuit type: ___\nTap power: ___\nAuto tapper name: ___\nStarting auto tappers: ___\nOne thing to add at home: ___',
@@ -521,7 +521,7 @@ window.CW_CONFIG = {
           'Your bakery is the project. Press F5 and check every feature once.',
           'Open Project > Export and add a Windows Desktop or Web preset.',
           'Choose Export Project and keep the whole export folder.',
-          'Open the Godot Mod Studio to compare the same scene in the browser.'
+          'Open the Godot Lab to compare the same scene in the browser.'
         ],
         check: 'The exported folder runs on another computer and the bakery keeps working.'
       },

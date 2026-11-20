@@ -1593,6 +1593,21 @@ window.JVDS_CONTENT = {
       "needs": "browser"
     },
     {
+      "id": "godot-creator-brief",
+      "title": "Godot Creator: Build a Level from a Brief (Advanced)",
+      "desc": "An advanced Godot Creator brief for ages 10+. Plan a small level, build it independently in the browser or the Godot editor, test it, write a design note and share it. No step-by-step instructions.",
+      "engine": "Godot",
+      "difficulty": "advanced",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#478cbf",
+      "cover": "/godot-teaser.webp",
+      "url": "/workshops/godot-creator-brief.html",
+      "needs": "browser"
+    },
+    {
       "id": "godot-gatekeeper-3d-part1-canvas",
       "title": "Godot Gatekeeper 3D Part 1 Build Canvas",
       "desc": "",
@@ -2016,6 +2031,21 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/js-snake-workshop.webp",
       "url": "/workshops/js-snake-workshop.html"
+    },
+    {
+      "id": "js-builder-second-level",
+      "title": "JavaScript Builder: Add a Second Level",
+      "desc": "Turn your Flappy game into a level 2 game. Add a level variable, a moving obstacle and a higher target score, then test and remix it. Free Builder workshop for ages 10+.",
+      "engine": "JavaScript",
+      "difficulty": "intermediate",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#f7df1e",
+      "cover": "/og/js-flappy-workshop.webp",
+      "url": "/workshops/js-builder-second-level.html",
+      "needs": "browser"
     },
     {
       "id": "minecraft-custom-block-mod",
@@ -5709,8 +5739,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-19T17:22:25.000Z",
-    "workshops": 284,
+    "generated": "2026-11-20T08:19:04.000Z",
+    "workshops": 286,
     "games": 16,
     "tools": 50,
     "books": 5,
@@ -5721,9 +5751,9 @@ window.JVDS_CONTENT = {
       "GDevelop": 7,
       "General": 52,
       "GML/GameMaker": 6,
-      "Godot": 18,
+      "Godot": 19,
       "Java": 8,
-      "JavaScript": 6,
+      "JavaScript": 7,
       "Minecraft": 18,
       "MUGEN": 17,
       "OpenRCT2": 13,

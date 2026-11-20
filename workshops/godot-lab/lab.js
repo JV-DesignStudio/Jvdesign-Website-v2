@@ -25,7 +25,7 @@
      projects.json holds the library; ?project=<id> opens one directly. The two
      fallbacks keep the Lab working if the manifest has not loaded yet. */
   var FALLBACK = {
-    starter: { id: 'starter', title: 'First Video Game starter', zip: 'starter.zip', download: 'my-first-godot-project.zip', level: '2D', workshop: '/workshops/godot-mod-studio.html' },
+    starter: { id: 'starter', title: 'First Video Game starter', zip: 'starter.zip', download: 'my-first-godot-project.zip', level: '2D', workshop: '/workshops/engine-godot.html#godot-path' },
     'godot-tutorial': { id: 'godot-tutorial', title: 'Star Collector', zip: 'godot-tutorial.zip', download: 'star-collector-godot.zip', level: '2D', workshop: '/workshops/godot-tutorial-canvas.html' }
   };
   var projectsById = Object.assign({}, FALLBACK);

@@ -6,6 +6,149 @@
 
 const POSTS = [
     {
+        id: 642,
+        date: '13 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Tabletop Studio: starter boards and clearer hints',
+        excerpt: 'Starter-board previews and clearer hints make it quicker to pick a world and play.',
+        image: '/assets/devlog/2026-11-13-tools-tabletop-studio-html.webp',
+        content: 'Tabletop Studio now shows starter-board previews and clearer hints, so picking a world and starting to play feels quicker. Choose a meadow, a dungeon, an island or a surprise, then start placing pieces.'
+    },
+
+    {
+        id: 641,
+        date: '14 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Invite a friend to BuildLab with a QR code',
+        excerpt: 'Build Together hosts can show an invite as a QR code, with keyboard access too.',
+        image: '/assets/devlog/2026-11-14-tools-buildlab-html.webp',
+        content: 'Build Together hosts can now show their invite as a QR code. Keyboard users can Tab into the radial menu, and Escape closes the QR and radial overlays. BuildLab also waits until you ask before downloading the QR or WebGPU modules, so the page opens faster.'
+    },
+
+    {
+        id: 640,
+        date: '14 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Tabletop Studio: rotate the board and draw straight lines',
+        excerpt: 'Boards can turn, and the paint tools now draw straight lines and rectangles.',
+        image: '/assets/devlog/2026-11-14-tabletop-studio-real-game-prototyping.webp',
+        content: 'Tabletop Studio can rotate a board and paint straight lines and rectangles. It makes a tidy map or a quick dungeon much faster to draw, and the board still saves on your device as you go.'
+    },
+
+    {
+        id: 639,
+        date: '14 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'The Tool Gallery remembers your filters',
+        excerpt: 'The Tool Gallery keeps your filter, shares it with one link and has a Back button.',
+        image: '/assets/devlog/2026-11-14-tool-parity.webp',
+        content: 'The Tool Gallery now remembers your filter, shares a filtered view with one link, and has a Back button. The filter tabs work with the arrow keys, the choice autosaves, and Ember has a touchpoint on the page.'
+    },
+
+    {
+        id: 638,
+        date: '16 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Launch Studio installs like the rest of the studio',
+        excerpt: 'Launch Studio now says when your logo, screenshot or store page is saved, and installs as an app.',
+        image: '/assets/devlog/2026-11-16-tools-store-page-builder-html.webp',
+        content: 'Launch Studio now tells screen readers when a logo, screenshot or store page is saved or exported, so the work is easier to follow with a keyboard or a screen reader. Each mode has a manifest, so Launch Studio installs like the rest of the studio and opens without a connection.'
+    },
+
+    {
+        id: 637,
+        date: '15 November 2026',
+        tag: 'games',
+        emoji: '🎮',
+        title: 'Sound is back in the arcade',
+        excerpt: 'Eight arcade games have their sound back, and every cabinet shows a how-to card first.',
+        image: '/assets/devlog/2026-11-15-games-pips-cozy-cove-html.webp',
+        content: 'Eight arcade games have their sound back, and every cabinet now shows a clear how-to card before you play. Pick a game, read the card, then jump in. The how-to follows the same steps on every game, so you always know where to start.'
+    },
+
+    {
+        id: 636,
+        date: '7 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'A quick-actions menu for BuildLab on touch',
+        excerpt: 'Long-press a part or tap the toolbox to get Move, Scale, Turn, Paint and Delete at your finger.',
+        image: '/assets/devlog/2026-11-07-buildlab-learner-ux.webp',
+        content: 'BuildLab has a quick-actions radial menu on touch. Long-press a part or tap the toolbox to get Move, Scale, Turn, Paint and Delete right at your finger, so building on a tablet is much quicker.'
+    },
+
+    {
+        id: 635,
+        date: '11 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Arcade Game Maker: one clear next step',
+        excerpt: 'Every tab in Arcade Game Maker now ends with one clear next step.',
+        image: '/assets/devlog/2026-11-11-tools-arcade-game-maker-html.webp',
+        content: 'The Arcade Game Maker now ends every tab with one clear next step. The Build tab has three quick changes: make it faster, change the hero, add a sound. Play still returns to Make it yours and Play Again, so a game keeps improving.'
+    },
+
+    {
+        id: 634,
+        date: '16 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Five more makers work offline',
+        excerpt: 'Minecraft Skin Editor, Game Planner, Launch Studio, Game Logo Maker and Screenshot Mode now open without a connection.',
+        image: '/assets/devlog/2026-11-16-a3061.webp',
+        content: 'Five more makers now open without a connection: Minecraft Skin Editor, Game Planner, Launch Studio, Game Logo Maker and Screenshot Mode. If the school wifi drops, you can keep making.'
+    },
+
+    {
+        id: 633,
+        date: '16 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Turn your story into a playable page',
+        excerpt: 'Story Editor now downloads one playable story file you can keep or share.',
+        image: '/assets/devlog/2026-11-16-tools-story-editor-html.webp',
+        content: 'Story Editor now downloads one playable story file, so a learner can keep or hand in their branching story without the site. Pick a path, make a choice and the story plays on its own.'
+    },
+
+    {
+        id: 632,
+        date: '19 November 2026',
+        tag: 'update',
+        emoji: '📚',
+        title: 'A clearer way into Godot',
+        excerpt: 'The Godot path starts with one clear workshop and ends in a challenge you finish in the Godot Lab.',
+        image: '/assets/devlog/2026-11-19-workshops-engine-godot-html.webp',
+        content: 'The Godot lesson now ends in a rainy day challenge you finish in the Godot Lab. The movement step has a drag-to-order code task that makes the order of code easier to see. The download game button moved into the stage toolbar, and every workshop has a For grown-ups note. The old Godot Studio page is unpromoted and stays only for old links.'
+    },
+
+    {
+        id: 631,
+        date: '16 November 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Play your World Builder level on its own',
+        excerpt: 'One click downloads a playable level file that runs without the site.',
+        image: '/assets/devlog/2026-11-16-tools-level-designer-html.webp',
+        content: 'World Builder now downloads one playable level file, so a learner can keep or hand in a level that runs without the site. It is a simple way to take a design out of the browser and show it to someone.'
+    },
+
+    {
+        id: 630,
+        date: '19 November 2026',
+        tag: 'site',
+        emoji: '⚙️',
+        title: 'The crew now guides Discovery Session',
+        excerpt: 'Every slide in the Discovery Session now has its own character guide.',
+        image: '/assets/devlog/2026-11-19-pages-discovery-session-html.webp',
+        content: 'The Discovery Session now introduces the crew up front and gives every slide its own guide. Stardust, Lumo, Ember, Pip and Echo walk you through the studio instead of appearing on just one slide, so there is always someone to show you the next step.'
+    },
+
+    {
         id: 536,
         date: '19 November 2026',
         tag: 'site',

@@ -30,7 +30,7 @@ const server=http.createServer((req,res)=>{
       cards:document.querySelectorAll('a.gd-ep').length,
       episodeLinks:Array.from(document.querySelectorAll('a.gd-ep')).filter(a=>/\.html$/.test(a.getAttribute('href')||'')).length,
       hero:!!document.getElementById('gdHero'),
-      studio:document.querySelectorAll('a[href*="godot-mod-studio.html"]').length,
+      studio:document.querySelectorAll('a[href*="godot-lab"]').length,
       prog:!!document.getElementById('gdProgText'),
       badge:!!document.getElementById('gdProgBadge'),
       cheat:!!document.querySelector('a[href*="godot-cheatsheet.html"]'),
@@ -40,7 +40,7 @@ const server=http.createServer((req,res)=>{
     check('hub lists all 7 episodes',hub.cards>=7,'cards '+hub.cards);
     check('hub links the episode pages',hub.episodeLinks>=7,'links '+hub.episodeLinks);
     check('hub has the live scene hero',hub.hero);
-    check('hub links the Godot Mod Studio',hub.studio>=2,'links '+hub.studio);
+    check('hub links the Godot Lab',hub.studio>=2,'links '+hub.studio);
     check('hub has the progress dashboard',hub.prog&&hub.badge);
     check('hub links the cheat sheet',hub.cheat);
     check('hub has no dashes',hub.dashes===0,'dashes '+hub.dashes);
@@ -61,11 +61,11 @@ const server=http.createServer((req,res)=>{
       await page.goto(base+'/workshops/'+file,{waitUntil:'load'});
       if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
       const ep=await page.evaluate(()=>({
-        handoff:/Build it in our Godot Studio too/.test(document.body.innerHTML),
+        handoff:/Build it in the Godot Lab too/.test(document.body.innerHTML),
         dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
         sw:document.documentElement.scrollWidth
       }));
-      check(file+': links the Godot Studio for guidance',ep.handoff);
+      check(file+': links the Godot Lab for guidance',ep.handoff);
       check(file+': no dashes',ep.dashes===0,'dashes '+ep.dashes);
       check(file+': desktop no overflow',ep.sw<=1442,ep.sw+'');
       await page.setViewport({width:390,height:844,isMobile:true});
