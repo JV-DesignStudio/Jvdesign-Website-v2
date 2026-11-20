@@ -14,10 +14,10 @@
 | Stage | Workshops |
 |---|---:|
 | Beginner | 272 |
-| Builder | 8 |
-| Creator | 4 |
+| Builder | 9 |
+| Creator | 5 |
 
-Major subjects are engines with at least 5 workshops. 16 of 21 major engines have no Builder workshop. 17 of 21 have no Creator workshop.
+Major subjects are engines with at least 5 workshops. 15 of 21 major engines have no Builder workshop. 16 of 21 have no Creator workshop.
 
 ## By engine
 
@@ -31,9 +31,9 @@ Major subjects are engines with at least 5 workshops. 16 of 21 major engines hav
 | GDevelop | 7 | 7 | 0 | 0 | missing Builder, Creator |
 | General | 52 | 50 | 1 | 1 | complete |
 | GML/GameMaker | 6 | 6 | 0 | 0 | missing Builder, Creator |
-| Godot | 18 | 14 | 4 | 0 | missing Creator |
+| Godot | 19 | 14 | 4 | 1 | complete |
 | Java | 8 | 7 | 1 | 0 | missing Creator |
-| JavaScript | 6 | 6 | 0 | 0 | missing Builder, Creator |
+| JavaScript | 7 | 6 | 1 | 0 | missing Creator |
 | Minecraft | 18 | 18 | 0 | 0 | missing Builder, Creator |
 | MUGEN | 17 | 17 | 0 | 0 | missing Builder, Creator |
 | OpenRCT2 | 13 | 13 | 0 | 0 | missing Builder, Creator |
@@ -67,7 +67,7 @@ Major subjects are engines with at least 5 workshops. 16 of 21 major engines hav
 | shooter | 9 | 9 | 0 | 0 | missing Builder, Creator |
 | simulator | 2 | 2 | 0 | 0 | missing Builder, Creator |
 | tycoon | 4 | 4 | 0 | 0 | missing Builder, Creator |
-| Untagged | 157 | 152 | 3 | 2 | complete |
+| Untagged | 159 | 152 | 4 | 3 | complete |
 
 ## Read this next
 
