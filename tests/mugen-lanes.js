@@ -10,17 +10,17 @@ const assert = require('assert/strict');
 
 const ROOT = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'mugen-lanes.json'), 'utf8'));
-const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'mugen-lanes.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style-mugen-lanes.css'), 'utf8');
+const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'workshop-lanes.js'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'style-workshop-lanes.css'), 'utf8');
 const enhancements = fs.readFileSync(path.join(ROOT, 'workshop-enhancements.js'), 'utf8');
 
 const pages = Object.keys(data.pages || {});
 assert.ok(pages.length >= 14, 'lanes cover the 14 MUGEN build pages (' + pages.length + ')');
-assert.ok(/\.mg-lane\{/.test(css) && /\.mg-lane-progress\{/.test(css), 'lane styles exist');
-assert.ok(/fetch\('\/content\/mugen-lanes\.json'/.test(script), 'lane script reads the data file');
-assert.ok(/data-mg-done/.test(script), 'lane script adds a checkpoint tick');
+assert.ok(/\.wl-lane\{/.test(css) && /\.wl-lane-progress\{/.test(css), 'lane styles exist');
+assert.ok(/mugen-lanes\.json/.test(script), 'lane script reads the data file');
+assert.ok(/data-wl-done/.test(script), 'lane script adds a checkpoint tick');
 assert.ok(/\.s-body/.test(script), 'lane script supports the MUGEN workshop step body');
-assert.ok(/mugen-lanes\.js/.test(enhancements), 'enhancements load the lane script on MUGEN pages');
+assert.ok(/workshop-lanes\.js/.test(enhancements), 'enhancements load the lane script on MUGEN pages');
 assert.ok(fs.existsSync(path.join(ROOT, data.studio.replace(/^\//, ''))), 'Mod Studio page exists');
 
 const problems = [];

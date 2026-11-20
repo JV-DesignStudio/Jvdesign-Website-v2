@@ -10,17 +10,17 @@ const assert = require('assert/strict');
 
 const ROOT = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'unreal-lanes.json'), 'utf8'));
-const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'unreal-lanes.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style-unreal-lanes.css'), 'utf8');
+const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'workshop-lanes.js'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'style-workshop-lanes.css'), 'utf8');
 const enhancements = fs.readFileSync(path.join(ROOT, 'workshop-enhancements.js'), 'utf8');
 
 const pages = Object.keys(data.pages || {});
 assert.ok(pages.length >= 3, 'lanes cover the 3 Unreal pages with a step spine (' + pages.length + ')');
-assert.ok(/\.ue-lane\{/.test(css) && /\.ue-lane-progress\{/.test(css), 'lane styles exist');
-assert.ok(/fetch\('\/content\/unreal-lanes\.json'/.test(script), 'lane script reads the data file');
-assert.ok(/data-ue-done/.test(script), 'lane script adds a checkpoint tick');
+assert.ok(/\.wl-lane\{/.test(css) && /\.wl-lane-progress\{/.test(css), 'lane styles exist');
+assert.ok(/unreal-lanes\.json/.test(script), 'lane script reads the data file');
+assert.ok(/data-wl-done/.test(script), 'lane script adds a checkpoint tick');
 assert.ok(/\.s-body/.test(script), 'lane script supports the Unreal workshop step body');
-assert.ok(/unreal-lanes\.js/.test(enhancements), 'enhancements load the lane script on Unreal pages');
+assert.ok(/workshop-lanes\.js/.test(enhancements), 'enhancements load the lane script on Unreal pages');
 assert.ok(fs.existsSync(path.join(ROOT, data.studio.replace(/^\//, ''))), 'Mod Studio page exists');
 
 const problems = [];

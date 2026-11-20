@@ -39,7 +39,12 @@ const EXCLUDE_FILES = new Set([
   'meet-the-crew.html', 'newsletter.html',
   'tools/dialogue-tree-builder.html',
   'games/sky_high_squirt.html',
-  'tools/tileset-builder.html'
+  'tools/tileset-builder.html',
+  // Vendored Godot web editor export (workshops/godot-lab/editor). Its close
+  // buttons, tabindex and heading come from the engine build, not our UI.
+  'workshops/godot-lab/editor/index.html',
+  // Google Search Console verification file. It has no page meta by design.
+  'google6afe7cd0ffe32cdc.html'
 ]);
 
 // Games that live in games/ but are NOT part of the live arcade line-up.

@@ -10,17 +10,17 @@ const assert = require('assert/strict');
 
 const ROOT = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'terraria-lanes.json'), 'utf8'));
-const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'terraria-lanes.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style-terraria-lanes.css'), 'utf8');
+const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'workshop-lanes.js'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'style-workshop-lanes.css'), 'utf8');
 const enhancements = fs.readFileSync(path.join(ROOT, 'workshop-enhancements.js'), 'utf8');
 
 const pages = Object.keys(data.pages || {});
 assert.ok(pages.length >= 12, 'lanes cover the 12 Terraria build pages (' + pages.length + ')');
-assert.ok(/\.tr-lane\{/.test(css) && /\.tr-lane-progress\{/.test(css), 'lane styles exist');
-assert.ok(/fetch\('\/content\/terraria-lanes\.json'/.test(script), 'lane script reads the data file');
-assert.ok(/data-tr-done/.test(script), 'lane script adds a checkpoint tick');
+assert.ok(/\.wl-lane\{/.test(css) && /\.wl-lane-progress\{/.test(css), 'lane styles exist');
+assert.ok(/terraria-lanes\.json/.test(script), 'lane script reads the data file');
+assert.ok(/data-wl-done/.test(script), 'lane script adds a checkpoint tick');
 assert.ok(/\.s-body/.test(script), 'lane script supports the Terraria workshop step body');
-assert.ok(/terraria-lanes\.js/.test(enhancements), 'enhancements load the lane script on Terraria pages');
+assert.ok(/workshop-lanes\.js/.test(enhancements), 'enhancements load the lane script on Terraria pages');
 assert.ok(fs.existsSync(path.join(ROOT, data.studio.replace(/^\//, ''))), 'Mod Studio page exists');
 
 const problems = [];

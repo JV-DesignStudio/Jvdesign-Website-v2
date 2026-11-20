@@ -10,8 +10,8 @@ const assert = require('assert/strict');
 const ROOT = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'general-lanes.json'), 'utf8'));
 const workshops = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'workshops.json'), 'utf8'));
-const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'general-lanes.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style-general-lanes.css'), 'utf8');
+const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'workshop-lanes.js'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'style-workshop-lanes.css'), 'utf8');
 const enhancements = fs.readFileSync(path.join(ROOT, 'workshop-enhancements.js'), 'utf8');
 
 const general = workshops.filter((w) => w.engine === 'General');
@@ -20,10 +20,10 @@ const ids = general.map((w) => w.id);
 assert.equal(Object.keys(pages).length, general.length, 'one register entry per General page (' + Object.keys(pages).length + '/' + general.length + ')');
 for (const id of ids) assert.ok(pages[id], 'register covers ' + id);
 
-assert.ok(/\.gl-lane\{/.test(css) && /\.gl-mode\{/.test(css), 'lane and mode styles exist');
-assert.ok(/fetch\('\/content\/general-lanes\.json'/.test(script), 'lane script reads the register');
-assert.ok(/data-gl-done/.test(script), 'lane script adds a checkpoint tick');
-assert.ok(/general-lanes\.js/.test(enhancements), 'enhancements load the General script');
+assert.ok(/\.wl-lane\{/.test(css) && /\.wl-mode\{/.test(css), 'lane and mode styles exist');
+assert.ok(/general-lanes\.json/.test(script), 'lane script reads the register');
+assert.ok(/data-wl-done/.test(script), 'lane script adds a checkpoint tick');
+assert.ok(/workshop-lanes\.js/.test(enhancements), 'enhancements load the General script');
 
 const kinds = new Set(['build-along', 'reference']);
 const modes = new Set(['software', 'browser', 'builder', 'guide', 'overview']);

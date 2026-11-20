@@ -1107,37 +1107,8 @@
   loadScript('/assets/js/workshop-course-nav.js');
   loadScript('/assets/js/workshop-recommend.js');
   loadScript('/assets/js/workshop-kit.js');
-  if (/\/workshops\/minecraft-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/minecraft-lanes.js');
-  }
-  if (/\/workshops\/mugen-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/mugen-lanes.js');
-  }
-  if (/\/workshops\/terraria-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/terraria-lanes.js');
-  }
-  if (/\/workshops\/stardew-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/stardew-lanes.js');
-  }
-  if (/\/workshops\/openrct2-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/openrct2-lanes.js');
-  }
-  if (/\/workshops\/blender-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/blender-lanes.js');
-  }
-  if (/\/workshops\/tinkercad-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/tinkercad-lanes.js');
-  }
-  if (/\/workshops\/unreal-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/unreal-lanes.js');
-  }
-  if (/\/workshops\/unity-[^/]+\.html$/i.test(window.location.pathname)) {
-    loadScript('/assets/js/unity-lanes.js');
-  }
-  var generalSlugs = /^(world-builder-3d|add-your-own-stage|nuclear-throne-guide|barrel-blast-workshop|build-a-game-15-min|sci-fi-runner-builder|space_invaders_tutorial|castle-siege-blueprint|cyber-security|fairy-survivors-guide|my-first-browser-game-run-sheet|my-first-scratch-game-run-sheet|my-first-video-game-run-sheet|diablo-blueprint|jump-jump-mario-workshop|make-your-first-board-game|my-achievements|my-first-3d-model|my-first-3d-prints-fidget-toy|my-first-browser-game|my-first-cpp-game|my-first-cpp-game-canvas|my-first-defold-game|my-first-defold-game-canvas|my-first-fighting-game|my-first-gamemaker-game|my-first-gdevelop-game|my-first-gdevelop-game-canvas|my-first-godot-game-canvas|my-first-java-game|my-first-minecraft-mod|my-first-pico8-game|my-first-pico8-game-canvas|my-first-python-game|my-first-python-game-canvas|my-first-roblox-studio-game|my-first-scratch-game|my-first-scratch-game-canvas|my-first-series|my-first-unity-game|my-first-unreal-game|my-first-video-game|night-watch-workshop|night-watch-part2-workshop|night-watch-part3-workshop|nuclear-blueprint|pixel-quest-workshop|race-builder|racing-blueprint|fnaf-blueprint|start-here|voxel-studio)$/;
-  var generalMatch = window.location.pathname.match(/\/workshops\/([a-z0-9_-]+)\.html$/i);
-  if (generalMatch && generalSlugs.test(generalMatch[1])) {
-    loadScript('/assets/js/general-lanes.js');
+  if (/\/workshops\/[^/]+\.html$/i.test(window.location.pathname)) {
+    loadScript('/assets/js/workshop-lanes.js');
   }
 
   var isArticlePage = !!(document.body && (document.body.dataset.workshopKey || document.body.dataset.profileId));

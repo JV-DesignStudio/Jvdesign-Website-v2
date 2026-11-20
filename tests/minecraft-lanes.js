@@ -10,16 +10,16 @@ const assert = require('assert/strict');
 
 const ROOT = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'minecraft-lanes.json'), 'utf8'));
-const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'minecraft-lanes.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'style-minecraft-lanes.css'), 'utf8');
+const script = fs.readFileSync(path.join(ROOT, 'assets', 'js', 'workshop-lanes.js'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'style-workshop-lanes.css'), 'utf8');
 const enhancements = fs.readFileSync(path.join(ROOT, 'workshop-enhancements.js'), 'utf8');
 
 const pages = Object.keys(data.pages || {});
 assert.ok(pages.length >= 14, 'lanes cover the 14 Minecraft build pages (' + pages.length + ')');
-assert.ok(/\.mc-lane\{/.test(css) && /\.mc-lane-progress\{/.test(css), 'lane styles exist');
-assert.ok(/fetch\('\/content\/minecraft-lanes\.json'/.test(script), 'lane script reads the data file');
-assert.ok(/data-mc-done/.test(script), 'lane script adds a checkpoint tick');
-assert.ok(/minecraft-lanes\.js/.test(enhancements), 'enhancements load the lane script on Minecraft pages');
+assert.ok(/\.wl-lane\{/.test(css) && /\.wl-lane-progress\{/.test(css), 'lane styles exist');
+assert.ok(/minecraft-lanes\.json/.test(script), 'lane script reads the data file');
+assert.ok(/data-wl-done/.test(script), 'lane script adds a checkpoint tick');
+assert.ok(/workshop-lanes\.js/.test(enhancements), 'enhancements load the lane script on Minecraft pages');
 assert.ok(fs.existsSync(path.join(ROOT, data.studio.replace(/^\//, ''))), 'Mod Studio page exists');
 
 const problems = [];
