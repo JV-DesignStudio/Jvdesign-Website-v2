@@ -23,14 +23,23 @@ function scratchToJs(code) {
     .replace(/set x to \[([^\]]+)\]/g, 'px=$1;')
     .replace(/set y to \[([^\]]+)\]/g, 'py=$1;')
     .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'px=$1;py=$2;')
-    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, function (m, name, val) {
+      var v = String(val).trim();
+      if (/^-?\d+(\.\d+)?$/.test(v)) return name + '=' + v + ';';
+      if (/^(true|false|null)$/i.test(v)) return name + '=' + v.toLowerCase() + ';';
+      if (/^[A-Za-z][A-Za-z0-9_ ]*[!?]?$/.test(v)) return name + '="' + v.replace(/"/g, '\\"') + '";';
+      return name + '=' + v + ';';
+    })
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/if <touching \[Edge\]\?> then/g, 'if(px<0||px>464||py<0||py>344){')
     .replace(/if <touching color \[([^\]]+)\]\?> then/g, 'if(touchingWall(px,py)){')
-    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/if <([^>]+)> then/g, function (m, expr) {
+      return 'if(' + String(expr).replace(/([^=!<>])=([^=])/g, '$1===$2') + '){';
+    })
     .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
     .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
     .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/set \[([^\]]+)\] to ([^\n;]+)/g, function (m, name, expr) { return name + '=' + expr.trim() + ';'; })
     .replace(/\/\/.*$/gm, '');
 }
 
@@ -100,6 +109,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-maze-canvas',
   downloadName: 'my-scratch-maze.html',
+  previewSolutionWhenBlank: true,
   engineProject: {
     href: '/downloads/scratch-maze-workshop-reference.zip',
     label: 'Download the Scratch reference project'
@@ -143,12 +153,13 @@ window.CW_CONFIG = {
     3: function(u) {
       return wbWrap(
         
-        SETUP + PLAYER_VARS + KEYS + MAZE_DATA + WALL_CHECK,
+        SETUP + PLAYER_VARS + MAZE_DATA + WALL_CHECK + KEYS + 'var oldX=0,oldY=0;',
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
         'if(leftHeld)px-=pSpeed;if(rightHeld)px+=pSpeed;' +
         'if(upHeld)py-=pSpeed;if(downHeld)py+=pSpeed;' +
+        'oldX=ox;oldY=oy;' +
         'if(window.cwStep)cwStep();' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +

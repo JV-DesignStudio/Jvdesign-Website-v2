@@ -28,6 +28,13 @@ for (const f of files) {
 }
 ok('every finished build is a runnable page (' + files.length + ')', bad.length === 0, bad.slice(0, 5).join('; '));
 
+const scratchDemos = files.filter((f) => /^(scratch-|my-first-scratch-)/.test(f));
+const shellBad = scratchDemos.filter((f) => {
+  const html = fs.readFileSync(path.join(DEMO_DIR, f), 'utf8');
+  return !/class="demo-top"/.test(html) || !/id="demoCodeBtn"/.test(html) || !/class="demo-stage"/.test(html);
+});
+ok('Scratch demos use the interactive See it shell (' + scratchDemos.length + ')', scratchDemos.length > 0 && shellBad.length === 0, shellBad.join('; '));
+
 const pointed = kits.filter((k) => k.demo && k.demo.kind === 'demo' && /^\/workshops\/demos\//.test(k.demo.url || ''));
 const missing = pointed.filter((k) => !fs.existsSync(path.join(ROOT, k.demo.url.replace(/^\//, ''))));
 ok('every kit demo link resolves (' + pointed.length + ' links)', missing.length === 0, missing.slice(0, 5).map((k) => k.id).join(', '));

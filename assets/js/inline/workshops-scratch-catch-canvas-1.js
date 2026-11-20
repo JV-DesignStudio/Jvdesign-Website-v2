@@ -102,6 +102,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-catch-canvas',
   downloadName: 'my-scratch-catch.html',
+  previewSolutionWhenBlank: true,
   engineProject: {
     href: '/downloads/scratch-catch-workshop-reference.zip',
     label: 'Download the Scratch reference project'

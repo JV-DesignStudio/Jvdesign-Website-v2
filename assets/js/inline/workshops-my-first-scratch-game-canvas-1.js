@@ -16,11 +16,18 @@ function scratchToJs(code) {
     .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
     .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
     .replace(/if\s+(.+?)\s*:/g, 'if($1){')
-    .replace(/set \[([^\]]+)\] to \[([A-Za-z_]\w*)\]/g, '$1="$2";')
-    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, function (m, name, val) {
+      var v = String(val).trim();
+      if (/^-?\d+(\.\d+)?$/.test(v)) return name + '=' + v + ';';
+      if (/^(true|false|null)$/i.test(v)) return name + '=' + v.toLowerCase() + ';';
+      if (/^[A-Za-z][A-Za-z0-9_ ]*[!?]?$/.test(v)) return name + '="' + v.replace(/"/g, '\\"') + '";';
+      return name + '=' + v + ';';
+    })
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
-    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/if <([^>]+)> then/g, function (m, expr) {
+      return 'if(' + String(expr).replace(/([^=!<>])=([^=])/g, '$1===$2') + '){';
+    })
     .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
     .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
     .replace(/move \[([^\]]+)\] steps/g, 'sprite.x+=$1*Math.cos(sprite.dir*Math.PI/180);sprite.y+=$1*Math.sin(sprite.dir*Math.PI/180);')
@@ -76,6 +83,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-scratch-canvas',
   downloadName: 'my-first-scratch-game.html',
+  previewSolutionWhenBlank: true,
   nextStep: { url: '/workshops/scratch-platformer-canvas.html', label: 'Scratch Platformer' },
 
   hints: [

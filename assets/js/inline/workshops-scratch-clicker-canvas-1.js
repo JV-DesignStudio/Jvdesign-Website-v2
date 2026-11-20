@@ -23,13 +23,22 @@ function scratchToJs(code) {
     .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
     .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
     .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
-    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, function (m, name, val) {
+      var v = String(val).trim();
+      if (/^-?\d+(\.\d+)?$/.test(v)) return name + '=' + v + ';';
+      if (/^(true|false|null)$/i.test(v)) return name + '=' + v.toLowerCase() + ';';
+      if (/^[A-Za-z][A-Za-z0-9_ ]*[!?]?$/.test(v)) return name + '="' + v.replace(/"/g, '\\"') + '";';
+      return name + '=' + v + ';';
+    })
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
-    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/if <([^>]+)> then/g, function (m, expr) {
+      return 'if(' + String(expr).replace(/([^=!<>])=([^=])/g, '$1===$2') + '){';
+    })
     .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
     .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
     .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/set \[([^\]]+)\] to ([^\n;]+)/g, function (m, name, expr) { return name + '=' + expr.trim() + ';'; })
     .replace(/\/\/.*$/gm, '');
 }
 
@@ -53,7 +62,9 @@ var STATE_VARS = 'let gameState="play";';
 
 var CLICK_HANDLER = 'let clicked=false,clickX=0,clickY=0;' +
   'canvas.addEventListener("click",function(e){' +
-    'var r=canvas.getBoundingClientRect();clickX=e.clientX-r.left;clickY=e.clientY-r.top;clicked=true});';
+    'var r=canvas.getBoundingClientRect();' +
+    'clickX=(e.clientX-r.left)*(canvas.width/r.width);' +
+    'clickY=(e.clientY-r.top)*(canvas.height/r.height);clicked=true});';
 
 var MOVE_TARGET = 'function moveTarget(){tx=Math.floor(Math.random()*380)+50;ty=Math.floor(Math.random()*260)+50}';
 
@@ -83,6 +94,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-clicker-canvas',
   downloadName: 'my-scratch-clicker.html',
+  previewSolutionWhenBlank: true,
   engineProject: {
     href: '/downloads/scratch-clicker-workshop-reference.zip',
     label: 'Download the Scratch reference project'

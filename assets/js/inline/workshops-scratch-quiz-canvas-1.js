@@ -17,10 +17,18 @@ function scratchToJs(code) {
     .replace(/if <key \[2\] pressed\?> then/g, 'if(key2){')
     .replace(/if <key \[3\] pressed\?> then/g, 'if(key3){')
     .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
-    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, function (m, name, val) {
+      var v = String(val).trim();
+      if (/^-?\d+(\.\d+)?$/.test(v)) return name + '=' + v + ';';
+      if (/^(true|false|null)$/i.test(v)) return name + '=' + v.toLowerCase() + ';';
+      if (/^[A-Za-z][A-Za-z0-9_ ]*[!?]?$/.test(v)) return name + '="' + v.replace(/"/g, '\\"') + '";';
+      return name + '=' + v + ';';
+    })
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/say \[([^\]]+)\]/g, 'feedback="$1";')
-    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/if <([^>]+)> then/g, function (m, expr) {
+      return 'if(' + String(expr).replace(/([^=!<>])=([^=])/g, '$1===$2') + '){';
+    })
     .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
     .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
     .replace(/\/\/.*$/gm, '');
@@ -61,7 +69,7 @@ var KEYS = 'let key1=false,key2=false,key3=false,spaceHeld=false;' +
     'key1=false;key2=false;key3=false;spaceHeld=false});';
 
 var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
-  'var r=canvas.getBoundingClientRect(),y=e.clientY-r.top;' +
+  'var r=canvas.getBoundingClientRect(),y=(e.clientY-r.top)*(canvas.height/r.height);' +
   'if(y>=160&&y<210)key1=true;else if(y>=220&&y<270)key2=true;else if(y>=280&&y<330)key3=true});';
 
 var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,480,360);';
@@ -102,6 +110,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-quiz-canvas',
   downloadName: 'my-scratch-quiz.html',
+  previewSolutionWhenBlank: true,
   engineProject: {
     href: '/downloads/scratch-quiz-workshop-reference.zip',
     label: 'Download the Scratch reference project'

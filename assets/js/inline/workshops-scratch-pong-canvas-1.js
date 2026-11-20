@@ -77,6 +77,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-pong-canvas',
   downloadName: 'my-scratch-pong.html',
+  previewSolutionWhenBlank: true,
 
   hints: [
     'A white paddle at the bottom of a dark stage',
