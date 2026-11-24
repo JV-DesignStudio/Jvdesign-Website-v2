@@ -22,7 +22,7 @@ check('page has a status section',      /ki-status-banner/.test(pageHtml) || /ki
 check('redirect stub points to /pages/known-issues.html',
   /url=\/pages\/known-issues\.html/.test(stubHtml));
 check('footer links to /known-issues',  /href="\/known-issues"/.test(footerHtml));
-check('no em-dashes in page',          !/[–—]/.test(pageHtml));
+check('no em-dashes in page',          !new RegExp('[' + String.fromCharCode(8211) + String.fromCharCode(8212) + ']').test(pageHtml));
 check('page has nav BUILD marker or nav element',
   /BUILD:nav-content/.test(pageHtml) || /<nav/.test(pageHtml));
 check('page has footer BUILD marker or footer element',

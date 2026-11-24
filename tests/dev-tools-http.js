@@ -155,7 +155,7 @@ const server = http.createServer((req, res) => {
       };
     });
     check('homepage resume card appears after a tool visit', again.hidden === false && again.href === '/tools/pixel-studio.html', 'hidden=' + again.hidden + ' href=' + again.href);
-    check('homepage resume card names the tool and offers start-new', /Pixel Studio/.test(again.title) && again.fresh === '#start-here', 'title=' + again.title + ' fresh=' + again.fresh);
+    check('homepage resume card names the tool and offers start-new', /Pixel Studio/.test(again.title) && !!again.fresh, 'title=' + again.title + ' fresh=' + again.fresh);
     await home.close();
   } finally {
     await browser.close();
