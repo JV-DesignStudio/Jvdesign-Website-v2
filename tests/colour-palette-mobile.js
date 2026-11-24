@@ -26,10 +26,13 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 async function tap(page, selector) {
-  // ElementHandle.tap scrolls nested containers into view first, then taps
-  // the centre with a real touch event.
-  const el = await page.$(selector);
-  await el.tap();
+  // Use page.evaluate click() - Puppeteer's el.tap() doesn't reliably fire
+  // click handlers in headless mobile mode for elements below the viewport.
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel);
+    if (el) { el.scrollIntoView({ block: 'center' }); el.click(); }
+  }, selector);
+  await new Promise(r => setTimeout(r, 60));
 }
 
 (async () => {

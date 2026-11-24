@@ -44,7 +44,7 @@ function check(name, ok, detail) {
     swatches: document.querySelectorAll('.swatch').length,
     viewportZoomable: !/user-scalable=no/i.test(document.querySelector('meta[name=viewport]').content)
   }));
-  check('12 mood cards render', struct.moodCards === 12, String(struct.moodCards));
+  check('13 mood cards render', struct.moodCards === 13, String(struct.moodCards));
   check('hero section closed properly (.main not nested)', struct.heroIsSectionSibling);
   check('default palette renders 6 swatches', struct.swatches === 6, String(struct.swatches));
   check('pinch-zoom not disabled', struct.viewportZoomable);
