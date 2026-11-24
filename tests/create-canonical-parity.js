@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-/* A3166: /create is served by create/index.html on GitHub Pages, while the
- * polished Ember hub lives at pages/dev-tools.html. Both must render the same
- * page so the live Create hub never drifts back to a bare tool grid.
+/* A3166/A3168: /create is served by create/index.html on GitHub Pages, while
+ * the polished Ember hub lives at pages/dev-tools.html. create/index.html is
+ * generated from that source by scripts/build-create-hub.js, so this test fails
+ * if the copy is stale or if the live page loses its indexable head.
  *
  * Run: node tests/create-canonical-parity.js
  */
@@ -9,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { render } = require('../scripts/build-create-hub.js');
 
 const root = path.join(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
@@ -27,11 +29,14 @@ function body(html) {
 
 const canonical = read('create/index.html');
 const source = read('pages/dev-tools.html');
+const expected = render(source);
 
 check('create/index.html has a body', body(canonical) !== null);
 check('pages/dev-tools.html has a body', body(source) !== null);
 check('Create hub bodies match', body(canonical) === body(source),
   'create/index.html and pages/dev-tools.html render different pages');
+check('create/index.html matches the generator', canonical === expected,
+  'stale copy - run: node scripts/build-create-hub.js');
 
 check('create/index.html is indexable', /<meta name="robots" content="index, follow">/.test(canonical));
 check('create/index.html canonical is /create', /<link rel="canonical" href="https:\/\/jvdesignstudio\.co\.uk\/create">/.test(canonical));

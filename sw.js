@@ -60,7 +60,9 @@
 // v63 - A3061: precache the remaining learner makers (Minecraft Skin Editor, Game
 // Planner, Launch Studio, Game Logo Maker, Screenshot Mode) so the toolbox opens
 // offline on a school network after one online visit.
-const CACHE='jvds-v65';
+// v66 - A3168: refresh the precached style-mascots.css so the moved Lumo
+// companion and readable tip bubble reach returning visitors.
+const CACHE='jvds-v66';
 const CORE=[
   '/',
   '/offline.html',

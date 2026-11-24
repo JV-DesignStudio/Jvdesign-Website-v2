@@ -61,6 +61,7 @@
   });
 
   document.body.appendChild(banner);
+  document.body.classList.add('jvds-consent-open');
 
   banner.addEventListener('keydown', function(e){
     if(e.key === 'Escape'){
@@ -72,14 +73,21 @@
   // Reserve space at the bottom of the page so the fixed banner never covers
   // footer links or a page's last interactive elements.
   var prevPad = document.body.style.paddingBottom;
-  function reserveSpace(){ document.body.style.paddingBottom = (banner.offsetHeight + 8) + 'px'; }
-  function releaseSpace(){ document.body.style.paddingBottom = prevPad; }
+  function reserveSpace(){
+    document.body.style.paddingBottom = (banner.offsetHeight + 8) + 'px';
+    document.body.style.setProperty('--jvds-consent-h', banner.offsetHeight + 'px');
+  }
+  function releaseSpace(){
+    document.body.style.paddingBottom = prevPad;
+    document.body.style.removeProperty('--jvds-consent-h');
+  }
   reserveSpace();
   window.addEventListener('resize', reserveSpace);
 
   function dismiss(){
     window.removeEventListener('resize', reserveSpace);
     releaseSpace();
+    document.body.classList.remove('jvds-consent-open');
     banner.remove();
   }
 
