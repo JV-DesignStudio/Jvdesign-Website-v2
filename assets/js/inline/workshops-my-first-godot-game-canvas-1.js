@@ -464,6 +464,18 @@ window.CW_CONFIG = {
       activity: '\uD83D\uDC1B Find the bug',
       goal: 'The basket moves and the star falls, but catching it does nothing. Find the mistake in the collision check and fix it.',
       checkpoint: 'Catch three stars in a row - the score goes up each time.',
+      engine: {
+        name: 'Godot 4',
+        file: 'main.gd',
+        intro: 'The same collision bug exists in the Godot version. Open the file and fix it.',
+        do: [
+          'Open main.gd in Godot 4.',
+          'Find the line that checks if the star touches the basket  -  it uses the top edge of the star.',
+          'Change the condition so it uses the bottom edge of the star (<code>star_y + star_h</code> in GDScript: <code>star_position.y + star_size.y</code>).',
+          'Run the project and catch three stars to confirm the score increases each time.'
+        ],
+        check: 'The score goes up each time the star touches the basket.'
+      },
       points: [
         'Rectangle collision checks all four edges - if any one is wrong, nothing collides',
         'The star is 20 pixels tall: its bottom edge is <code>star_y + star_h</code>',
