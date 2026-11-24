@@ -38,6 +38,7 @@ const FLAGSHIP = ['arcane_citadel.html','gem_match.html','nova-siege.html','sky_
 const FULLSCREEN_DEBT = new Set([
   // Empty since A2840: all catalogue games own the screen. Add a file here only
   // with a tracking card, and remove it once the game passes --strict.
+  'call_of_the_cards.html', // A3165: tabletop content page; convert to Nova Siege shell
 ]);
 const STRICT_FULLSCREEN = process.env.STRICT_FULLSCREEN === '1' || process.argv.includes('--strict');
 const debtSeen = new Set();
