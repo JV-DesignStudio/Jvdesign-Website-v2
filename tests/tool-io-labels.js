@@ -11,6 +11,7 @@ const ok = (name, cond, extra) => { console.log((cond ? 'PASS ' : 'FAIL ') + nam
 
 const pixel = read('tools/pixel-studio.html');
 const build = read('tools/buildlab.html');
+const sound = read('tools/sound-studio.html');
 
 // Pixel Studio: browser save is Save/Restore, file moves are Export/Import.
 ok('pixel: Save button is labelled Save', /(?:onclick="saveProject\(\)"|data-on="saveProject")[^>]*title="Save in this browser only"[^>]*>[^<]*Save</.test(pixel));
@@ -29,6 +30,13 @@ ok('buildlab: no legacy "Save .buildlab" label', !/(?:onclick="saveProjectFile\(
 ok('buildlab: no legacy "Load .buildlab" label', !/Load \.buildlab/.test(build));
 ok('buildlab: browser-local limit explained', /Save Slot keeps a build in this browser/.test(build));
 ok('buildlab: import note per export format', /open in Roblox Studio/.test(build) && /Blender, Unreal, Godot, Unity/.test(build));
+
+// Keep-your-work affordance: all three tools must carry data-keep-pill so the
+// save-state pill appears consistently in the top bar / toolbar area.
+ok('pixel: keep-your-work pill present', /data-keep-pill/.test(pixel));
+ok('buildlab: keep-your-work pill present', /data-keep-pill/.test(build));
+ok('sound: keep-your-work pill present', /data-keep-pill/.test(sound));
+ok('sound: browser-local limit explained', /Save keeps it in this browser/.test(sound) || /Save stays on.*this browser/.test(sound));
 
 if (failures) { console.log('\nFAIL tool-io-labels: ' + failures + ' check(s) failed'); process.exit(1); }
 console.log('\nPASS tool-io-labels: Save/Restore/Export/Import vocabulary is consistent');
