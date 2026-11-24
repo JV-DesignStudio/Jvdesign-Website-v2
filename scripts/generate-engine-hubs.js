@@ -74,7 +74,7 @@ function load() {
   return { config, byId };
 }
 
-// Honest age band across everything shown, e.g. "Ages 7 and up" or "Ages 7 to 14".
+// Honest age band across everything shown, e.g. "Ages 7+" or "Ages 7 to 14".
 function ageBand(ids, byId) {
   let min = Infinity, max = 0, open = false;
   for (const id of ids) {
@@ -89,7 +89,7 @@ function ageBand(ids, byId) {
     else max = Math.max(max, lo);
   }
   if (min === Infinity) return '';
-  return open ? 'Ages ' + min + ' and up' : 'Ages ' + min + ' to ' + max;
+  return open ? 'Ages ' + min + '+' : 'Ages ' + min + ' to ' + max;
 }
 
 function coverFor(w, engine) {
