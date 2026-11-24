@@ -172,7 +172,31 @@ window.CW_CONFIG = {
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
-    /* Step 7: Take It Home - shows the learner's mod card in the canvas panel */
+    7: function(u) {
+      /* Debug It - ships the broken collision; learner must fix star_y >= basket_y */
+      return wbWrap(
+        SETUP + BG_STARS + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        STAR_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;fallSpeed=3;resetStar();gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        'sy+=fallSpeed;' +
+        'if(window.cwStep)cwStep();' +
+        'if(sy>410)resetStar();' +
+        'if(score>=5){gameState="over"}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="rgba(0,0,0,.7)";ctx.fillRect(0,0,600,400);' +
+        'ctx.save();ctx.shadowColor="#ffd166";ctx.shadowBlur=20;ctx.fillStyle="#ffd166";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,180);ctx.restore();ctx.fillStyle="#e8eaf2";ctx.font="18px monospace";ctx.fillText("Score: "+score,300,218);' +
+        'ctx.fillStyle="#60a5fa";ctx.font="16px monospace";ctx.fillText("Press R to play again",300,256)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    /* Step 8: Take It Home - shows the learner's mod card in the canvas panel */
   },
 
   steps: [
@@ -433,6 +457,32 @@ window.CW_CONFIG = {
         ],
         correct: 1
       }
+    },
+    {
+      num: 7,
+      title: 'Debug It: The Star That Won\'t Land',
+      activity: '\uD83D\uDC1B Find the bug',
+      goal: 'The basket moves and the star falls, but catching it does nothing. Find the mistake in the collision check and fix it.',
+      checkpoint: 'Catch three stars in a row - the score goes up each time.',
+      points: [
+        'Rectangle collision checks all four edges - if any one is wrong, nothing collides',
+        'The star is 20 pixels tall: its bottom edge is <code>star_y + star_h</code>',
+        'Using the top edge of the star (<code>star_y</code>) means the check fires only after the star has already passed through the basket',
+        'This kind of off-by-one is one of the most common game-dev bugs - the shapes overlap but the check never fires'
+      ],
+      challenge: '\uD83D\uDC1B Something is wrong with the collision. The basket moves under the star but the score stays at zero. Fix it:',
+      starter: '# Check if star touches basket\nif star_y >= basket_y and star_x + star_w >= basket_x and star_x <= basket_x + basket_w:\n    score += 1\n    resetStar()',
+      solution: '# Check if star touches basket\nif star_y + star_h >= basket_y and star_x + star_w >= basket_x and star_x <= basket_x + basket_w:\n    score += 1\n    resetStar()',
+      checks: ['star_y + star_h', 'basket_y', 'score'],
+      debugClues: {
+        clue1: 'The basket slides under the star perfectly - but the score never goes up. The collision block runs, so the problem must be in the condition itself.',
+        clue2: 'The star is 20 pixels tall. The collision check uses <code>star_y</code> - that is the top edge of the star. Should the check fire when the top of the star reaches the basket, or when the bottom does?',
+        answer: 'Change <code>star_y >= basket_y</code> to <code>star_y + star_h >= basket_y</code>. The collision should fire when the bottom of the star (<code>star_y + star_h</code>) reaches the top of the basket (<code>basket_y</code>). Using <code>star_y</code> alone fires only after the star has already passed right through.'
+      },
+      debugWrong: [
+        { pattern: 'star_y + star_w', feedback: 'Close - but <code>star_w</code> is the width (horizontal size), not the height. The star is 20 pixels tall, so its bottom edge is <code>star_y + star_h</code>.' }
+      ],
+      height: 120
     }
   ]
 };

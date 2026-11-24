@@ -1307,15 +1307,25 @@ function renderSteps() {
           (isDone ? '✓ Done' : 'Check my code ▶') +
         '</button>' +
         (isDone ? '' :
-          ((attempts[step.num] || 0) >= 2 ?
-            '<button class="cw-btn cw-btn-show" data-cw="showSolution" data-cw-arg="' + step.num + '">' +
-              (solutionSeen[step.num] ? 'Show Solution Again' : 'Show Solution') +
-            '</button>' : '') +
+          (step.debugClues ? '' :
+            ((attempts[step.num] || 0) >= 2 ?
+              '<button class="cw-btn cw-btn-show" data-cw="showSolution" data-cw-arg="' + step.num + '">' +
+                (solutionSeen[step.num] ? 'Show Solution Again' : 'Show Solution') +
+              '</button>' : '')) +
           '<button class="cw-btn cw-btn-reset" data-cw="resetStep" data-cw-arg="' + step.num + '">Reset</button>'
         ) +
       '</div>' +
       '<div class="cw-feedback" id="feedback-' + step.num + '" role="status" aria-live="polite"></div>' +
-      ((isActive || isDone) ? renderEngine(step) + renderParsons(step) : '');
+      ((isActive || isDone) ? renderEngine(step) + renderParsons(step) : '') +
+      (step.debugClues && (isActive || isDone) ?
+        '<div class="cw-debug-clues">' +
+          '<div class="cw-debug-clues-head"><img src="/assets/mascots/echo-badge.webp" alt="" width="18" height="18" loading="lazy"> Echo\'s clues</div>' +
+          '<details class="cw-debug-clue"><summary>Clue 1 - a nudge</summary><p>' + step.debugClues.clue1 + '</p></details>' +
+          '<details class="cw-debug-clue"><summary>Clue 2 - what to look for</summary><p>' + step.debugClues.clue2 + '</p></details>' +
+          '<details class="cw-debug-clue cw-debug-answer"><summary>Full answer</summary><p>' + step.debugClues.answer + '</p></details>' +
+          '<p class="cw-debug-note">Try the clues before the answer. Finding the bug is the skill.</p>' +
+        '</div>'
+        : '');
 
     if (step.fills && (isActive || isDone)) {
       var parts = step.fills.text.split('___');
@@ -1907,6 +1917,16 @@ function checkStep(num) {
 
   var syntax = syntaxError(raw);
   if (syntax) { failStep(num, syntax); return; }
+
+  if (step.debugWrong) {
+    for (var wi = 0; wi < step.debugWrong.length; wi++) {
+      var dw = step.debugWrong[wi];
+      if (code.indexOf(String(dw.pattern).toLowerCase()) !== -1) {
+        failStep(num, dw.feedback);
+        return;
+      }
+    }
+  }
 
   var missing = step.checks.filter(function(c) { return code.indexOf(String(c).toLowerCase()) === -1; });
   if (missing.length !== 0) {
