@@ -132,7 +132,7 @@
           meta.className = 'tool-card-readiness';
           meta.innerHTML = '<span class="tool-card-weight">~' + info.kb + ' KB</span>' +
             '<span class="' + (info.offline ? 'tool-card-offline' : 'tool-card-online') + '">' +
-            (info.offline ? 'Offline ready' : 'Online first') + '</span>';
+            (info.offline ? 'Works offline after loading' : 'Needs one online visit first') + '</span>';
           card.appendChild(meta);
         });
       })
@@ -149,6 +149,41 @@
     return weightsPromise;
   }
 
+  var gameWeightsPromise = null;
+  function fetchGameWeights() {
+    if (!gameWeightsPromise) {
+      gameWeightsPromise = fetch('/content/game-weights.json', { cache: 'force-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    return gameWeightsPromise;
+  }
+
+  function decorateGameCards() {
+    var cards = document.querySelectorAll('.game-card[href]');
+    if (!cards.length) return;
+    fetchGameWeights()
+      .then(function (weights) {
+        if (!weights) return;
+        [].forEach.call(cards, function (card) {
+          if (card.querySelector('.game-card-readiness')) return;
+          var m = (card.getAttribute('href') || '').match(/\/games\/([^/]+)\.html$/);
+          if (!m) return;
+          var info = weights[m[1]];
+          if (!info) return;
+          var pill = document.createElement('span');
+          pill.className = 'game-card-readiness';
+          var connLabel = info.offline ? 'Works offline after loading' : 'Needs one online visit first';
+          var saveLabel = info.saves ? ' · Progress saved on this device' : '';
+          pill.innerHTML = '<span class="' + (info.offline ? 'game-card-offline' : 'game-card-online') + '">' + connLabel + saveLabel + '</span>';
+          var body = card.querySelector('.game-body');
+          if (body) body.appendChild(pill);
+          else card.appendChild(pill);
+        });
+      })
+      .catch(function () {});
+  }
+
   // A1995: say plainly whether this tool works without a connection. The data
   // comes from content/tool-weights.json, the same source as the hub cards.
   function injectToolOfflineBadge() {
@@ -163,9 +198,11 @@
       var badge = document.createElement('p');
       badge.id = 'tool-offline-badge';
       badge.className = 'workshop-offline-badge';
-      badge.innerHTML = info.offline
-        ? '<strong>Available offline after one visit.</strong> Open this tool once on the school network, then it keeps working when the connection drops.'
-        : '<strong>Needs a connection for the first visit.</strong> This tool is not in the offline pack, so open it while you have internet.';
+      var connLine = info.offline
+        ? '<strong>Works offline after loading.</strong> Open this tool once on the school network, then it keeps working when the connection drops.'
+        : '<strong>Needs one online visit first.</strong> This tool is not in the offline pack, so open it while you have internet.';
+      var saveLine = info.saves ? ' <strong>Progress saved on this device.</strong>' : '';
+      badge.innerHTML = connLine + saveLine;
       var host = document.querySelector('main') || document.body;
       host.insertBefore(badge, host.firstChild);
     });
@@ -178,7 +215,7 @@
     var badge = document.createElement('p');
     badge.id = 'workshop-offline-badge';
     badge.className = 'workshop-offline-badge';
-    badge.innerHTML = '<strong>Available offline after one visit.</strong> Open this page once on the school network, then it keeps working when the connection drops.';
+    badge.innerHTML = '<strong>Works offline after loading.</strong> Open this page once on the school network, then it keeps working when the connection drops.';
     host.insertBefore(badge, host.firstChild);
   }
 
@@ -227,6 +264,7 @@
     applyAccessibility();
     renderBadges();
     decorateHubCards();
+    decorateGameCards();
     injectOfflineBadge();
     injectToolOfflineBadge();
     injectWorkshopPath();
