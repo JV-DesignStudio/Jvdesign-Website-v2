@@ -4662,7 +4662,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/cpp-cheatsheet.html"
+      "url": "/tools/cpp-cheatsheet.html",
+      "aliases": [
+        "cpp",
+        "c++ syntax",
+        "unreal cpp"
+      ]
     },
     {
       "id": "defold-cheatsheet",
@@ -4671,7 +4676,11 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/defold-cheatsheet.html"
+      "url": "/tools/defold-cheatsheet.html",
+      "aliases": [
+        "defold lua",
+        "defold reference"
+      ]
     },
     {
       "id": "error-guide",
@@ -4698,7 +4707,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/gamemaker-cheatsheet.html"
+      "url": "/tools/gamemaker-cheatsheet.html",
+      "aliases": [
+        "gml",
+        "gamemaker studio",
+        "gamemaker reference"
+      ]
     },
     {
       "id": "gdd-builder",
@@ -4716,7 +4730,11 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/gdevelop-cheatsheet.html"
+      "url": "/tools/gdevelop-cheatsheet.html",
+      "aliases": [
+        "gdevelop events",
+        "gdevelop reference"
+      ]
     },
     {
       "id": "glossary",
@@ -4736,7 +4754,11 @@ window.JVDS_CONTENT = {
         "3D"
       ],
       "comingSoon": false,
-      "url": "/tools/godot-cheatsheet.html"
+      "url": "/tools/godot-cheatsheet.html",
+      "aliases": [
+        "gdscript",
+        "godot reference"
+      ]
     },
     {
       "id": "icon-generator",
@@ -4754,7 +4776,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/java-cheatsheet.html"
+      "url": "/tools/java-cheatsheet.html",
+      "aliases": [
+        "java syntax",
+        "java reference",
+        "java oop"
+      ]
     },
     {
       "id": "javascript-cheatsheet",
@@ -4763,7 +4790,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/javascript-cheatsheet.html"
+      "url": "/tools/javascript-cheatsheet.html",
+      "aliases": [
+        "js cheatsheet",
+        "javascript reference",
+        "js syntax"
+      ]
     },
     {
       "id": "keyboard-shortcuts",
@@ -4805,7 +4837,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/minecraft-cheatsheet.html"
+      "url": "/tools/minecraft-cheatsheet.html",
+      "aliases": [
+        "minecraft commands",
+        "minecraft crafting",
+        "minecraft reference"
+      ]
     },
     {
       "id": "minecraft-skin-editor",
@@ -4839,7 +4876,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/pico8-cheatsheet.html"
+      "url": "/tools/pico8-cheatsheet.html",
+      "aliases": [
+        "pico8",
+        "pico-8 lua",
+        "pico8 reference"
+      ]
     },
     {
       "id": "pixel-studio",
@@ -4866,7 +4908,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/python-cheatsheet.html"
+      "url": "/tools/python-cheatsheet.html",
+      "aliases": [
+        "python 3",
+        "pygame reference",
+        "python syntax"
+      ]
     },
     {
       "id": "quest-board",
@@ -4888,7 +4935,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/roblox-cheatsheet.html"
+      "url": "/tools/roblox-cheatsheet.html",
+      "aliases": [
+        "luau",
+        "roblox scripting",
+        "roblox reference"
+      ]
     },
     {
       "id": "scratch-cheatsheet",
@@ -4897,7 +4949,11 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/scratch-cheatsheet.html"
+      "url": "/tools/scratch-cheatsheet.html",
+      "aliases": [
+        "scratch blocks",
+        "scratch 3"
+      ]
     },
     {
       "id": "scratch-starter-guide",
@@ -4995,7 +5051,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/unity-cheatsheet.html"
+      "url": "/tools/unity-cheatsheet.html",
+      "aliases": [
+        "unity c#",
+        "monobehaviour",
+        "unity reference"
+      ]
     },
     {
       "id": "unity-starter-setup",
@@ -5013,7 +5074,12 @@ window.JVDS_CONTENT = {
       "category": "Reference",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/unreal-cheatsheet.html"
+      "url": "/tools/unreal-cheatsheet.html",
+      "aliases": [
+        "unreal blueprints",
+        "unreal c++",
+        "ue5"
+      ]
     },
     {
       "id": "rocket-builder",
@@ -5028,7 +5094,23 @@ window.JVDS_CONTENT = {
       "comingSoon": false,
       "url": "/workshops/3d-builder.html?preset=rocket",
       "aliases": [
-        "rocket maker"
+        "rocket builder",
+        "robot builder",
+        "castle builder",
+        "pirate ship builder",
+        "race car builder",
+        "3d model maker",
+        "Rocket",
+        "Robot",
+        "Castle",
+        "Pirate Ship",
+        "Steampunk Airship",
+        "Race Car",
+        "Submarine",
+        "Space Station",
+        "Fairy Tale Cottage",
+        "Pirate Cannon",
+        "Phone Stand"
       ]
     },
     {
@@ -5042,10 +5124,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=robot",
-      "aliases": [
-        "robot maker"
-      ]
+      "url": "/workshops/3d-builder.html?preset=robot"
     },
     {
       "id": "castle-builder",
@@ -5058,10 +5137,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=castle",
-      "aliases": [
-        "fortress builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=castle"
     },
     {
       "id": "space-station-builder",
@@ -5074,10 +5150,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=space-station",
-      "aliases": [
-        "orbital outpost builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=space-station"
     },
     {
       "id": "fairy-tale-builder",
@@ -5090,10 +5163,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=fairy-tale",
-      "aliases": [
-        "cottage builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=fairy-tale"
     },
     {
       "id": "pirate-ship-builder",
@@ -5106,10 +5176,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=pirate-ship",
-      "aliases": [
-        "ship builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=pirate-ship"
     },
     {
       "id": "steampunk-airship-builder",
@@ -5122,10 +5189,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=steampunk-airship",
-      "aliases": [
-        "airship builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=steampunk-airship"
     },
     {
       "id": "race-car-builder",
@@ -5138,10 +5202,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=race-car",
-      "aliases": [
-        "car builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=race-car"
     },
     {
       "id": "submarine-builder",
@@ -5154,10 +5215,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=submarine",
-      "aliases": [
-        "sub builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=submarine"
     },
     {
       "id": "pirate-cannon-builder",
@@ -5170,10 +5228,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=pirate-cannon",
-      "aliases": [
-        "cannon builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=pirate-cannon"
     },
     {
       "id": "phone-stand-builder",
@@ -5186,10 +5241,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/3d-builder.html?preset=phone-stand",
-      "aliases": [
-        "3d print builder"
-      ]
+      "url": "/workshops/3d-builder.html?preset=phone-stand"
     }
   ],
   "books": [
@@ -5748,7 +5800,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-24T13:19:34.000Z",
+    "generated": "2026-11-24T16:48:40.000Z",
     "workshops": 286,
     "games": 16,
     "tools": 51,

@@ -322,8 +322,7 @@ window.CW_CONFIG = {
         'Feed the same <code>inputQueue</code> - zero new game logic needed'
       ],
       challenge: 'Write the touchstart + touchend handlers:',
-      starter: '// Track where the finger lands, then compare on release\nlet touchStart = null;\ncanvas.addEventListener("touchstart", function(e) {\n  // save starting position\n  \n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  // compare dx vs dy, push direction to inputQueue\n  \n});',
-      solution: 'let touchStart = null;\ncanvas.addEventListener("touchstart", function(e) {\n  touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};\n  e.preventDefault();\n});\ncanvas.addEventListener("touchend", function(e) {\n  if (!touchStart) return;\n  const dx = e.changedTouches[0].clientX - touchStart.x;\n  const dy = e.changedTouches[0].clientY - touchStart.y;\n  if (Math.abs(dx) > Math.abs(dy))\n    inputQueue.push({x: dx > 0 ? 1 : -1, y: 0});\n  else\n    inputQueue.push({x: 0, y: dy > 0 ? 1 : -1});\n  touchStart = null;\n});',
+      starter: '// Your turn  -  write the touch handlers from scratch.',
       checks: ['touchstart', 'touchend', 'inputqueue.push'],
       height: 240,
       fills: {
@@ -360,8 +359,7 @@ window.CW_CONFIG = {
         'Head is bright, tail fades - lightness = <code>55 - i * 1.5</code>'
       ],
       challenge: 'Write the gradient snake draw code:',
-      starter: '// Draw each segment with fading lightness\nsnake.forEach(function(c, i) {\n  ctx.fillStyle = "#4ade80";\n  ctx.fillRect(c.x*CELL+1, c.y*CELL+1, CELL-2, CELL-2);\n});',
-      solution: 'snake.forEach(function(c, i) {\n  const light = 55 - Math.min(35, i * 1.5);\n  ctx.fillStyle = "hsl(155, 70%, " + light + "%)";\n  ctx.fillRect(c.x*CELL+1, c.y*CELL+1, CELL-2, CELL-2);\n});',
+      starter: '// Your turn  -  draw the gradient body from scratch.',
       checks: ['hsl', 'foreach', 'fillrect'],
       height: 120,
       quiz: {
