@@ -7,7 +7,49 @@ on:
   schedule:
     - cron: '0 6 * * *' # daily 06:00 UTC audit — board-data freshness + drift
 
+# gate — required status check on main (< 10 min)
+# Runs on every PR: broken link, missing CSP hash or public-boundary leak fails it.
+# To wire as a required check:
+#   gh api repos/{owner}/{repo}/branches/main/protection \
+#     --method PUT --input scripts/branch-protection.js
+# See scripts/branch-protection.js for the full payload.
+
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Keep private planning out of the public site
+        run: npm run validate:public
+
+      - name: Check em dashes (public)
+        run: node scripts/check-dashes-ci.js
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate internal links
+        run: npm run validate:links
+
+      - name: CSP sync guard (page metas match the shared policy)
+        run: npm run check:csp-sync
+
+      - name: Validate CSS gate
+        run: npm run validate:css:gate
+
+      - name: Validate JS
+        run: npm run validate:js
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 45
