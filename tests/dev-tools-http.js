@@ -50,6 +50,8 @@ const server = http.createServer((req, res) => {
         const visibleCatCount = visibleCats.length;
         const allBtn = q('.filter-btn[data-filter="all"]');
         if (allBtn) allBtn.click();
+        const remixSec = q('#featuredRemix');
+        const challengeSec = q('#challengeStrip');
         return {
           visibleCats: visibleCatCount,
           visibleCards,
@@ -67,6 +69,10 @@ const server = http.createServer((req, res) => {
           resumeExists: !!q('#resumeLast'),
           resumeHidden: q('#resumeLast') ? q('#resumeLast').hidden : null,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          remixSection: !!remixSec,
+          remixGoHref: remixSec ? (remixSec.querySelector('[data-remix-go]') || {}).href || '' : '',
+          challengeSection: !!challengeSec,
+          challengeCta: challengeSec ? (challengeSec.querySelector('.challenge-strip__cta') || {}).href || '' : '',
         };
       });
       check(vp.width + ' page returns 200', res && res.status() === 200, res ? String(res.status()) : 'no response');
@@ -83,6 +89,11 @@ const server = http.createServer((req, res) => {
       check(vp.width + ' resume card is hidden for a first visit', d.resumeExists && d.resumeHidden === true, 'exists=' + d.resumeExists + ' hidden=' + d.resumeHidden);
       check(vp.width + ' no horizontal overflow', d.overflow <= 2, 'overflow=' + d.overflow);
       check(vp.width + ' no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+      // A2275
+      check(vp.width + ' featured remix section present', d.remixSection);
+      check(vp.width + ' remix link points to arcade-game-maker', /arcade-game-maker/.test(d.remixGoHref), d.remixGoHref.slice(-60));
+      check(vp.width + ' challenge strip present', d.challengeSection);
+      check(vp.width + ' challenge strip links to challenges.html', /challenges\.html/.test(d.challengeCta), d.challengeCta.slice(-60));
 
       // A2297: a returning learner sees one resume card for the last tool.
       await page.evaluate(() => {
