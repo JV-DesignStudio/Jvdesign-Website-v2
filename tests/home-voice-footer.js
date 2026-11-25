@@ -67,23 +67,22 @@ for (const gone of RETIRED_COPY) {
 const footnotes = text(home).toLowerCase();
 ok('homepage states it is free to use', /free/.test(footnotes));
 
-/* ── 2. Homepage counts match the generated stats ─────────────── */
+/* ── 2. Homepage about-stats block ─────────────────────────────── */
 
 const stats = JSON.parse(fs.readFileSync(STATS, 'utf8'));
 const aboutStart = homeMain.indexOf('<div class="about-stats">');
 const aboutBlock = aboutStart >= 0 ? homeMain.slice(aboutStart, homeMain.indexOf('btn-about', aboutStart)) : '';
-const statNums = [...aboutBlock.matchAll(/<div class="stat-num">(\d+\+?)<\/div>\s*<div class="stat-label">([^<]+)<\/div>/gi)]
-  .map(m => ({ n: m[1], label: m[2].trim().toLowerCase() }));
-ok('homepage shows the four content counts', statNums.length === 4, 'found ' + statNums.length);
-for (const label of ['workshops', 'free tools', 'games', 'books']) {
-  const row = statNums.find(s => s.label.includes(label));
-  ok('homepage shows a ' + label + ' figure', !!row && /^\d+\+?$/.test(row.n), row ? row.n : 'row missing');
-}
-// The homepage now markets rounded figures (for example "180+"), so it no
-// longer equals the exact content/stats.json totals. The live games figure is
-// checked against the registry in the browser pass below.
+// Match any stat-num value (numeric, text like "Ages 5+" or "15 min", etc.)
+const statNums = [...aboutBlock.matchAll(/<div class="stat-num">([^<]+)<\/div>\s*<div class="stat-label">([^<]+)<\/div>/gi)]
+  .map(m => ({ n: m[1].trim(), label: m[2].trim().toLowerCase() }));
+ok('homepage about-stats block has four stats', statNums.length === 4, 'found ' + statNums.length);
+// Current stat labels: workshops, accounts needed, who it\'s for, to your first make
+ok('homepage shows a workshops stat', !!statNums.find(s => s.label.includes('workshop')));
+ok('homepage shows a no-account stat', !!statNums.find(s => /account|sign.?up|login|register/.test(s.label)));
+// stats.json keeps exact totals for other pages to reference
 ok('exact totals still exist in content/stats.json', ['workshops', 'tools', 'games', 'books'].every(k => Number.isFinite(stats[k])));
-ok('homepage no longer advertises the stale 182/30 figures', !/\b(182|30)\b/.test(homeText));
+// Guard against re-introducing old stale counts ("182 workshops", "30 tools" etc.)
+ok('homepage no longer advertises the stale 182/30 figures', !/\b182\b/.test(homeText) && !/\b30\s+(tools?|workshops?|games?)\b/i.test(homeText));
 
 /* ── 3. Footer columns ────────────────────────────────────────── */
 
