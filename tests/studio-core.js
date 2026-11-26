@@ -90,6 +90,7 @@ const core = fs.existsSync(path.join(ROOT, 'assets/js/studio-core.js')) ? read('
   'S.print',
   'S.board',
   'S.help',
+  'S.overlay',
   'S.code'
 ].forEach((token) => check('studio-core exports ' + token, core.indexOf(token) !== -1));
 
@@ -146,7 +147,13 @@ const hostPath = path.join(ROOT, 'assets/preview-host.html');
 check('preview host exists', fs.existsSync(hostPath));
 if (fs.existsSync(hostPath)) {
   const host = fs.readFileSync(hostPath, 'utf8');
-  check('preview host blocks the network', host.indexOf("default-src 'none'") !== -1 && host.indexOf('connect-src \'none\'') !== -1);
+  // The host may allow local blob: connections so learner snippets can read
+  // their own in-memory files. What matters is that no network origin is
+  // reachable, so accept 'none' or blob: and reject http, https and *.
+  const csp = (host.match(/Content-Security-Policy"\s+content="([^"]*)"/i) || [])[1] || '';
+  const connect = ((csp.match(/connect-src([^;]*)/i) || [])[1] || '').trim();
+  const connectSafe = /^(?:'none'|blob:)(?:\s+blob:)*$/.test(connect);
+  check('preview host blocks the network', csp.indexOf("default-src 'none'") !== -1 && connectSafe, connect);
   check('preview host allows only blob modules', host.indexOf("script-src 'self' blob:") !== -1);
 }
 const hostJs = path.join(ROOT, 'assets/js/studio/preview-host.js');
