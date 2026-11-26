@@ -84,22 +84,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/blender-materials-workshop.html"
     },
     {
-      "id": "blender-mod-studio",
-      "title": "Blender Mod Studio",
-      "desc": "A free browser playground for the Blender series. Lay out a 3D scene on a grid (primitives, lights, cameras), add Blender steps, read a broken Blender Python log and choose the fix, then download a real bpy script that builds the scene for you. No install needed to plan it.",
-      "engine": "Blender",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#f5792a",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/blender-mod-studio.html"
-    },
-    {
       "id": "blender-world-workshop",
       "title": "Blender World Workshop",
       "desc": "A free Blender series for beginners: from your first cube to a rigged, animated and lit 3D scene. Sketch a blockout in your browser, then install the free Blender and build it for real. Ages 10+.",
@@ -280,20 +264,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/cpp-tower-defence-builder.html"
     },
     {
-      "id": "cpp-mod-studio",
-      "title": "C++ Mod Studio",
-      "desc": "A free browser playground for the C++ World Workshop. Lay out a game level on a grid, tick real SFML features, read a broken compiler error and choose the fix, then download a real C++ project (main.cpp + CMakeLists) you can build. No install and no account needed to start.",
-      "engine": "C++",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#00599c",
-      "cover": "/og/cpp-mod-studio.png",
-      "url": "/workshops/cpp-mod-studio.html"
-    },
-    {
       "id": "cpp-world-workshop",
       "title": "C++ World Workshop",
       "desc": "A free C++ and SFML series for beginners: Pong, Snake, Breakout, Platformer and Tower Defence, step by step. Design your level in the browser, then build it with C++. Ages 12+.",
@@ -322,22 +292,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/cpp-tower-part2-workshop.webp",
       "url": "/workshops/cpp-tower-part2-workshop.html"
-    },
-    {
-      "id": "defold-mod-studio",
-      "title": "Defold Mod Studio",
-      "desc": "A free browser playground for the Defold series. Lay out a 2D scene on a grid, add real Lua scripts, read a broken Defold console log and choose the fix, then download a real Defold project zip you can open in the free Defold editor. No install and no account needed to start.",
-      "engine": "Defold",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "2d"
-      ],
-      "steps": 6,
-      "themeColor": "#e0552f",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/defold-mod-studio.html"
     },
     {
       "id": "defold-dungeon-workshop",
@@ -430,22 +384,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF9800",
       "cover": "/og/learn.webp",
       "url": "/workshops/defold-shooter-workshop.html"
-    },
-    {
-      "id": "gdevelop-mod-studio",
-      "title": "GDevelop Mod Studio",
-      "desc": "A free browser playground for the GDevelop series. Lay out a 2D game on a grid, add GDevelop events, read a broken GDevelop log and choose the fix, then download a GDevelop build sheet with the object list and event sheet. No install needed to start.",
-      "engine": "GDevelop",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "2d"
-      ],
-      "steps": 6,
-      "themeColor": "#7c3aed",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/gdevelop-mod-studio.html"
     },
     {
       "id": "gdevelop-platformer-workshop",
@@ -1458,22 +1396,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-rpg-workshop.html"
     },
     {
-      "id": "gml-mod-studio",
-      "title": "GameMaker (GML) Mod Studio",
-      "desc": "A free browser playground for the GameMaker series. Lay out a 2D game on a grid, add real GML behaviours, read a broken GameMaker log and choose the fix, then download real GML event code you can paste into GameMaker. No install needed to start.",
-      "engine": "GML/GameMaker",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "2d"
-      ],
-      "steps": 6,
-      "themeColor": "#6cbe45",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/gml-mod-studio.html"
-    },
-    {
       "id": "godot-autoclicker-canvas",
       "title": "Biscuit Tycoon Build Canvas",
       "desc": "Build a Biscuit Tin style auto clicker in the browser. Tap for biscuits, hire auto tappers and buy upgrades. Ages 8+.",
@@ -1929,22 +1851,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/java-pong-workshop.html"
     },
     {
-      "id": "java-mod-studio",
-      "title": "Java Mod Studio",
-      "desc": "A free browser playground for the Java series. Lay out a 2D game on a grid, add real Java methods, read a broken compiler log and choose the fix, then download a real Swing Java project you can run with any free JDK. No install and no account needed to start.",
-      "engine": "Java",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "2d"
-      ],
-      "steps": 6,
-      "themeColor": "#e76f00",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/java-mod-studio.html"
-    },
-    {
       "id": "js-platformer-part2-workshop",
       "title": "Add Coins and Enemies to Your JavaScript Platformer (My First Browser Game, Episode 6)",
       "desc": "Add coins, enemies and health to your JavaScript platformer. Free browser tutorial.",
@@ -2244,20 +2150,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/minecraft-mod-starter-files.html"
     },
     {
-      "id": "minecraft-mod-studio",
-      "title": "Minecraft Mod Studio",
-      "desc": "A free browser playground for the Minecraft World Workshop. Design a crafting recipe on a 3x3 bench, add a function, fill in pack.mcmeta and your recipe file, debug a broken datapack log, then download a real datapack zip. No install and no account needed.",
-      "engine": "Minecraft",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#4f8a2c",
-      "cover": "/og/minecraft-mod-studio.png",
-      "url": "/workshops/minecraft-mod-studio.html"
-    },
-    {
       "id": "minecraft-setup-check",
       "title": "Minecraft Modding: Check Your Computer Before You Start",
       "desc": "Check your computer is ready for Minecraft modding with Fabric and Java. Covers Java 21, IntelliJ IDEA, disk space, install permissions and common Gradle errors. Free setup guide for families.",
@@ -2356,20 +2248,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/mugen-ai-workshop.html"
     },
     {
-      "id": "mugen-mod-studio",
-      "title": "MUGEN Mod Studio",
-      "desc": "A free browser playground for the MUGEN World Workshop. Fill in a fighter def, lay out a stage, preview it, read a broken log and download a real character and stage as a zip. No install and no account needed.",
-      "engine": "MUGEN",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#d32f2f",
-      "cover": "/og/mugen-mod-studio.png",
-      "url": "/workshops/mugen-mod-studio.html"
-    },
-    {
       "id": "mugen-workshop",
       "title": "MUGEN Workshop Build Your Own Fighter",
       "desc": "Learn to build MUGEN characters and stages from scratch. Free guides, templates, cheat sheets, project briefs and more. By JVDesignStudio.",
@@ -2386,7 +2264,7 @@ window.JVDS_CONTENT = {
     {
       "id": "mugen-world-workshop",
       "title": "MUGEN World Workshop",
-      "desc": "A free MUGEN workshop series: build your own fighter, add a stage, give it AI and set up a complete game. Start in the browser with the MUGEN Mod Studio. Ages 10+.",
+      "desc": "A free MUGEN workshop series: build your own fighter, add a stage, give it AI and set up a complete game. Ages 10+.",
       "engine": "MUGEN",
       "difficulty": "beginner",
       "ageRange": "10-14",
@@ -2552,20 +2430,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#4ade80",
       "cover": "/og/openrct2-cheatsheet.webp",
       "url": "/workshops/openrct2-cheatsheet.html"
-    },
-    {
-      "id": "openrct2-mod-studio",
-      "title": "OpenRCT2 Mod Studio",
-      "desc": "A free browser playground for the OpenRCT2 World Workshop. Fill in a plugin, choose what it does with the park, read a broken console log and choose the fix, then download a real plugin folder as a zip. No install and no account needed.",
-      "engine": "OpenRCT2",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#d94f3d",
-      "cover": "/og/openrct2-world-workshop.png",
-      "url": "/workshops/openrct2-mod-studio.html"
     },
     {
       "id": "openrct2-world-ep6-swim-rescue",
@@ -2945,22 +2809,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/python-platformer-workshop.html"
     },
     {
-      "id": "python-mod-studio",
-      "title": "Python Mod Studio",
-      "desc": "A free browser playground for the Python World Workshop. Lay out a platformer level on a grid, tick real Pygame features, read a broken Python traceback and choose the fix, then download a real Pygame project (main.py) you can run. No install and no account needed to start.",
-      "engine": "Python",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "platformer"
-      ],
-      "steps": 6,
-      "themeColor": "#3776ab",
-      "cover": "/og/python-mod-studio.png",
-      "url": "/workshops/python-mod-studio.html"
-    },
-    {
       "id": "python-studio",
       "title": "Python Studio: Build a Pygame Game in Your Browser, Then Run It for Real",
       "desc": "A free browser studio for the My First Python Game series. Pick a game (Fruit Catch, Dodge, Maze, Breakout, Platformer), tune it, play it live, then download a runnable Pygame project with real main.py code. No install to start. Ages 10+.",
@@ -3194,22 +3042,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/roblox-horror-canvas.html"
-    },
-    {
-      "id": "roblox-mod-studio",
-      "title": "Roblox Mod Studio",
-      "desc": "A free browser playground for the Roblox Studio series. Lay out an obby level on a grid, add real Lua scripts, read a broken Roblox Output log and choose the fix, then download a real .rbxmx model plus your scripts. No install and no account needed.",
-      "engine": "Roblox",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "obby"
-      ],
-      "steps": 6,
-      "themeColor": "#3b82f6",
-      "cover": "/og/roblox-mod-studio.png",
-      "url": "/workshops/roblox-mod-studio.html"
     },
     {
       "id": "roblox-obby-canvas",
@@ -3506,20 +3338,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/scratch-story-workshop.html"
     },
     {
-      "id": "stardew-mod-studio",
-      "title": "Stardew Mod Studio",
-      "desc": "A free browser playground for the Stardew World Workshop. Paint a map with layers and tile rules, use the fill and undo tools, take on challenges, test walking, try warps, build your files, debug a SMAPI log, save or share your world and download your mod. No install needed.",
-      "engine": "Stardew Valley",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#3f7d3a",
-      "cover": "/og/stardew-world-workshop.png",
-      "url": "/workshops/stardew-mod-studio.html"
-    },
-    {
       "id": "stardew-modding-cheatsheet",
       "title": "Stardew Modding Cheat Sheet",
       "desc": "Free printable Stardew Valley map modding cheat sheet: folder paths, the mod layout, manifest and content templates, layers, tile properties, warps and the common errors.",
@@ -3592,7 +3410,7 @@ window.JVDS_CONTENT = {
     {
       "id": "stardew-world-ep12-design",
       "title": "Stardew World Workshop Ep 12: Design Your World",
-      "desc": "Episode 12 of the free Stardew World Workshop. Learn level design thinking: purpose, paths, flow, balance and detail, then test it in the Mod Studio. Ages 10+.",
+      "desc": "Episode 12 of the free Stardew World Workshop. Learn level design thinking: purpose, paths, flow, balance and detail, then test it in Stardew Valley. Ages 10+.",
       "engine": "Stardew Valley",
       "difficulty": "beginner",
       "ageRange": "10-14",
@@ -3728,20 +3546,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#2e7d32",
       "cover": "/og/terraria-world-workshop.png",
       "url": "/workshops/terraria-modding-cheatsheet.html"
-    },
-    {
-      "id": "terraria-mod-studio",
-      "title": "Terraria World Studio",
-      "desc": "A free browser playground for the Terraria World Workshop: paint and dig tiles, build biomes, add chests, test walking, plan your world files and download your world. No install needed.",
-      "engine": "Terraria",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#2e7d32",
-      "cover": "/og/terraria-world-workshop.png",
-      "url": "/workshops/terraria-mod-studio.html"
     },
     {
       "id": "terraria-world-workshop",
@@ -4060,22 +3864,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#9333ea",
       "cover": "/og/tinkercad-ep2-popit.webp",
       "url": "/workshops/tinkercad-ep2-popit.html"
-    },
-    {
-      "id": "tinkercad-mod-studio",
-      "title": "TinkerCAD Mod Studio",
-      "desc": "A free browser playground for the 3D-print series. Lay out a 3D model on a grid (box, cylinder, cone, sphere, wedge, pyramid), add model steps, read a broken log and choose the fix, then download a real STL you can import into TinkerCAD or print. No install needed to start.",
-      "engine": "TinkerCAD",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#0b7fab",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/tinkercad-mod-studio.html"
     },
     {
       "id": "unity-breakout-workshop",
@@ -5800,31 +5588,31 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-25T10:40:34.000Z",
-    "workshops": 286,
+    "generated": "2026-11-26T13:46:45.000Z",
+    "workshops": 272,
     "games": 16,
     "tools": 51,
     "books": 5,
     "engines": {
-      "Blender": 11,
-      "C++": 10,
-      "Defold": 7,
-      "GDevelop": 7,
+      "Blender": 10,
+      "C++": 9,
+      "Defold": 6,
+      "GDevelop": 6,
       "General": 52,
-      "GML/GameMaker": 6,
+      "GML/GameMaker": 5,
       "Godot": 19,
-      "Java": 8,
+      "Java": 7,
       "JavaScript": 7,
-      "Minecraft": 18,
-      "MUGEN": 17,
-      "OpenRCT2": 13,
+      "Minecraft": 17,
+      "MUGEN": 16,
+      "OpenRCT2": 12,
       "PICO-8": 7,
-      "Python": 11,
-      "Roblox": 26,
+      "Python": 10,
+      "Roblox": 25,
       "Scratch": 8,
-      "Stardew Valley": 15,
-      "Terraria": 15,
-      "TinkerCAD": 10,
+      "Stardew Valley": 14,
+      "Terraria": 14,
+      "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10
     },
