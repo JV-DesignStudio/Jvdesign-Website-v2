@@ -25,7 +25,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       }));
       check(width + 'px: discovery page loads', info.title.length > 5, info.title);
-      check(width + 'px: discovery page lists 16 games', /16 browser games/.test(info.body));
+      check(width + 'px: discovery page lists 16 games', /31 browser games/.test(info.body));
       check(width + 'px: characters guide the deck', info.guides >= 12, info.guides + ' guides');
       check(width + 'px: crew uses mascot art', ['lumo','ember','pip','echo','stardust'].every(n => info.crew.some(s => s.includes('/' + n + '-hero.webp'))), info.crew.length + ' images');
       check(width + 'px: no sideways scrolling', info.overflow <= 2, String(info.overflow));
