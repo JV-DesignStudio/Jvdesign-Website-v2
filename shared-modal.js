@@ -51,9 +51,14 @@
     function close(){
       try{localStorage.setItem(config.seenKey,'1');}catch(e){}
       modal.classList.remove('open');
+      if(window.JVDSStudio&&window.JVDSStudio.overlay&&window.JVDSStudio.overlay.release)window.JVDSStudio.overlay.release();
     }
 
     function open(){
+      if(!modal.classList.contains('open')&&window.JVDSStudio&&window.JVDSStudio.overlay&&window.JVDSStudio.overlay.blocking()){
+        window.JVDSStudio.overlay.queue(function(){open();});
+        return;
+      }
       modal.classList.add('open');
     }
 

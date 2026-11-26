@@ -458,6 +458,82 @@
   };
 
   /* ---------------------------------------------------------------- */
+  /* Overlay coordinator                                               */
+  /* ---------------------------------------------------------------- */
+
+  // One place decides which dialog is allowed on screen. Tools can keep
+  // their own markup; the coordinator enforces one open overlay at a time
+  // and holds notifications back until the workspace is reachable.
+  var OVERLAY_SELECTOR = '[role="dialog"][aria-modal="true"], .modal-overlay.open, .jvs-modal-wrap, .jvs-sheet[data-open="true"]';
+  var overlayQueue = [];
+  var overlayObserver = null;
+
+  function overlayVisible(el) {
+    if (!el || !el.parentNode || el.hasAttribute('hidden')) return false;
+    var cs = W.getComputedStyle(el);
+    return !!cs && cs.display !== 'none' && cs.visibility !== 'hidden';
+  }
+
+  function nearestOverlay(el) {
+    var p = el.parentNode;
+    while (p && p !== D.body) {
+      if (p.matches && p.matches(OVERLAY_SELECTOR) && overlayVisible(p)) return p;
+      p = p.parentNode;
+    }
+    return null;
+  }
+
+  function openOverlays() {
+    var nodes = D.querySelectorAll(OVERLAY_SELECTOR);
+    var list = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (overlayVisible(el) && !nearestOverlay(el)) list.push(el);
+    }
+    return list;
+  }
+
+  function ensureOverlayObserver() {
+    if (overlayObserver || !W.MutationObserver) return;
+    overlayObserver = new W.MutationObserver(function () {
+      if (overlayQueue.length) setTimeout(drainOverlayQueue, 0);
+    });
+    overlayObserver.observe(D.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-open', 'hidden']
+    });
+  }
+
+  function stopOverlayObserver() {
+    if (overlayObserver) { overlayObserver.disconnect(); overlayObserver = null; }
+  }
+
+  function drainOverlayQueue() {
+    if (!overlayQueue.length) { stopOverlayObserver(); return; }
+    if (openOverlays().length) return;
+    var fn = overlayQueue.shift();
+    try { fn(); } catch (e) {}
+    if (overlayQueue.length) setTimeout(drainOverlayQueue, 0);
+    else stopOverlayObserver();
+  }
+
+  var overlayApi = {
+    blocking: function () { return openOverlays().length > 0; },
+    count: function () { return openOverlays().length; },
+    queue: function (fn) {
+      if (typeof fn !== 'function') return;
+      if (!openOverlays().length) { try { fn(); } catch (e) {} return; }
+      overlayQueue.push(fn);
+      ensureOverlayObserver();
+    },
+    release: drainOverlayQueue,
+    pending: function () { return overlayQueue.length; }
+  };
+  S.overlay = overlayApi;
+
+  /* ---------------------------------------------------------------- */
   /* Toast                                                             */
   /* ---------------------------------------------------------------- */
 
@@ -472,6 +548,10 @@
 
   S.toast = function (text, opts) {
     opts = opts || {};
+    if (!opts.force && overlayApi.blocking()) {
+      overlayApi.queue(function () { S.toast(text, opts); });
+      return { close: function () {}, el: null };
+    }
     var el = h('div', {
       class: 'jvs-toast',
       'data-tone': opts.tone || 'info',

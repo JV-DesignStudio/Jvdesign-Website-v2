@@ -349,7 +349,11 @@ function checkMissionParam(){
     banner.style.display='flex';
     setCanvasSize(16,16,true); document.getElementById('custW').value=16; document.getElementById('custH').value=16;
     setStudioMode('draw');
-    setTimeout(()=>showToast('Mission: draw 3 pixels → Character tab → Stamp → Animate → Export'),800);
+    setTimeout(function(){
+      var msg='Mission: draw 3 pixels → Character tab → Stamp → Animate → Export';
+      if(window.JVDSStudio&&window.JVDSStudio.overlay) window.JVDSStudio.overlay.queue(function(){showToast(msg);});
+      else showToast(msg);
+    },800);
     // poll progress
     setInterval(updateMissionProgress,800);
   } else if(!dismissed && !hasMission){
