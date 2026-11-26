@@ -1202,25 +1202,85 @@ function renderNodeTree(node, depth, isLast, prefix) {
   return html;
 }
 
-/* A3070: engine parity. A step can carry the same job in the real engine:
-   the exact file, the exact clicks and a checkpoint. The code is the same
-   code the learner already writes in the canvas editor, so the two lanes
-   never drift. */
+/* A3070: engine parity  -  hidden per-step. Steps carry engine metadata but we
+   do not render it inside each step card: the instructions assume the real IDE
+   is open, which confuses learners who are only on the browser page. Instead,
+   we show the prototype chip at the top and the full engine guide in the finish
+   banner after all steps are done (see injectPrototypeChip / injectEngineGuide). */
 function renderEngine(step) {
-  var e = step.engine;
-  if (!e) return '';
-  var name = e.name || 'the engine';
-  var html = '<div class="cw-engine">' +
-    '<div class="cw-engine-head"><span class="cw-engine-badge">' + escapeHtml(name) + '</span> In ' + escapeHtml(name) + '</div>' +
-    (e.intro ? '<p class="cw-engine-intro">' + escapeHtml(e.intro) + '</p>' : '') +
-    (e.file ? '<p class="cw-engine-file">File: <code>' + escapeHtml(e.file) + '</code></p>' : '') +
-    '<ol class="cw-engine-do">' +
-      (e.do || []).map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') +
-    '</ol>' +
-    (e.code ? '<pre class="cw-engine-code"><code>' + escapeHtml(e.code) + '</code></pre>' : '') +
-    (e.check ? '<p class="cw-engine-check"><strong>Check:</strong> ' + escapeHtml(e.check) + '</p>' : '') +
-  '</div>';
-  return html;
+  return '';
+}
+
+function hasEngineSteps() {
+  return STEPS.some(function(s) { return s.engine && s.engine.do && s.engine.do.length; });
+}
+
+function engineName() {
+  for (var i = 0; i < STEPS.length; i++) {
+    if (STEPS[i].engine && STEPS[i].engine.name) return STEPS[i].engine.name;
+  }
+  return '';
+}
+
+/* Inject a small "browser prototype" chip at the top of the steps panel.
+   Called at the end of renderSteps() so it appears above step 1.
+   Only shown when any step carries engine data. */
+function injectPrototypeChip() {
+  var panel = document.getElementById('stepsPanel');
+  if (!panel || !hasEngineSteps()) return;
+  var name = engineName();
+  var chip = document.createElement('p');
+  chip.className = 'cw-proto-chip';
+  chip.setAttribute('role', 'note');
+  chip.innerHTML = '🧪 <strong>Browser prototype</strong>  -  same logic as ' +
+    escapeHtml(name) + ', runs in your browser. Engine guide unlocks when you finish.';
+  panel.insertBefore(chip, panel.firstChild);
+}
+
+/* Inject a consolidated "Now build in [Engine]" guide into the finish banner
+   once all canvas steps are complete. Collects the engine steps from STEPS[].engine
+   and renders them as a step-by-step checklist. */
+function injectEngineGuide() {
+  var banner = document.getElementById('finishBanner');
+  if (!banner || banner.querySelector('.cw-engine-guide')) return;
+  var stepsWithEngine = STEPS.filter(function(s) { return s.engine && s.engine.do && s.engine.do.length; });
+  if (!stepsWithEngine.length) return;
+
+  var name = engineName() || 'the engine';
+  var project = CFG.labProject
+    ? { href: CFG.labProject, label: 'Build this project in the ' + name + ' Lab', lab: true }
+    : CFG.engineProject;
+
+  var html = '<div class="cw-engine-guide" role="region" aria-label="Engine guide">' +
+    '<h3 class="cw-engine-guide-title">Now build this in ' + escapeHtml(name) + '</h3>' +
+    '<p class="cw-engine-guide-intro">You\'ve finished the browser prototype  -  the logic is identical to what runs in ' +
+    escapeHtml(name) + '. Follow these steps in the real engine using the reference project.</p>';
+
+  if (project && project.href) {
+    html += '<a class="cw-engine-guide-dl" href="' + escapeHtml(project.href) + '"' +
+      (project.lab ? '' : ' download') + '>' +
+      '⬇ ' + escapeHtml(project.label || ('Download the ' + name + ' reference project')) +
+      '</a>';
+  }
+
+  html += '<ol class="cw-engine-guide-steps">';
+  stepsWithEngine.forEach(function(step) {
+    var e = step.engine;
+    html += '<li class="cw-engine-guide-step">' +
+      '<span class="cw-engine-guide-step-title">' + escapeHtml(step.title) + '</span>';
+    if (e.file) {
+      html += ' <code class="cw-engine-guide-file">📄 ' + escapeHtml(e.file) + '</code>';
+    }
+    html += '<ul class="cw-engine-guide-do">';
+    (e.do || []).forEach(function(d) { html += '<li>' + escapeHtml(d) + '</li>'; });
+    html += '</ul>';
+    if (e.check) {
+      html += '<p class="cw-engine-guide-check">✓ <em>' + escapeHtml(e.check) + '</em></p>';
+    }
+    html += '</li>';
+  });
+  html += '</ol></div>';
+  banner.insertAdjacentHTML('beforeend', html);
 }
 
 function parsonsShuffle(n) {
@@ -1468,6 +1528,7 @@ function renderSteps() {
     }
   });
   if (stepImageMap) injectStepImages(stepImageMap);
+  injectPrototypeChip();
 }
 
 var BLANK_PLACEHOLDER = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
@@ -1739,6 +1800,7 @@ function updateProgress() {
   if (count === STEPS.length) {
     offerRemix(finishFocusPending);
     finishFocusPending = false;
+    injectEngineGuide();
   }
   wsSyncProgress();
 }

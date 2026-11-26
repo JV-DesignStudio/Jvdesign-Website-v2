@@ -70,21 +70,14 @@ function apply() {
     const file = path.join(ROOT, String(entry.url).replace(/^\//, ''));
     if (!fs.existsSync(file)) { failed.push(entry.id + ' (missing file)'); continue; }
     let html = fs.readFileSync(file, 'utf8');
-    const want = block(entry);
 
+    // Strip any existing WS-OUTCOME block — no longer injected (too much preamble).
     const start = html.indexOf(START);
     const end = html.indexOf(END);
     if (start >= 0 && end > start) {
-      const next = html.slice(0, start) + want + html.slice(end + END.length);
-      if (next !== html) { fs.writeFileSync(file, next); updated++; }
-      continue;
+      const stripped = html.slice(0, start).replace(/\n$/, '') + '\n' + html.slice(end + END.length).replace(/^\n/, '');
+      if (stripped !== html) { fs.writeFileSync(file, stripped); updated++; }
     }
-
-    const at = findInsert(html);
-    if (at < 0) { failed.push(entry.id + ' (no insert point)'); continue; }
-    html = html.slice(0, at) + '\n\n' + want + '\n' + html.slice(at);
-    fs.writeFileSync(file, html);
-    updated++;
   }
 
   console.log(`Applied workshop outcomes: ${updated} pages updated, ${entries.length} entries`);
